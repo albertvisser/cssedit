@@ -5,11 +5,8 @@ import PyQt4.QtGui as gui
 import PyQt4.QtCore as core
 
 try:
-    print('try importing editor from editor.cssedit')
     from editor.cssedit import Editor
 except ImportError as e:
-    print(e)
-    print('try importing editor from cssedit')
     from cssedit import Editor
 
 class TreePanel(gui.QTreeWidget):
@@ -200,6 +197,8 @@ class MainWindow(gui.QMainWindow):
         ## Mixin.__init__(self)
         offset = 40 if os.name != 'posix' else 10
         self.move(offset, offset)
+        self.app_title = 'CSSEdit'
+
         ## self.nt_icon = gui.QIcon(os.path.join(HERE, "doctree.xpm"))
         ## self.tray_icon = gui.QSystemTrayIcon(self.nt_icon, self)
         ## self.tray_icon.setToolTip("Click to revive DocTree")
@@ -214,70 +213,60 @@ class MainWindow(gui.QMainWindow):
         ## self.opts = init_opts()
         ## self.resize(self.opts['ScreenSize'][0], self.opts['ScreenSize'][1]) # 800, 500)
         self.resize(800, 500)
-        self.setWindowTitle('CSSEdit')
+        self.setWindowTitle(self.app_title)
 
         self.tree = TreePanel(self)
         self.setCentralWidget(self.tree)
 
-        ## self.actiondict = {}
-        ## menubar = self.menuBar()
-        ## self.create_menu(menubar, self._get_menu_data())
+        self.actiondict = {}
+        menubar = self.menuBar()
+        self.create_menu(menubar, (
+            ('&Application', (
+                ('E&xit', self.exit, 'Ctrl+Q', '', 'Quit the application' ),
+            ),),
+            ('&File', (
+                ('&Open', self.openfile, 'Ctrl+O', '', 'Open a css file'),
+            ),),
+            ))
         ## self.undo_stack = UndoRedoStack(self)
         self.project_dirty = False
 
     def create_menu(self, menubar, menudata):
         """bouw het menu en de meeste toolbars op"""
-        ## for item, data in menudata:
-            ## menu = menubar.addMenu(item)
-            ## toolbar_added = False
-            ## if item == menudata[2][0]: # "&View":
-                ## self.viewmenu = menu
-            ## elif item == menudata[1][0]:
-                ## self.notemenu = menu
-            ## elif item == menudata[3][0]:
-                ## self.treemenu = menu
-            ## for menudef in data:
-                ## if not menudef:
-                    ## menu.addSeparator()
-                    ## continue
-                ## label, handler, shortcut, icon, info = menudef
-                ## if icon:
-                    ## action = gui.QAction(gui.QIcon(os.path.join(HERE, icon)), label,
-                        ## self)
-                    ## if not toolbar_added:
-                        ## toolbar = self.addToolBar(item)
-                        ## toolbar.setIconSize(core.QSize(16,16))
-                        ## toolbar_added = True
-                    ## toolbar.addAction(action)
-                ## else:
-                    ## action = gui.QAction(label, self)
+        for item, data in menudata:
+            menu = menubar.addMenu(item)
+            self.menu[item] = menu
+            for menudef in data:
+                if not menudef:
+                    menu.addSeparator()
+                    continue
+                label, handler, shortcut, icon, info = menudef
+                if icon:
+                    action = gui.QAction(gui.QIcon(os.path.join(HERE, icon)), label,
+                        self)
+                    if not toolbar_added:
+                        toolbar = self.addToolBar(item)
+                        toolbar.setIconSize(core.QSize(16,16))
+                        toolbar_added = True
+                    toolbar.addAction(action)
+                else:
+                    action = gui.QAction(label, self)
                 ## if item == menudata[3][0]:
                     ## if label == '&Undo':
                         ## self.undo_item = action
                     ## elif label == '&Redo':
                         ## self.redo_item = action
-                ## if shortcut:
-                    ## action.setShortcuts([x for x in shortcut.split(",")])
+                if shortcut:
+                    action.setShortcuts([x for x in shortcut.split(",")])
                 ## if info.startswith("Check"):
                     ## action.setCheckable(True)
-                    ## info = info[5:]
-                    ## if info in ('B', 'I', 'U'):
-                        ## font = gui.QFont()
-                        ## if info == 'B':
-                            ## font.setBold(True)
-                        ## elif info == 'I':
-                            ## font.setItalic(True)
-                        ## elif info == 'U':
-                            ## font.setUnderline(True)
-                        ## action.setFont(font)
-                        ## info = ''
-                ## if info:
-                    ## action.setStatusTip(info)
-                ## self.connect(action, core.SIGNAL('triggered()'), handler)
-                ## # action.triggered.connect(handler) werkt hier niet
-                ## if label:
-                    ## menu.addAction(action)
-                    ## self.actiondict[label] = action
+                if info:
+                    action.setStatusTip(info)
+                self.connect(action, core.SIGNAL('triggered()'), handler)
+                # action.triggered.connect(handler) werkt hier niet
+                if label:
+                    menu.addAction(action)
+                    self.actiondict[label] = action
 
     def show_message(self, text, title):
         gui.QMessageBox.information(self, title, text)
@@ -290,7 +279,11 @@ class MainWindow(gui.QMainWindow):
         self.setWindowTitle("{}{} (view: {}) - DocTree".format(title,
             '*' if self.project_dirty else ''))
 
-    def getfilename(self, title, start, save=False):
+    def getfilename(self, title='', start='', save=False):
+        if title == '':
+            title = self.app_title
+        if start == '':
+            start = os.getcwd()
         filter = "CSS files (*.css)"
         if save:
             filename = gui.QFileDialog.getSaveFileName(self, title, start, filter)
@@ -322,6 +315,14 @@ class MainWindow(gui.QMainWindow):
         self.tree.setCurrentItem(item_to_activate)
         self.tree.setFocus()
 
+    def openfile(self, event=None):
+        ok, filename = self.getfilename()
+        self.open(filename=filename)
+
+    def exit(self, event=None):
+        # check if data needs to be saved - or move this to closeEvent method
+        self.close()
+
 def main(**kwargs):
     app = gui.QApplication(sys.argv)
     main = MainWindow()
@@ -329,7 +330,7 @@ def main(**kwargs):
     main.show()
     print(kwargs)
     if kwargs:
-        main.open(**kwargs)
+        main.open(**kwargs) # no error return, throws an exception if needed
     ## if err:
         ## gui.QMessageBox.information(main, "Error", err, gui.QMessageBox.Ok)
     app.exec_()
