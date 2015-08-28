@@ -4,11 +4,17 @@ logging.basicConfig(filename='cssedit.log', level=logging.DEBUG,
 
 import os
 import sys
-sys.path.append(os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    'editor'))
-import cssedit
-import cssedit_qt
+
+try:
+    import editor.cssedit
+except ImportError:
+    sys.path.append(os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'editor'))
+    import cssedit
+    import cssedit_qt as gui
+else:
+    import editor.cssedit_qt as gui
 
 testfiles = (
     "simplecss-compressed.css",
@@ -269,14 +275,15 @@ test_editorclass = {
 #--
 def test_gui(arg=''):
     if arg == 'file':
-        cssedit_qt.main(filename="simplecss-short.css")
+        gui.main(filename=os.path.join(os.path.dirname(os.path.abspath(__file__)),
+            "simplecss-short.css"))
     elif arg == 'tag':
-        cssedit_qt.main(tag='div p>span["red"]~a:hover',
+        gui.main(tag='div p>span["red"]~a:hover',
             text='border: 5px solid red; text-decoration: none; content: "gargl"; ')
     elif arg == 'text':
-        cssedit_qt.main(text=formatted_css)
+        gui.main(text=formatted_css)
     else:
-        cssedit_qt.main(test='text') # raises ValueError
+        gui.main(test='text') # raises ValueError
 
 gui_testtypes = ('file', 'tag', 'text', '')
 #--

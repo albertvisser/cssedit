@@ -4,7 +4,13 @@ import sys
 import PyQt4.QtGui as gui
 import PyQt4.QtCore as core
 
-from cssedit import Editor
+try:
+    print('try importing editor from editor.cssedit')
+    from editor.cssedit import Editor
+except ImportError as e:
+    print(e)
+    print('try importing editor from cssedit')
+    from cssedit import Editor
 
 class TreePanel(gui.QTreeWidget):
     "Tree structure"
@@ -207,6 +213,7 @@ class MainWindow(gui.QMainWindow):
 
         ## self.opts = init_opts()
         ## self.resize(self.opts['ScreenSize'][0], self.opts['ScreenSize'][1]) # 800, 500)
+        self.resize(800, 500)
         self.setWindowTitle('CSSEdit')
 
         self.tree = TreePanel(self)
@@ -316,17 +323,13 @@ class MainWindow(gui.QMainWindow):
         self.tree.setFocus()
 
 def main(**kwargs):
-    print('start app')
     app = gui.QApplication(sys.argv)
-    print('create window')
     main = MainWindow()
     ## app.setWindowIcon(main.nt_icon)
-    print('show window')
     main.show()
-    ## main.project_file = fnaam
-    print('load data')
-    main.open(**kwargs)
+    print(kwargs)
+    if kwargs:
+        main.open(**kwargs)
     ## if err:
         ## gui.QMessageBox.information(main, "Error", err, gui.QMessageBox.Ok)
-    print('start event loop')
     app.exec_()
