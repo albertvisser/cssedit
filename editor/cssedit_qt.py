@@ -226,6 +226,39 @@ class MainWindow(gui.QMainWindow):
             ),),
             ('&File', (
                 ('&Open', self.openfile, 'Ctrl+O', '', 'Open a css file'),
+                ('&Reload', self.reopenfile, 'Ctrl+R', '', 'Discard all changes and reopen the current css file'),
+                ('&Save', self.savefile, 'Ctrl+S', '', 'Save the current css file'),
+                ('&Save As', self.savefileas, 'Ctrl+Shift+S', '', 'Save the current css file under a different name'),
+            ),),
+            ('&Selector', (
+                ('Add', self.no_op, '', '', 'Add a new selector under the root'),
+                ('Insert after', self.no_op, '', '', 'Add a new selector after the current one'),
+                ('Insert before', self.no_op, '', '', 'Add a new selector before the current one'),
+                ('Delete', self.no_op, '', '', 'Delete the current selector'),
+                ('Cut', self.no_op, '', '', 'Cut (copy and delete) the current selector'),
+                ('Copy', self.no_op, '', '', 'Copy the current selector'),
+                ('Paste after', self.no_op, '', '', 'Insert the copied selector after the current one'),
+                ('Paste before', self.no_op, '', '', 'Insert the copied selector before the current one'),
+            ),),
+            ('&Property', (
+                ('Add', self.no_op, '', '', 'Add a new property under the current selector'),
+                ('Insert after', self.no_op, '', '', 'Add a new property after the current one'),
+                ('Insert before', self.no_op, '', '', 'Add a new property before the current one'),
+                ('Delete', self.no_op, '', '', 'Delete the current property'),
+                ('Cut', self.no_op, '', '', 'Cut (copy and delete) the current property'),
+                ('Copy', self.no_op, '', '', 'Copy the current property'),
+                ('Paste after', self.no_op, '', '', 'Insert the copied property after the current one'),
+                ('Paste before', self.no_op, '', '', 'Insert the copied property before the current one'),
+            ),),
+            ('&Value', (
+                ('Add', self.no_op, '', '', 'Add a new data value under the current property'),
+                ('Insert after', self.no_op, '', '', 'Add a new data value after the current one'),
+                ('Insert before', self.no_op, '', '', 'Add a new data value before the current one'),
+                ('Delete', self.no_op, '', '', 'Delete the current data value'),
+                ('Cut', self.no_op, '', '', 'Cut (copy and delete) the current data value'),
+                ('Copy', self.no_op, '', '', 'Copy the current data value'),
+                ('Paste after', self.no_op, '', '', 'Insert the copied data value after the current one'),
+                ('Paste before', self.no_op, '', '', 'Insert the copied data value before the current one'),
             ),),
             ))
         ## self.undo_stack = UndoRedoStack(self)
@@ -233,9 +266,10 @@ class MainWindow(gui.QMainWindow):
 
     def create_menu(self, menubar, menudata):
         """bouw het menu en de meeste toolbars op"""
+        self.menus = {} # we may need this if we need to do something with specific menus later
         for item, data in menudata:
             menu = menubar.addMenu(item)
-            self.menu[item] = menu
+            self.menus[item] = menu
             for menudef in data:
                 if not menudef:
                     menu.addSeparator()
@@ -268,7 +302,8 @@ class MainWindow(gui.QMainWindow):
                     menu.addAction(action)
                     self.actiondict[label] = action
 
-    def show_message(self, text, title):
+    def show_message(self, text, title=""):
+        title = title or self.app_title
         gui.QMessageBox.information(self, title, text)
 
     def show_statusmessage(self, text):
@@ -281,7 +316,7 @@ class MainWindow(gui.QMainWindow):
 
     def getfilename(self, title='', start='', save=False):
         if title == '':
-            title = self.app_title
+            title = 'Save File' if save else 'Open File'
         if start == '':
             start = os.getcwd()
         filter = "CSS files (*.css)"
@@ -295,7 +330,7 @@ class MainWindow(gui.QMainWindow):
     def open(self, **kwargs):
         ## self.root = self.tree.takeTopLevelItem(0)
         self.root = gui.QTreeWidgetItem()
-        self.root.setText(0, "Root")
+        self.root.setText(0, self.project_file)
         self.tree.addTopLevelItem(self.root)
         self.activeitem = item_to_activate = self.root
 
@@ -316,8 +351,25 @@ class MainWindow(gui.QMainWindow):
         self.tree.setFocus()
 
     def openfile(self, event=None):
-        ok, filename = self.getfilename()
+        ok, filename = self.getfilename(title=self.app_title + ' - open file')
+        self.project_file = filename
         self.open(filename=filename)
+
+    def reopenfile(self, event=None):
+        self.open(filename=self.project_file)
+
+    def savefile(self, event=None, filename=''):
+        filename = filename or self.project_file
+        self.show_message("If this were real, we'd be saving the file as {}".format(
+            filename))
+
+    def savefileas(self, event=None):
+        ok, filename = self.getfilename(title=self.app_title + ' - save file as',
+            save=True)
+        self.savefile(filename=filename)
+
+    def no_op(self, event=None):
+        pass
 
     def exit(self, event=None):
         # check if data needs to be saved - or move this to closeEvent method
