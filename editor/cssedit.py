@@ -18,10 +18,13 @@ import shutil
 import collections
 format_types = ("long", "medium", "short", "compressed")
 
-def fsplit(text, delimiter):
-    """split text, but keep split character with first part
+def fsplit(text, delimiter, multi=False):
+    """split text, but keep split character attached to first part
     """
-    data = text.split(delimiter)
+    if multi:
+        data = text.split(delimiter)
+    else:
+        data = text.split(delimiter, 1)
     for idx, item in enumerate(data[:-1]):
         data[idx] += delimiter.strip()
     return data
@@ -47,7 +50,7 @@ def parse(text):
         # skip empty lines
         if '{' not in line: continue
         # collect comments separately
-        comments = fsplit(line, '*/')
+        comments = fsplit(line, '*/', multi=True)
         line = comments[-1]
         node, data = line.split('{')
         seq += 1
