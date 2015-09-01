@@ -4,24 +4,23 @@ logging.basicConfig(filename='cssedit.log', level=logging.DEBUG,
 
 import os
 import sys
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 try:
-    import editor.cssedit
+    import editor.cssedit as cssedit
 except ImportError:
-    sys.path.append(os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        'editor'))
+    sys.path.append(os.path.join(os.path.dirname(HERE),'editor'))
     import cssedit
     import cssedit_qt as gui
 else:
     import editor.cssedit_qt as gui
 
-testfiles = (
-    "simplecss-compressed.css",
-    "simplecss-short.css",
-    "simplecss-medium.css",
-    "simplecss-long.css",
-    )
+testfiles = {
+    'compressed': os.path.join(HERE, "simplecss-compressed.css"),
+    'short': os.path.join(HERE, "simplecss-short.css"),
+    'medium': os.path.join(HERE, "simplecss-medium.css"),
+    'long': os.path.join(HERE, "simplecss-long.css"),
+    }
 
 formatted_css ="""\
 div p>span["red"]~a:hover {
@@ -45,17 +44,21 @@ def test_fsplit():
     for data, delim in (
             ('Hallo, daar, jongens en meisjes', ','),
             ('x { y:z; p: q;}', '}'),
-            ('/* commentaar */ /* commentaar */ /* commentaar */ *', '*/')):
+            ('/* commentaar */ /* commentaar */ /* commentaar */ *', '*/'),
+            ('/* commentaar */* snoepies', '*/')):
         logging.info(cssedit.fsplit(data, delim))
+    logging.info(cssedit.fsplit(
+        '/* commentaar */ /* commentaar */ /* commentaar */ *', '*/', multi=True))
 
 def test_load():
-    for name in testfiles:
+    for name in testfiles.values():
+        logging.info('-- data from file {}'.format(name))
         data = cssedit.load(name)
         logging.info(data)
 
 def test_parse():
-    for name in testfiles[:2]:
-        logging.info('data from ' + name)
+    for name in testfiles.values():
+        logging.info('-- data from file {}'.format(name))
         data = cssedit.load(name)
         result = cssedit.parse(data)
         for key, value in result.items():
@@ -139,21 +142,24 @@ def test_editor_noargs():
     logging.info("--- Positional arg only: 3")
     ed = cssedit.Editor('snork', 'bork', 'klork') # as well
     logging.info("--- Positional arg with correct one")
-    ed = cssedit.Editor('snork', filename='simplecss-compressed.css') # raises
+    ed = cssedit.Editor('snork', filename=testfiles["compressed"]) # raises
         # TypeError: __init__() got multiple values for argument 'filename'
 
 def test_editor_filename():
-    logging.info("--- filename as positional arg")
-    ed = cssedit.Editor('simplecss-compressed.css') # raises TypeError
+    ## logging.info("--- filename as positional arg")
+    ## ed = cssedit.Editor(testfiles['compressed']) # raises TypeError
+    ## log_treedata(ed)
+    ## logging.info("--- treedata for file - empty filename")
+    ## ed = cssedit.Editor(filename="")    # raises ValueError
+    ## log_treedata(ed)
+    ## logging.info("--- treedata for file - nonexistant")
+    ## ed = cssedit.Editor(filename="nonexistant") # raises FileNotFoundError
+    ## log_treedata(ed)
+    logging.info("--- treedata for file - valid file (compressed)")
+    ed = cssedit.Editor(filename=testfiles["compressed"])
     log_treedata(ed)
-    logging.info("--- treedata for file - empty filename")
-    ed = cssedit.Editor(filename="")    # raises ValueError
-    log_treedata(ed)
-    logging.info("--- treedata for file - nonexistant")
-    ed = cssedit.Editor(filename="nonexistant") # raises FileNotFoundError
-    log_treedata(ed)
-    logging.info("--- treedata for file - valid file")
-    ed = cssedit.Editor(filename="simplecss-compressed.css")
+    logging.info("--- treedata for file - valid file with comments")
+    ed = cssedit.Editor(filename=testfiles["short"]) # also one with comments
     log_treedata(ed)
 
 def test_editor_tag():
@@ -204,7 +210,7 @@ def test_editor_text():
 
 def test_editor_compileback():
     logging.info("--- compile back from fileinput")
-    ed = cssedit.Editor(filename="simplecss-compressed.css")
+    ed = cssedit.Editor(filename=testfiles["compressed"])
     ed.treetoview()
     ed.viewtotree()
     logging.info(ed.data)
@@ -222,7 +228,7 @@ def test_editor_compileback():
 
 def test_editor_return():
     logging.info("-- return for filename - look at files for result")
-    ed = cssedit.Editor(filename="simplecss-short.css")
+    ed = cssedit.Editor(filename=testfiles["short"])
     ed.treetoview()
     ed.viewtotree()
     ## logging.info(ed.data)
@@ -275,8 +281,7 @@ test_editorclass = {
 #--
 def test_gui(arg=''):
     if arg == 'file':
-        gui.main(filename=os.path.join(os.path.dirname(os.path.abspath(__file__)),
-            "simplecss-short.css"))
+        gui.main(filename=testfiles["short"])
     elif arg == 'tag':
         gui.main(tag='div p>span["red"]~a:hover',
             text='border: 5px solid red; text-decoration: none; content: "gargl"; ')
@@ -297,4 +302,4 @@ def run_all_tests():
         test_gui(test)
 
 ## run_all_tests()
-test_gui('file')
+## test_gui('file')
