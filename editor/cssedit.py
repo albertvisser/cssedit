@@ -45,38 +45,42 @@ def parse(text):
         return collections.defaultdict(dict)
     seq = 0
     lines = text.split('}')
-    selectors = collections.defaultdict(nodes)
+    selectors = []
     for line in lines:
         # skip empty lines
         if '{' not in line: continue
         # collect comments separately
         comments = fsplit(line, '*/', multi=True)
+        for item in comments[:-1]:
+            selectors.append(('/**/', item.strip()[2:-2].strip()))
         line = comments[-1]
         node, data = line.split('{')
         seq += 1
         node = node.strip()
         properties = data.split(';')
+        propdict = {}
         for item in properties:
             if item.strip() == "": continue
             if ':' not in item: continue
             prop, value = item.split(':')
-            prop = prop.strip()
-            value = value.strip()
-            selectors[seq][node][prop] = value
+            propdict[prop.strip()] = value.strip()
+        selectors.append((node, propdict))
     return selectors
 
-def compile(argdict):
+def compile(inputlist):
     result = ""
-    for key in sorted(argdict):
-        seldict = argdict[key]
-        for selector, data in seldict.items():
-            components = ["{} {{".format(selector)]
-            for key, value in data.items():
-                components.append("{}: {};".format(key, value))
-            components.append("} ")
-            result += " ".join(components)
-    return result
-
+    for node, data in inputlist:
+        if node == '/**/':
+            result += '/* {} */'.format(data)
+            continue
+        components = []
+        for key in sorted(data.keys()):
+            components.append("{}: {};".format(key, data[key]))
+        data = ' '
+        if components:
+            data += ' '.join(components) + ' '
+        result += '{} {{{}}} '.format(node, data)
+    return result.strip()
 
 def format(data, format="compressed"):
     "returns a text unless the compression format is wrong"
@@ -87,14 +91,15 @@ def format(data, format="compressed"):
     result = []
     lines = data.split('} ')
     for line in lines:
-        if line.strip() == "": continue
+        line = line.strip()
+        if line == "": continue
+        line = line.strip('}').strip()
         if format == "short":
-            result.append(line + "}")
+            result.append(line + " }")
         else:
             selector, seldata = line.split('{ ')
-            seldata = seldata.strip()
-            if not seldata.endswith(';'):
-                seldata = seldata + ';'
+            ## if not seldata.endswith(';'):
+                ## seldata = seldata + ';'
             result.append(selector + "{")
             if format == "long":
                 properties = seldata.split(';')
@@ -103,9 +108,9 @@ def format(data, format="compressed"):
                     if test:
                         result.append("    {};".format(test))
             else:
-                result.append("    {}".format(seldata))
+                result.append("    {}".format(seldata.strip()))
             result.append("}")
-    return "\n".join(result)
+    return os.linesep.join(result)
 
 def save(data, filename, backup=True):
     if backup and os.path.exists(filename):
@@ -128,45 +133,52 @@ class Editor:
             text = load(filename)
             self.filename = filename
         elif tag and text:                  # tag and contents of style property
+            ## if ':' not in text:
+                ## raise ValueError("Incorrect css data")
             text = get_for_single_tag(tag, text)
             self.tag = tag
-        elif text:                          # contents of style tag
-            text = text
-        else:
+        ## elif text:                          # contents of style tag
+            ## if ':' not in text:
+                ## raise ValueError("Incorrect css data")
+        ## else:
+        elif not text:
             raise ValueError("Not enough arguments")
-        if ':' not in text:
-            raise ValueError("Incorrect css data")
         self.data = parse(text)
         if not self.data:
             raise ValueError("Incorrect css data")
+        # TODO: andere controles op deze data
 
-    def treetoview(self):
+    def texttotree(self):
         """turn the structure into a visual thing
         """
         self.treedata = []
-        for key, value in self.data.items():
-            self.treedata.append(str(key))
-            for item, contents in value.items():
-                self.treedata.append("    {}".format(item))
-                for thing, stuff in contents.items():
-                    self.treedata.append("        {}".format(thing))
-                    self.treedata.append("            {}".format(stuff))
+        for ix, value in enumerate(self.data):
+            ## self.treedata.append(str(ix + 1))
+            item, contents = value
+            for selector in item.split(','):
+                self.treedata.append("{}".format(selector.strip()))
+                for property, value in sorted(contents.items()):
+                    self.treedata.append("    {}".format(property))
+                    self.treedata.append("        {}".format(value))
 
-    def viewtotree(self):
+    def treetotext(self):
         """turn the visual thing into a structure
         """
-        def nodes():
-            return collections.defaultdict(dict)
-        data = collections.defaultdict(nodes)
+        data = []
+        propdict = {}
         for item in self.treedata:
             if not item.startswith('    '):
-                key = item.strip()
+                if propdict:
+                    data.append((selector, propdict))
+                selector = item.strip()
+                propdict = {}
             elif not item.startswith('        '):
-                subkey = item.strip()
+                property = item.strip()
             elif not item.startswith('            '):
-                subsubkey = item.strip()
-            else:
-                data[int(key)][subkey][subsubkey] = item.strip()
+                value = item.strip()
+                propdict[property] = value
+        if propdict:
+            data.append((selector, propdict))
         self.data = data # compile(data)
 
     def return_to_source(self, backup=True, savemode="compressed"):
