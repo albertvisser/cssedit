@@ -15,7 +15,6 @@ a:hover { background-color: blue }
 p.oms:before { content: "Hello, it's me" }
 
 /* document hierarchies */
-
 div div { display: block; }
 ul>li>ul>li { list-style: square; }
 ul + p { font-style: italic }
@@ -23,6 +22,5 @@ p ~ p { font-variant: small-caps; }
 a[title] { color: yellowish; }
 td[valign="top"] { font-weight: bold; }
 a[href*="ads"] { display: none; }
-a[href^="http"]{ background: url(path/to/external/icon.png) no-repeat; padding-left: 10px; }
+a[href^="http"] { background: url(path/to/external/icon.png) no-repeat; padding-left: 10px; }
 a[href$="jpg"] { text-decoration: line-through; }
-

@@ -14,7 +14,7 @@ pylint*
 *data/*
 *oud/*
 build/*
-tests/*
+tests/*log*
 dist/*
 *out
 *.zip

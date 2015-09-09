@@ -17,6 +17,7 @@ import os
 import shutil
 import collections
 format_types = ("long", "medium", "short", "compressed")
+comment_tag = '/**/'
 
 def fsplit(text, delimiter, multi=False):
     """split text, but keep split character attached to first part
@@ -30,17 +31,30 @@ def fsplit(text, delimiter, multi=False):
     return data
 
 def load(filename):
+    # TODO: handle blank lines (wrt output = input)
     with open(filename) as f_in:
         result = " ".join([x.strip() for x in f_in.readlines()])
     return result
 
-def get_for_single_tag(tag, cssdata):
-    return "{} {{ {} }}".format(tag, cssdata.strip())
+def get_for_single_tag(cssdata):
+    " tekst naar dict"
+    propdict = {}
+    for item in cssdata.split(';'):
+        if item.strip() == "": continue
+        if ':' not in item: continue
+        prop, value = item.split(':')
+        propdict[prop.strip()] = value.strip()
+    return propdict # of moet tag ook mee voor het onthouden?
 
 def return_for_single_tag(cssdata):
-    return [x.strip() for x in cssdata.strip('}').split(" { ")]
+    " dict naar tekst"
+    properties = []
+    for property, value in sorted(cssdata.items()):
+        properties.append("{}: {};".format(property, value))
+    return " ".join(properties)
 
 def parse(text):
+    # TODO: handle inline comments
     def nodes():
         return collections.defaultdict(dict)
     seq = 0
@@ -49,10 +63,10 @@ def parse(text):
     for line in lines:
         # skip empty lines
         if '{' not in line: continue
-        # collect comments separately
+        # collect comments separately - works only for in between selectors
         comments = fsplit(line, '*/', multi=True)
         for item in comments[:-1]:
-            selectors.append(('/**/', item.strip()[2:-2].strip()))
+            selectors.append((comment_tag, item.strip()[2:-2].strip()))
         line = comments[-1]
         node, data = line.split('{')
         seq += 1
@@ -67,50 +81,55 @@ def parse(text):
         selectors.append((node, propdict))
     return selectors
 
-def compile(inputlist):
-    result = ""
-    for node, data in inputlist:
-        if node == '/**/':
-            result += '/* {} */'.format(data)
-            continue
-        components = []
-        for key in sorted(data.keys()):
-            components.append("{}: {};".format(key, data[key]))
-        data = ' '
-        if components:
-            data += ' '.join(components) + ' '
-        result += '{} {{{}}} '.format(node, data)
-    return result.strip()
+## def compile(inputlist):
+    ## # compile should not return a string but a list, so format knows better about separate lines`
+    ## # or maybe we shouldn't use this at all?
+    ## result = []
+    ## for node, data in inputlist:
+        ## if node == comment_tag:
+            ## result.append('/* {} */'.format(data))
+            ## continue
+        ## components = []
+        ## for key in sorted(data.keys()):
+            ## components.append("{}: {};".format(key, data[key]))
+        ## data = ' '
+        ## if components:
+            ## data += ' '.join(components) + ' '
+        ## result.append('{} {{{}}}'.format(node, data))
+    ## return result
 
-def format(data, format="compressed"):
-    "returns a text unless the compression format is wrong"
-    if format not in (format_types):
+def format(inputlist, mode="compressed"):
+    "returns a text unless the compression mode is wrong"
+    if mode not in (format_types):
         return
-    if format == "compressed":
-        return data
-    result = []
-    lines = data.split('} ')
-    for line in lines:
-        line = line.strip()
-        if line == "": continue
-        line = line.strip('}').strip()
-        if format == "short":
-            result.append(line + " }")
-        else:
-            selector, seldata = line.split('{ ')
-            ## if not seldata.endswith(';'):
-                ## seldata = seldata + ';'
-            result.append(selector + "{")
-            if format == "long":
-                properties = seldata.split(';')
-                for prop in properties:
-                    test = prop.strip()
-                    if test:
-                        result.append("    {};".format(test))
+    lines = []
+    for selector, data in inputlist:
+        # elke regel is een tuple
+        if selector == comment_tag:
+            # element 1 geeft commentaar aan, element 2 is de commentaartekst
+            if mode != "compressed":
+                lines.append('/* {} */'.format(data))
+            continue
+        # element 1 is een string en element 2 een dictionary
+        properties = []
+        for property, value in sorted(data.items()):
+            properties.append("{}: {};".format(property, value))
+        propertiesline = " ".join(properties)
+        selector_start, selector_end = selector + " {", "}"
+        selectorline = " ".join((selector_start, propertiesline, selector_end))
+        if mode in ("compressed", "short"):
+            lines.append(selectorline)
+        else: # mode in ("medium", "long")
+            lines.append(selector_start)
+            if mode == "medium":
+                lines.append("    {}".format(propertiesline))
             else:
-                result.append("    {}".format(seldata.strip()))
-            result.append("}")
-    return os.linesep.join(result)
+                lines.extend(["    {}".format(x) for x in properties])
+            lines.append(selector_end)
+    if mode == "compressed":
+        return " ".join(lines)
+    else:
+        return "\n".join(lines)
 
 def save(data, filename, backup=True):
     if backup and os.path.exists(filename):
@@ -124,26 +143,26 @@ class Editor:
     def __init__(self, **kwargs): # filename="", tag="", text=""):
         """get css from a source and turn it into a structure
         """
-        filename = tag = text = ''
-        if 'filename' in kwargs: filename = kwargs['filename']
-        if 'tag' in kwargs: tag = kwargs['tag']
-        if 'text' in kwargs: text = kwargs['text']
-        self.filename = self.tag = ""
-        if filename:                        # css file
-            text = load(filename)
-            self.filename = filename
-        elif tag and text:                  # tag and contents of style property
-            ## if ':' not in text:
-                ## raise ValueError("Incorrect css data")
-            text = get_for_single_tag(tag, text)
-            self.tag = tag
-        ## elif text:                          # contents of style tag
-            ## if ':' not in text:
-                ## raise ValueError("Incorrect css data")
-        ## else:
-        elif not text:
+        self.filename = self.tag = text = ''
+        self.data = []
+        if 'filename' in kwargs:
+            self.filename = kwargs['filename']
+            if self.filename == '':
+                raise ValueError("Invalid filename")
+            text = load(self.filename)
+        if 'tag' in kwargs:
+            self.tag = kwargs['tag']
+        if 'text' in kwargs:
+            text = kwargs['text']
+        if not text:
             raise ValueError("Not enough arguments")
-        self.data = parse(text)
+        elif ':' not in text:
+            raise ValueError("Incorrect css data")
+        elif self.tag:
+            ## self.data = get_for_single_tag(text)
+            self.data = [(self.tag, get_for_single_tag(text))]
+        else:
+            self.data = parse(text)
         if not self.data:
             raise ValueError("Incorrect css data")
         # TODO: andere controles op deze data
@@ -155,6 +174,10 @@ class Editor:
         for ix, value in enumerate(self.data):
             ## self.treedata.append(str(ix + 1))
             item, contents = value
+            if item == comment_tag:
+                self.treedata.append(comment_tag)
+                self.treedata.append('    {}'.format(contents))
+                continue
             for selector in item.split(','):
                 self.treedata.append("{}".format(selector.strip()))
                 for property, value in sorted(contents.items()):
@@ -166,14 +189,20 @@ class Editor:
         """
         data = []
         propdict = {}
+        in_comment = False
         for item in self.treedata:
             if not item.startswith('    '):
                 if propdict:
                     data.append((selector, propdict))
                 selector = item.strip()
+                if selector == comment_tag:
+                    in_comment = True
                 propdict = {}
             elif not item.startswith('        '):
                 property = item.strip()
+                if in_comment:
+                    data.append((selector, property))
+                    in_comment = False
             elif not item.startswith('            '):
                 value = item.strip()
                 propdict[property] = value
@@ -187,15 +216,13 @@ class Editor:
             info = "` or `".join((info, format_types[-1]))
             raise AttributeError("wrong format type for save, should be either of "
                 "`{}`".format(info))
-        data = compile(self.data)
+        ## data = compile(self.data)
         if self.filename:
-            save(format(data, savemode), self.filename, backup)
+            save(format(self.data, savemode), self.filename, backup)
         elif self.tag:
-            self.cssdata = return_for_single_tag(data)
+            self.cssdata = return_for_single_tag(self.data[0][1])
         else:
-            self.data = format(data, savemode) # otherwise it's not accessible
-
-
+            self.data = format(self.data, savemode) # otherwise it's not accessible
 
 # this doesn't do anything yet with
 # - comments, either inline or in between selectors

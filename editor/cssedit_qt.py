@@ -5,9 +5,9 @@ import PyQt4.QtGui as gui
 import PyQt4.QtCore as core
 
 try:
-    from editor.cssedit import Editor
+    from editor.cssedit import Editor, comment_tag
 except ImportError as e:
-    from cssedit import Editor
+    from cssedit import Editor, comment_tag
 
 class TreePanel(gui.QTreeWidget):
     "Tree structure"
@@ -329,20 +329,24 @@ class MainWindow(gui.QMainWindow):
 
     def open(self, **kwargs):
         ## self.root = self.tree.takeTopLevelItem(0)
+        self.project_file = kwargs['filename']
         self.root = gui.QTreeWidgetItem()
         self.root.setText(0, self.project_file)
         self.tree.addTopLevelItem(self.root)
         self.activeitem = item_to_activate = self.root
 
         self.css = Editor(**kwargs)
-        for key, value in self.css.data.items():
+        print(self.css.data)
+        for key, value in self.css.data:
+
+            selectoritem = self.tree.add_to_parent(key, self.root)
+            if key == comment_tag:
+                dataitem = self.tree.add_to_parent(value, selectoritem)
+                continue
 
             for item, contents in value.items():
-                selectoritem = self.tree.add_to_parent(item, self.root)
-                selectoritem.setData(0, core.Qt.UserRole, key)
-                for thing, stuff in contents.items():
-                    propertyitem = self.tree.add_to_parent(thing, selectoritem)
-                    valueitem = self.tree.add_to_parent(stuff, propertyitem)
+                propertyitem = self.tree.add_to_parent(item, selectoritem)
+                valueitem = self.tree.add_to_parent(contents, propertyitem)
 
         item_to_activate = self.root
         ## self.resize(*self.opts["ScreenSize"])
@@ -352,7 +356,6 @@ class MainWindow(gui.QMainWindow):
 
     def openfile(self, event=None):
         ok, filename = self.getfilename(title=self.app_title + ' - open file')
-        self.project_file = filename
         self.open(filename=filename)
 
     def reopenfile(self, event=None):

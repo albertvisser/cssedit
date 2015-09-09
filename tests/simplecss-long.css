@@ -37,7 +37,6 @@ p.oms:before {
 }
 
 /* document hierarchies */
-
 div div {
 	display: block;
 }
@@ -59,10 +58,9 @@ td[valign="top"] {
 a[href*="ads"] {
 	display: none;
 }
-a[href^="http"]{
+a[href^="http"] {
    background: url(path/to/external/icon.png) no-repeat; padding-left: 10px;
 }
 a[href$="jpg"] {
 	text-decoration: line-through;
 }
-
