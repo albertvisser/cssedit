@@ -1,0 +1,4 @@
+#! /bin/sh
+
+cd tests
+python3 -m unittest -v unittests
