@@ -192,6 +192,9 @@ class TreePanel(gui.QTreeWidget):
 class MainWindow(gui.QMainWindow):
     """Hoofdscherm van de applicatie"""
 
+# TODO: optie om log te tonen, eventueel context van een melding ophalen (zie cssedit.get_definition_from_file)
+# TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan) - ook in properties voor bekijken gelijksoortige stijlen
+
     def __init__(self, parent=None):
         gui.QMainWindow.__init__(self)
         ## Mixin.__init__(self)
@@ -222,6 +225,12 @@ class MainWindow(gui.QMainWindow):
         menubar = self.menuBar()
         self.create_menu(menubar, (
             ('&Application', (
+                ('Set output &Format', (
+                    ('&Compressed (no linefeeds)',), # TODO: these options
+                    ('&Short',),        # should be checkable and remembered;
+                    ('&Medium',),       # or would an options dialog be a better idea?
+                    ('&Long',),         # see Trac wiki
+                    ), '', '', 'Indicate how output should be saved'),
                 ('E&xit', self.exit, 'Ctrl+Q', '', 'Quit the application' ),
             ),),
             ('&File', (
@@ -275,6 +284,12 @@ class MainWindow(gui.QMainWindow):
                     menu.addSeparator()
                     continue
                 label, handler, shortcut, icon, info = menudef
+                if isinstance(handler, tuple): # TODO: find a nicer way
+                    submenu = menu.addMenu(label)
+                    for item in handler:
+                        # define submenu options
+                        pass
+                    continue
                 if icon:
                     action = gui.QAction(gui.QIcon(os.path.join(HERE, icon)), label,
                         self)
@@ -328,25 +343,19 @@ class MainWindow(gui.QMainWindow):
         return ok, filename
 
     def open(self, **kwargs):
-        ## self.root = self.tree.takeTopLevelItem(0)
-        self.project_file = kwargs['filename']
+        try:
+            self.project_file = kwargs['filename']
+        except KeyError:
+            self.project_file = ""
+        self.tree.takeTopLevelItem(0)
         self.root = gui.QTreeWidgetItem()
-        self.root.setText(0, self.project_file)
+        self.root.setText(0, self.project_file or "(no file)")
         self.tree.addTopLevelItem(self.root)
         self.activeitem = item_to_activate = self.root
 
         self.css = Editor(**kwargs)
-        print(self.css.data)
-        for key, value in self.css.data:
-
-            selectoritem = self.tree.add_to_parent(key, self.root)
-            if key == comment_tag:
-                dataitem = self.tree.add_to_parent(value, selectoritem)
-                continue
-
-            for item, contents in value.items():
-                propertyitem = self.tree.add_to_parent(item, selectoritem)
-                valueitem = self.tree.add_to_parent(contents, propertyitem)
+        self.css.datatotext()
+        self.texttotree()
 
         item_to_activate = self.root
         ## self.resize(*self.opts["ScreenSize"])
@@ -363,8 +372,55 @@ class MainWindow(gui.QMainWindow):
 
     def savefile(self, event=None, filename=''):
         filename = filename or self.project_file
-        self.show_message("If this were real, we'd be saving the file as {}".format(
-            filename))
+        self.css.data = self.treetotext()
+        self.css.texttodata()
+        self.css.return_to_source()
+        ## if not self.project_file: # embedded use
+            ## self.close()
+
+    def texttotree(self):
+        for key, value in self.css.treedata:
+            if key == comment_tag:
+                selectoritem = self.tree.add_to_parent(key, self.root)
+                dataitem = self.tree.add_to_parent(value, selectoritem)
+                continue
+            else:
+                try:
+                    selector = key.selectorText
+                except AttributeError:
+                    selectoritem = self.tree.add_to_parent(str(key), self.root)
+                    dataitem = self.tree.add_to_parent(value, selectoritem)
+                    continue
+                selectoritem = self.tree.add_to_parent(selector, self.root)
+                for item, contents in sorted(value.items()):
+                    propertyitem = self.tree.add_to_parent(item, selectoritem)
+                    valueitem = self.tree.add_to_parent(contents, propertyitem)
+
+    def treetotext(self):
+        data = []
+        count = self.root.childCount()
+        ix = 0
+        while ix < count:
+            selector_item = self.root.child(ix)
+            selector_name = selector_item.text(0)
+            if selector_name == comment_tag:
+                comment_item = selector_item.child(0)
+                comment = comment_item.text(0)
+                data.append((selector_name, comment))
+            else:
+                propertydict = {}
+                count2 = selector_item.childCount()
+                ix2 = 0
+                while ix2 < count2:
+                    property_item = selector_item.child(ix2)
+                    property_name = property_item.text(0)
+                    value_item = property_item.child(0)
+                    value_text = value_item.text(0)
+                    propertydict[property_name] = value_text
+                    ix2 += 1
+                data.append((selector_name, propertydict))
+            ix += 1
+        return data
 
     def savefileas(self, event=None):
         ok, filename = self.getfilename(title=self.app_title + ' - save file as',
@@ -375,7 +431,6 @@ class MainWindow(gui.QMainWindow):
         pass
 
     def exit(self, event=None):
-        # check if data needs to be saved - or move this to closeEvent method
         self.close()
 
 def main(**kwargs):
@@ -383,7 +438,6 @@ def main(**kwargs):
     main = MainWindow()
     ## app.setWindowIcon(main.nt_icon)
     main.show()
-    print(kwargs)
     if kwargs:
         main.open(**kwargs) # no error return, throws an exception if needed
     ## if err:

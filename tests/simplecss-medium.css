@@ -19,7 +19,7 @@ img {
 	color: red; font-weight: bold
 }
 #page-title {
-	font-size: 55
+	font-size: 1.3em
 }
 p::first-child {
 	text-decoration: underline;
@@ -48,7 +48,7 @@ p ~ p {
 	font-variant: small-caps;
 }
 a[title] {
-	color: yellowish;
+	color: yellow;
 }
 td[valign="top"] {
 	font-weight: bold;

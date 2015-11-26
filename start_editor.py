@@ -8,5 +8,5 @@ elif len(sys.argv) == 3:
     else:
         main(tag=sys.argv[1], text=sys.argv[2])
 else:
-    main(sys.argv)
+    main()
 
