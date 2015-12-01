@@ -95,10 +95,10 @@ data = {
         },
     }
 data['editor_file']['other'] = data['parse_function']
-data['editor_text']['one'] = data['editor_tag']
-data['editor_text']['more'] = (data['editor_text']['one'] +
-    data['editor_text']['addition'])
-data['editor_text']['formatted'] = (data['editor_text']['extra'] +
-    data['editor_text']['more'])
-data['editor_text2tree']['more'] = (data['editor_text2tree']['one'] +
-    data['editor_text2tree']['addition'])
+data['editor_text']['one'] = [data['editor_tag'][0]]
+data['editor_text']['more'] = data['editor_text']['one'] + \
+    data['editor_text']['addition']
+data['editor_text']['formatted'] = data['editor_text']['extra'] + \
+    data['editor_text']['more']
+data['editor_text2tree']['more'] = data['editor_text2tree']['one'] + \
+    data['editor_text2tree']['addition']
