@@ -1,5 +1,5 @@
 import sys
-from editor.cssedit_qt import main
+from editor.csseditor_qt import main
 if len(sys.argv) == 2:
     main(filename=sys.argv[1])
 elif len(sys.argv) == 3:
