@@ -7,6 +7,8 @@ import logging
 
 format_types = ("long", "medium", "short", "compressed")
 comment_tag = '/**/'
+logline_elements = ["severity", "subject", "message", "line", "pos", "data"]
+LogLine = collections.namedtuple('LogLine', logline_elements)
 
 def load(filename):
     "Note: does not return a string but a CSSStyleSheet instance"
@@ -25,7 +27,7 @@ def return_for_single_tag(cssdata):
     ## return " ".join(properties)
 
 def parse(text):
-    "Note: does not return a string but a CSSStyleSheet instance"
+    "Note: does not return a string but a CSSStyleSheet instance or..."
     return cssutils.parseString(text)
 
 ## def format(inputlist, mode="compressed"):
@@ -49,8 +51,12 @@ def save(data, filename, backup=True):
     "expects data to be a CSSStyleSheet instance"
     if backup and os.path.exists(filename):
         shutil.copyfile(filename, filename + "~")
-    with open(filename, 'w') as f_out:
-        print(data.cssText, file=f_out)
+    with open(filename, 'w', encoding='utf-8') as f_out:
+        try:
+            print(data.cssText, file=f_out)
+        except AttributeError:
+            print(data, file=f_out)
+
 
 def get_definition_from_file(file, line, pos):
     with open(file) as _in:
@@ -62,6 +68,17 @@ def get_definition_from_file(file, line, pos):
     start = data.rfind('}', 0, pos) + 1
     text = data[start:end]
     return text
+
+def parse_log_line(line):
+    "turn a log line into a LogLine instance"
+    data = []
+    x, rest = line.split("\t", 1); data.append(x)
+    x, rest = rest.split(": ", 1); data.append(x)
+    x, rest = rest.split(" [", 1); data.append(x)
+    x, y, rest = rest.split(':', 2); data.append(int(x)); data.append(int(y))
+    data.append(rest[:-1].strip())
+    return LogLine._make(data)
+
 
 class Editor:
 
@@ -98,6 +115,16 @@ class Editor:
             self.data.add(rule)
         else:
             self.data = parse(text)
+            text = str(self.data.cssText)
+            if not text:
+                self.data = None
+            else:
+                print(self.data.cssText)
+            ## if isinstance(data, cssutils.css.CSSStyleSheet):
+                ## self.data = data
+            ## elif isinstance(data, cssutils.css.CSSStyleDeclaration):
+                ## self.data = None
+            # TODO: raise error when this doesn't parse into a CSSStylesheet
 
         hdlr.close()
         self.log = ['unable to get log info']
@@ -133,7 +160,7 @@ class Editor:
                 if isinstance(value, cssutils.css.CSSComment):
                     self.treedata.append((comment_tag, value.cssText[1:-1].strip()))
                 elif isinstance(value, cssutils.css.cssmediarule.CSSMediaRule):
-                    # TODO
+                    pass # TODO
                 else:
                     # TODO: newlines weer gewoon doorgeven en in GUI in zo'n geval een multiline veld maken oid
                     self.treedata.append((type(value), value.cssText[1:-1].replace(
@@ -155,11 +182,15 @@ class Editor:
                     cssText='/* {} */'.format(propertydata))
             else:
                 style = cssutils.css.CSSStyleDeclaration()
-                for property, value in propertydata.items():
-                    style[property] = value
-                rule = cssutils.css.CSSStyleRule(selectorText=selector,
-                    style=style)
-            data.add(rule)
+                try:
+                    for property, value in propertydata.items():
+                        style[property] = value
+                    rule = cssutils.css.CSSStyleRule(selectorText=selector,
+                        style=style)
+                except TypeError:
+                    print(type(propertydata), str(propertydata))
+                    rule = None
+            if rule: data.add(rule)
         self.data = data # compile(data)
 
     def return_to_source(self, backup=True, savemode="compressed"):
@@ -170,7 +201,7 @@ class Editor:
             raise AttributeError("wrong format type for save, should be either of "
                 "`{}`".format(info))
         ## ## data = compile(self.data)
-        set_format(mode)
+        set_format(savemode)
         if self.filename:
             save(self.data, self.filename, backup)
         elif self.tag:
@@ -178,33 +209,21 @@ class Editor:
         else:
             self.data = self.data.cssText
 
-# this doesn't do anything yet with
-# - comments, either inline or in between selectors
-# - selectors which are used multiple times (defining different properties in different places)
-#   a dictionary would take only the last defined property?
-#   No, but you lose where what is defined
-#   this can be solved by being clever making combinations in the parse function
-# - groups of selectors with a common definition
-#   so a "selector" can also be a (comma-separated) "list of selectors"
-#   and you'd need to assign all the properties in the definition to all the
-#   selectors in the list
-#   this should be solved in the compile function
-
-# might be useful to try and use the "cssutils" package
-# instead of trying to solve this myself
-
 
 if __name__ == "__main__":
-    ## test = Editor(filename="../tests/simplecss-long.css")
-    test = Editor(filename="../tests/common_pt3.css")
-    ## for x in test.log:
-        ## print(x.strip())
-    ## print(test.log[0].strip())
-    test.datatotext()
+    ## testdata = "../tests/simplecss-long.css"
+    testdata = "../tests/common_pt3.css"
+    test = Editor(filename=testdata)
+    for x in test.log:
+        print(x.strip())
+        y = parse_log_line(x)
+        print(y)
+        z = get_definition_from_file(testdata, y.line, y.pos)
+        print(z)
+    ## test.datatotext()
     ## test.texttodata()
     ## text = get_definition_from_file("../tests/common.css", 1, 60)
     ## print(text)
-
 
 
 
