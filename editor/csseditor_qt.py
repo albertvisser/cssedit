@@ -5,9 +5,12 @@ import PyQt4.QtGui as gui
 import PyQt4.QtCore as core
 
 try:
-    import editor.cssedit as ed
+    import cssedit.editor.cssedit as ed
 except ImportError as e:
-    import cssedit as ed
+    try:
+        import editor.cssedit as ed
+    except ImportError as e:
+        import cssedit as ed
 
 class LogDialog(gui.QDialog):
     "Simple Log display"
@@ -260,6 +263,7 @@ class MainWindow(gui.QMainWindow):
 # TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan) - ook in properties voor bekijken gelijksoortige stijlen
 
     def __init__(self, parent=None):
+        self.parent = parent
         gui.QMainWindow.__init__(self)
         ## Mixin.__init__(self)
         offset = 40 if os.name != 'posix' else 10
@@ -534,6 +538,16 @@ class MainWindow(gui.QMainWindow):
 
     def exit(self, event=None):
         self.close()
+
+    def close(self, event=None):
+        """for "embedded" use: return modified data to parent before closing
+        """
+        if self.parent:
+            self.css.data = self.treetotext()
+            self.css.texttodata()
+            self.css.return_to_source()
+            self.parent.styledata = self.css.data
+        gui.QMainWindow.close(self)
 
 def main(**kwargs):
     app = gui.QApplication(sys.argv)

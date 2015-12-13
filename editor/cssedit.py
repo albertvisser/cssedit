@@ -105,7 +105,8 @@ class Editor:
     def __init__(self, **kwargs): # filename="", tag="", text=""):
         """get css from a source and turn it into a structure
         """
-        self.filename = self.tag = text = ''
+        self.filename = self.tag = ""
+        text = None # must be allowed to be empty (to create new inline style)
         try:
             self.filename = kwargs.pop('filename')
         except KeyError: pass
@@ -119,7 +120,7 @@ class Editor:
             if self.tag or text:
                 raise ValueError('Ambiguous arguments')
         else:
-            if not text:
+            if text is None:
                 raise ValueError("Not enough arguments")
         if kwargs:
             raise ValueError('Too many arguments')
@@ -139,7 +140,7 @@ class Editor:
             if not text:
                 self.data = None
             else:
-                print(self.data.cssText)
+                print('full text input in cssedit:', self.data.cssText)
             ## if isinstance(data, cssutils.css.CSSStyleSheet):
                 ## self.data = data
             ## elif isinstance(data, cssutils.css.CSSStyleDeclaration):
@@ -197,6 +198,7 @@ class Editor:
         """
         data = cssutils.css.CSSStyleSheet()
         for selector, propertydata in self.treedata:
+            print(selector, propertydata)
             if selector == comment_tag:
                 rule = cssutils.css.CSSComment(
                     cssText='/* {} */'.format(propertydata))
@@ -205,11 +207,13 @@ class Editor:
                 try:
                     for property, value in propertydata.items():
                         style[property] = value
-                    rule = cssutils.css.CSSStyleRule(selectorText=selector,
-                        style=style)
-                except TypeError:
+                except TypeError as e:
+                    print(e)
                     print(type(propertydata), str(propertydata))
                     rule = None
+                else:
+                    rule = cssutils.css.CSSStyleRule(selectorText=selector.selectorText,
+                        style=style)
             if rule: data.add(rule)
         self.data = data # compile(data)
 
@@ -225,7 +229,7 @@ class Editor:
         if self.filename:
             save(self.data, self.filename, backup)
         elif self.tag:
-            self.cssdata = return_for_single_tag(self.data)
+            self.data = return_for_single_tag(self.data)
         else:
             self.data = self.data.cssText
 
