@@ -70,14 +70,34 @@ def get_definition_from_file(file, line, pos):
     return text
 
 def parse_log_line(line):
-    "turn a log line into a LogLine instance"
+    """turn a log line into a LogLine instance
+
+    Let op: ik heb ook nog regels als:
+    ERROR	Unexpected token (NUMBER, 2, 1, 735)
+    ERROR	MediaList: Invalid MediaQuery:  (-webkit-min-device-pixel-ratio:2)
+    """
     data = []
-    x, rest = line.split("\t", 1); data.append(x)
-    x, rest = rest.split(": ", 1); data.append(x)
-    x, rest = rest.split(" [", 1); data.append(x)
-    x, y, rest = rest.split(':', 2); data.append(int(x)); data.append(int(y))
-    data.append(rest[:-1].strip())
-    return LogLine._make(data)
+    test = line.split("\t", 1)
+    if len(test) == 1:
+        return  # this line can not be parsed
+    severity, rest = test
+    test = rest.split(": ", 1)
+    if len(test) == 1: # unexpected token
+        message = rest
+        _, rest = message.split(" (", 1)
+        subject, data, line, pos = rest[:-1].split(',')
+    else:
+        subject, rest = test
+        test = rest.split(" [", 1)
+        if len(test) == 1:
+            message, data = rest.split(": ")
+            line = pos = "-1"
+        else:
+            message, rest = test
+            line, pos, rest = rest.split(':', 2)
+            data = rest[:-1].strip()
+    return LogLine(severity, subject, message, int(line), int(pos), data)
+
 
 
 class Editor:
@@ -212,6 +232,14 @@ class Editor:
 
 if __name__ == "__main__":
     ## testdata = "../tests/simplecss-long.css"
+    for logline in [
+        " transition]",
+        "WARNING	Property: Unknown Property name. [1:2511: flex-flow]",
+        "ERROR	Unexpected token (NUMBER, 2, 1, 735)",
+        "ERROR	MediaList: Invalid MediaQuery:  (-webkit-min-device-pixel-ratio:2)",
+            ]:
+        print(parse_log_line(logline))
+    sys.exit(0)
     testdata = "../tests/common_pt3.css"
     test = Editor(filename=testdata)
     for x in test.log:

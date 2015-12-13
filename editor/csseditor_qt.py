@@ -12,10 +12,12 @@ except ImportError as e:
 class LogDialog(gui.QDialog):
     "Simple Log display"
 
+    text = "css definition that triggers this message:\n\n"
+
     def __init__(self, parent, log):
         self.parent = parent
         gui.QDialog.__init__(self, parent)
-        self.setWindowTitle(self.parent.app_title)
+        self.setWindowTitle(self.parent.app_title + " - show log for current file")
         ## self.setWindowIcon(self.parent.app_icon)
         txt = gui.QLabel("Dubbelklik op een regel om de context "
             "(definitie in de css ) te bekijken")
@@ -54,14 +56,18 @@ class LogDialog(gui.QDialog):
 
     def show_context(self, item=None):
         """show full logline (in case it's been chopped off)
-        and the definition that triggered it"""
+        and the definition that triggered it
+        """
         # determine selected line in the list and get associated data
         selected = item or self.lijst.currentItem()
-        y = parse_log_line(selected)
-        context = get_definition_from_file(self.parent.filename, y.line, y.pos)
+        y = ed.parse_log_line(selected.text())
+        context = ed.get_definition_from_file(self.parent.project_file, y.line,
+            y.pos)
         # pop up a box to show the data
+        title = self.parent.app_title + " - show context for log message"
+        popup = gui.QMessageBox.information(self, title, self.text + context)
 
-    def done(self):
+    def done(self, arg=None):
         """finish dialog
         """
         gui.QDialog.done(self, 0)
@@ -419,12 +425,39 @@ class MainWindow(gui.QMainWindow):
         self.css = ed.Editor(**kwargs)
         self.css.datatotext()
         self.texttotree()
+        self.show_statusmessage(self.build_loaded_message())
 
         item_to_activate = self.root
         ## self.resize(*self.opts["ScreenSize"])
         self.root.setExpanded(True)
         self.tree.setCurrentItem(item_to_activate)
         self.tree.setFocus()
+
+    def build_loaded_message(self):
+        mld = 'file loaded'
+        warn = err = misc = 0
+        for line in self.css.log:
+            if line.startswith('WARNING'):
+                warn += 1
+            elif line.startswith('ERROR'):
+                err += 1
+            else:
+                misc += 1
+        if warn + err + misc > 0:
+            mld += ' with '
+            if warn > 0:
+                mld += '{} warnings'.format(warn)
+                if err > 0 and misc > 0:
+                    mld += ', '
+                else:
+                    mld += ' and '
+            if err > 0:
+                mld += '{} errors'.format(err)
+                if misc > 0:
+                    mld += ' and '
+            if misc > 0:
+                mld += '{} misc. messages'.format(misc)
+        return mld
 
     def openfile(self, event=None):
         ok, filename = self.getfilename(title=self.app_title + ' - open file')
@@ -489,7 +522,6 @@ class MainWindow(gui.QMainWindow):
         ok, filename = self.getfilename(title=self.app_title + ' - save file as',
             save=True)
         self.savefile(filename=filename)
-
 
     def show_log(self):
         if self.css:
