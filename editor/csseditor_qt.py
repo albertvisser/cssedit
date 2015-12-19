@@ -188,6 +188,15 @@ class TreePanel(gui.QTreeWidget):
             parent.insertChild(pos, new)
         return new
 
+    def add_to_parent_2(self, item, parent, pos=-1):
+        """
+        """
+        if pos == -1:
+            parent.addChild(item)
+        else:
+            parent.insertChild(pos, item)
+        ## return item
+
     def _getitemdata(self, item):
         return item.text(0), str(item.text(1)) # kan integer zijn
 
@@ -479,22 +488,58 @@ class MainWindow(gui.QMainWindow):
             ## self.close()
 
     def texttotree(self):
-        for key, value in self.css.treedata:
+        data = []
+        for key, value in self.css.treedata.items():
             if key == ed.comment_tag:
-                selectoritem = self.tree.add_to_parent(key, self.root)
-                dataitem = self.tree.add_to_parent(value, selectoritem)
+                for seq, item in value.items():
+                    selectoritem = gui.QTreeWidgetItem()
+                    selectoritem.setText(0, key.rstrip())
+                    selectoritem.setToolTip(0, key.rstrip())
+                    dataitem = gui.QTreeWidgetItem()
+                    dataitem.setText(0, item.rstrip())
+                    dataitem.setToolTip(0, item.rstrip())
+                    data.append((seq, selectoritem, ((dataitem,),)))
                 continue
-            else:
-                try:
-                    selector = key.selectorText
-                except AttributeError:
-                    selectoritem = self.tree.add_to_parent(str(key), self.root)
-                    dataitem = self.tree.add_to_parent(value, selectoritem)
+
+            selector = key
+            if not isinstance(selector, str):
+                for seq, item in value.items():
+                    selectoritem = gui.QTreeWidgetItem()
+                    selectoritem.setText(0, str(key))
+                    selectoritem.setToolTip(0, str(key))
+                    dataitem = gui.QTreeWidgetItem()
+                    dataitem.setText(0, item.rstrip())
+                    dataitem.setToolTip(0, item.rstrip())
+                    data.append((seq, selectoritem, ((dataitem,),)))
+                continue
+
+            selectoritem = gui.QTreeWidgetItem()
+            selectoritem.setText(0, selector)
+            selectoritem.setToolTip(0, selector)
+
+            dataitems = []
+            for item, contents in sorted(value.items()):
+                if item =='last':
+                    seq = contents
                     continue
-                selectoritem = self.tree.add_to_parent(selector, self.root)
-                for item, contents in sorted(value.items()):
-                    propertyitem = self.tree.add_to_parent(item, selectoritem)
-                    valueitem = self.tree.add_to_parent(contents, propertyitem)
+                propertyitem = gui.QTreeWidgetItem()
+                propertyitem.setText(0, item)
+                propertyitem.setToolTip(0, item)
+                valueitem = gui.QTreeWidgetItem()
+                valueitem.setText(0, contents)
+                valueitem.setToolTip(0, contents)
+                dataitems.append((propertyitem, valueitem))
+
+            data.append((seq, selectoritem, dataitems))
+
+        for seq, item, subitemlist in sorted(data):
+            self.tree.add_to_parent_2(item, self.root)
+            for subitem in subitemlist:
+                if len(subitem) == 1:
+                    self.tree.add_to_parent_2(subitem[0], item)
+                else:
+                    self.tree.add_to_parent_2(subitem[0], item)
+                    self.tree.add_to_parent_2(subitem[1], subitem[0])
 
     def treetotext(self):
         data = []

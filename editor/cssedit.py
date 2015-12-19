@@ -171,6 +171,7 @@ class Editor:
         """turn the cssutils structure into a more generic one
         """
         self.treedata = []
+        self.treedata = collections.defaultdict(dict)
         for ix, value in enumerate(list(self.data)):
             ## print(value.selectorText)
             ## print(value.selectorList)
@@ -179,23 +180,46 @@ class Editor:
                 selector_list = list(value.selectorList)
             except AttributeError as e:
                 if isinstance(value, cssutils.css.CSSComment):
-                    self.treedata.append((comment_tag, value.cssText[1:-1].strip()))
+                    ## self.treedata.append((comment_tag, value.cssText[1:-1].strip()))
+                    self.treedata[comment_tag][ix] = value.cssText[1:-1].strip()
                 elif isinstance(value, cssutils.css.cssmediarule.CSSMediaRule):
                     pass # TODO
                 else:
                     # TODO: newlines weer gewoon doorgeven en in GUI in zo'n geval een multiline veld maken oid
-                    self.treedata.append((type(value), value.cssText[1:-1].replace(
-                        '\n', '').strip()))
+                    ## self.treedata.append((type(value), value.cssText[1:-1].replace(
+                        ## '\n', '').strip()), ix)
+                    self.treedata[type(value)][ix] = value.cssText[1:-1].replace(
+                        '\n', '').strip()
             else:
                 propdict = {}
                 for prop in value.style.getProperties():
                     propdict[prop.name] = prop.propertyValue.cssText
                 for selector in selector_list:
-                    self.treedata.append((selector, propdict))
+                    self.treedata[selector.selectorText].update(propdict)
+                    self.treedata[selector.selectorText]['last'] = ix
+        ## # TODO: reorganize self.treedata so that for each tag there is only one style definition
+        ## prev_selector = ''
+        ## data = []
+        ## # for any given selector: collect all style definitions and keep the highest sequence
+        ## #   number; this is intended to put the comments back in the right place
+        ## for selector, propdict, ix in sorted(self.treedata, key=lambda x: x[2]):
+            ## if selector != prev_selector:
+                ## if prev_selector:
+                    ## data.append((highest_seq, (prev_selector, expanded_propdict,
+                        ## highest_seq)))
+                ## prev_selector = selector
+                ## expanded_propdict = {}
+                ## highest_seq = 0
+            ## expanded_propdict.update(propdict)
+            ## if ix > highest_seq: highest_seq = ix
+        ## self.treedata = []
+        ## for _, item in sorted(data):
+            ## self.treedata.append(item)
 
     def texttodata(self):
         """turn the generic structure into a cssutils one
         """
+        # TODO: first reorganize self.treedata so that common definitions are collected
         data = cssutils.css.CSSStyleSheet()
         for selector, propertydata in self.treedata:
             print(selector, propertydata)
@@ -236,23 +260,26 @@ class Editor:
 
 if __name__ == "__main__":
     ## testdata = "../tests/simplecss-long.css"
-    for logline in [
-        " transition]",
-        "WARNING	Property: Unknown Property name. [1:2511: flex-flow]",
-        "ERROR	Unexpected token (NUMBER, 2, 1, 735)",
-        "ERROR	MediaList: Invalid MediaQuery:  (-webkit-min-device-pixel-ratio:2)",
-            ]:
-        print(parse_log_line(logline))
-    sys.exit(0)
-    testdata = "../tests/common_pt3.css"
+    ## for logline in [
+        ## " transition]",
+        ## "WARNING	Property: Unknown Property name. [1:2511: flex-flow]",
+        ## "ERROR	Unexpected token (NUMBER, 2, 1, 735)",
+        ## "ERROR	MediaList: Invalid MediaQuery:  (-webkit-min-device-pixel-ratio:2)",
+            ## ]:
+        ## print(parse_log_line(logline))
+    ## sys.exit(0)
+    testdata = "../tests/common_pt1.css"
+    ## testdata = "../../htmledit/ashe/test.css"
     test = Editor(filename=testdata)
-    for x in test.log:
-        print(x.strip())
-        y = parse_log_line(x)
-        print(y)
-        z = get_definition_from_file(testdata, y.line, y.pos)
-        print(z)
-    ## test.datatotext()
+    ## for x in test.log:
+        ## print(x.strip())
+        ## y = parse_log_line(x)
+        ## print(y)
+        ## z = get_definition_from_file(testdata, y.line, y.pos)
+        ## print(z)
+    test.datatotext()
+    for item in test.treedata.items():
+        print(item)
     ## test.texttodata()
     ## text = get_definition_from_file("../tests/common.css", 1, 60)
     ## print(text)
