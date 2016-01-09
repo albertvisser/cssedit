@@ -1,6 +1,9 @@
 import os
 import sys
 
+# TODO: textdialog en listdialog nog checken of updaten ook werkt, griddialog nog helemaal
+# maken; als het werkt titels e.d. nog eens langslopen
+
 import PyQt4.QtGui as gui
 import PyQt4.QtCore as core
 
@@ -11,6 +14,42 @@ except ImportError as e:
         import editor.cssedit as ed
     except ImportError as e:
         import cssedit as ed
+
+CTYPES = ["text", "media", "rules", "selectors", "styles"] # component types
+def newitem(text):
+    text = str(text)
+    selectoritem = gui.QTreeWidgetItem()
+    selectoritem.setText(0, text)
+    selectoritem.setToolTip(0, text)
+    return selectoritem
+
+def read_rules(data):
+    "recursive structure to read rules"
+    rules = []
+    for rltype, rldata in data:
+        ruletypeitem = newitem(rltype)
+        for key in sorted(rldata):
+            if key == 'seqnum': continue
+            value = rldata[key]
+            ruletopitem = newitem(key)
+            if key == 'text':
+                rulekeyitem = newitem(value)
+                ruletopitem.addChild(rulekeyitem)
+            elif key == 'rules':
+                for rulekeyitem in read_rules(value):
+                    ruletopitem.addChild(rulekeyitem)
+            else:
+                for it in sorted(value):
+                    rulekeyitem = newitem(it)
+                    try:
+                        rulevalueitem = newitem(str(value[it]))
+                        rulekeyitem.addChild(rulevalueitem)
+                    except TypeError:
+                        pass
+                    ruletopitem.addChild(rulekeyitem)
+            ruletypeitem.addChild(ruletopitem)
+        rules.append(ruletypeitem)
+    return rules
 
 class LogDialog(gui.QDialog):
     "Simple Log display"
@@ -75,6 +114,255 @@ class LogDialog(gui.QDialog):
         """
         gui.QDialog.done(self, 0)
 
+
+class TextDialog(gui.QDialog):
+    """dialoog om een ongedefinieerde tekst (bv. van een commentaar) weer te geven
+    d.m.v. een multiline tekst box
+    """
+    def __init__(self, parent, title='', text='', comment=False):
+        self._parent = parent
+        gui.QDialog.__init__(self, parent)
+        self.setWindowTitle(title)
+        self.resize(440, 280)
+        vbox = gui.QVBoxLayout()
+
+        hbox = gui.QHBoxLayout()
+        self.data_text = gui.QTextEdit(self)
+        ## self.data_text.resize(440, 280)
+        hbox.addSpacing(50)
+        self.data_text.setText(text)
+        hbox.addWidget(self.data_text)
+        hbox.addSpacing(50)
+        vbox.addLayout(hbox)
+
+        hbox = gui.QHBoxLayout()
+        hbox.addStretch()
+        btn = gui.QPushButton('&Save', self)
+        btn.clicked.connect(self.on_ok)
+        btn.setDefault(True)
+        hbox.addWidget(btn)
+        btn = gui.QPushButton('&Cancel', self)
+        btn.clicked.connect(self.on_cancel)
+        hbox.addWidget(btn)
+        hbox.addStretch()
+        vbox.addLayout(hbox)
+
+        self.setLayout(vbox)
+        self.data_text.setFocus()
+
+    def on_cancel(self):
+        gui.QDialog.done(self, gui.QDialog.Rejected)
+
+    def on_ok(self):
+        self._parent.dialog_data = str(self.data_text.toPlainText())
+        gui.QDialog.done(self, gui.QDialog.Accepted)
+
+class GridDialog(gui.QDialog):
+    """dialoog om stijl definities voor een (groep van) selector(s) op te voeren
+    of te wijzigen
+    """
+    def __init__(self, parent, title='', itemlist=None, comment=False):
+        self._parent = parent
+        gui.QDialog.__init__(self, parent)
+        self.setWindowTitle(title)
+        ## self.setWindowIcon(gui.QIcon(os.path.join(PPATH,"ashe.ico")))
+        vbox = gui.QVBoxLayout()
+
+        sbox = gui.QFrame()
+        sbox.setFrameStyle(gui.QFrame.Box)
+        box = gui.QVBoxLayout()
+
+        hbox = gui.QHBoxLayout()
+        hbox.addStretch()
+        hbox.addWidget(gui.QLabel("Items in table:", self))
+        hbox.addStretch()
+        box.addLayout(hbox)
+
+        hbox = gui.QHBoxLayout()
+        self.attr_table = gui.QTableWidget(self)
+        ## self.attr_table.resize(540, 340)
+        self.attr_table.setColumnCount(2)
+        self.attr_table.setHorizontalHeaderLabels(['property', 'value']) # alleen zo te wijzigen
+        hdr = self.attr_table.horizontalHeader()
+        ## hdr.setMinimumSectionSize(340)
+        hdr.resizeSection(0, 102)
+        hdr.resizeSection(1, 152)
+        hdr.setStretchLastSection(True)
+        self.attr_table.verticalHeader().setVisible(False)
+        self.attr_table.setTabKeyNavigation(False)
+        ## self.attr_table.SetColSize(1, tbl.Size[0] - 162) # 178) # 160)
+        if itemlist is not None:
+            for attr, value in itemlist:
+                idx = self.attr_table.rowCount()
+                self.attr_table.insertRow(idx)
+                item = gui.QTableWidgetItem(attr)
+                self.attr_table.setItem(idx, 0, item)
+                item = gui.QTableWidgetItem(value)
+                self.attr_table.setItem(idx, 1, item)
+        else:
+            self.row = -1
+        ## hbox.addStretch()
+        hbox.addWidget(self.attr_table)
+        ## hbox.addStretch()
+        box.addLayout(hbox)
+
+        hbox = gui.QHBoxLayout()
+        hbox.addSpacing(50)
+        btn = gui.QPushButton('&Add Item', self)
+        btn.clicked.connect(self.on_add)
+        hbox.addWidget(btn)
+        btn = gui.QPushButton('&Delete Selected', self)
+        btn.clicked.connect(self.on_del)
+        hbox.addWidget(btn)
+        hbox.addSpacing(50)
+        box.addLayout(hbox)
+
+        sbox.setLayout(box)
+        vbox.addWidget(sbox)
+
+        hbox = gui.QHBoxLayout()
+        hbox.addStretch()
+        btn = gui.QPushButton('&Save', self)
+        btn.clicked.connect(self.on_ok)
+        btn.setDefault(True)
+        hbox.addWidget(btn)
+        btn = gui.QPushButton('&Cancel', self)
+        btn.clicked.connect(self.on_cancel)
+        hbox.addWidget(btn)
+        vbox.addLayout(hbox)
+        hbox.addStretch()
+
+        self.setLayout(vbox)
+
+    ## def on_resize(self, evt=None):
+        ## self.attr_table.SetColSize(1, self.attr_table.GetSize()[0] - 162) # 178) # 160)
+        ## self.attr_table.ForceRefresh()
+
+    def on_add(self, evt=None):
+        """property toevoegen:
+        in dit geval hoef ik alleen maar een lege regel aan de tabel toe te voegen
+        """
+        ## self.attr_table.setFocus()
+        num = self.attr_table.rowCount()
+        self.attr_table.setRowCount(num + 1)
+        ## self.attr_table.insertRow(idx) # waarom niet addRow?
+        ## self.attr_table.setCurrentCell(idx, 0)
+
+    def on_del(self, evt=None):
+        "attribuut verwijderen"
+        ok = gui.QMessageBox.question(self, 'Delete row from table',
+            'Are you sure?', gui.QMessageBox.Ok | gui.QMessageBox.Cancel,
+            gui.QMessageBox.Ok)
+        if ok == gui.QMessageBox.Ok:
+            self.attr_table.removeRow(self.attr_table.currentRow())
+
+    def on_cancel(self):
+        gui.QDialog.done(self, gui.QDialog.Rejected)
+
+    def on_ok(self):
+        "controle bij OK aanklikken"
+        proplist = []
+        for i in range(self.attr_table.rowCount()):
+            name = str(self.attr_table.item(i, 0).text())
+            value = str(self.attr_table.item(i, 1).text())
+            proplist.append((name, value))
+        self._parent.dialog_data = proplist
+        gui.QDialog.done(self, gui.QDialog.Accepted)
+
+class ListDialog(gui.QDialog):
+    'dialoog om een list toe te voegen'
+
+    def __init__(self, parent, title='', itemlist=None, comment=False):
+        self._parent = parent
+        gui.QDialog.__init__(self, parent)
+        self.setWindowTitle(title)
+        vbox = gui.QVBoxLayout()
+
+        sbox = gui.QFrame()
+        sbox.setFrameStyle(gui.QFrame.Box)
+        box = gui.QVBoxLayout()
+
+        hbox = gui.QHBoxLayout()
+        hbox.addStretch()
+        hbox.addWidget(gui.QLabel("Items in list:", self))
+        hbox.addStretch()
+        vbox.addLayout(hbox)
+
+        self.list = gui.QListWidget(self)
+        if itemlist is not None:
+            self.list.addItems(itemlist)
+        hbox = gui.QHBoxLayout()
+        hbox.addSpacing(50)
+        hbox.addWidget(self.list)
+        hbox.addSpacing(50)
+        box.addLayout(hbox)
+
+        hbox = gui.QHBoxLayout()
+        hbox.addStretch()
+        btn = gui.QPushButton('&Add Item', self)
+        btn.clicked.connect(self.on_add)
+        hbox.addWidget(btn)
+        btn = gui.QPushButton('&Edit Selected', self)
+        btn.clicked.connect(self.on_edit)
+        hbox.addWidget(btn)
+        btn = gui.QPushButton('&Delete Selected', self)
+        btn.clicked.connect(self.on_del)
+        hbox.addWidget(btn)
+        hbox.addStretch()
+        box.addLayout(hbox)
+
+        sbox.setLayout(box)
+        vbox.addWidget(sbox)
+
+        hbox = gui.QHBoxLayout()
+        hbox.addStretch()
+        btn = gui.QPushButton('&Save', self)
+        btn.clicked.connect(self.on_ok)
+        btn.setDefault(True)
+        hbox.addWidget(btn)
+        btn = gui.QPushButton('&Cancel', self)
+        btn.clicked.connect(self.on_cancel)
+        hbox.addWidget(btn)
+        vbox.addLayout(hbox)
+        hbox.addStretch()
+
+        self.setLayout(vbox)
+
+    def on_add(self, evt=None):
+        "item toevoegen"
+        text, ok = gui.QInputDialog.getText(self, 'Add item to list',
+            'Enter text for this item')
+        self.list.addItem(text)
+
+    def on_edit(self, evt=None):
+        "item wijzigen"
+        current = self.list.currentItem()
+        oldtext = current.text()
+        text, ok = gui.QInputDialog.getText(self, 'Edit list item',
+            'Enter text for this item:', text=oldtext)
+        if ok and text != oldtext:
+            current.setText(text)
+
+    def on_del(self, evt=None):
+        "item verwijderen"
+        ok = gui.QMessageBox.question(self, 'Delete item from list',
+            'Are you sure?', gui.QMessageBox.Ok | gui.QMessageBox.Cancel,
+            gui.QMessageBox.Ok)
+        if ok == gui.QMessageBox.Ok:
+            self.list.takeItem(self.list.currentRow())
+
+    def on_cancel(self):
+        gui.QDialog.done(self, gui.QDialog.Rejected)
+
+    def on_ok(self):
+        """bij OK: de opgebouwde list via self.dialog_data doorgeven
+        aan het mainwindow
+        """
+        list_data = []
+        for row in range(self.list.count()):
+            list_data.append(str(self.list.item(row).text()))
+        self._parent.dialog_data = list_data
+        gui.QDialog.done(self, gui.QDialog.Accepted)
 
 class TreePanel(gui.QTreeWidget):
     "Tree structure"
@@ -267,8 +555,6 @@ class TreePanel(gui.QTreeWidget):
 
 class MainWindow(gui.QMainWindow):
     """Hoofdscherm van de applicatie"""
-
-# TODO: optie om log te tonen, eventueel context van een melding ophalen (zie cssedit.get_definition_from_file)
 # TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan) - ook in properties voor bekijken gelijksoortige stijlen
 
     def __init__(self, parent=None):
@@ -311,45 +597,37 @@ class MainWindow(gui.QMainWindow):
                     ('&Long',),         # see Trac wiki
                     ), '', '', 'Indicate how output should be saved'),
                 ('E&xit', self.exit, 'Ctrl+Q', '', 'Quit the application' ),
-            ),),
+                ),),
             ('&File', (
                 ('&Open', self.openfile, 'Ctrl+O', '', 'Open a css file'),
-                ('&Reload', self.reopenfile, 'Ctrl+R', '', 'Discard all changes and reopen the current css file'),
+                ('&Reload', self.reopenfile, 'Ctrl+R', '',
+                    'Discard all changes and reopen the current css file'),
                 ('&Save', self.savefile, 'Ctrl+S', '', 'Save the current css file'),
-                ('Save &As', self.savefileas, 'Ctrl+Shift+S', '', 'Save the current css file under a different name'),
+                ('Save &As', self.savefileas, 'Ctrl+Shift+S', '',
+                    'Save the current css file under a different name'),
                 (),
-                ('Show &Log', self.show_log, 'Ctrl+Shift+L', '', 'Show messages from parsing this file'),
-            ),),
-            ('&Selector', (
-                ('Add', self.no_op, '', '', 'Add a new selector under the root'),
-                ('Insert after', self.no_op, '', '', 'Add a new selector after the current one'),
-                ('Insert before', self.no_op, '', '', 'Add a new selector before the current one'),
-                ('Delete', self.no_op, '', '', 'Delete the current selector'),
-                ('Cut', self.no_op, '', '', 'Cut (copy and delete) the current selector'),
-                ('Copy', self.no_op, '', '', 'Copy the current selector'),
-                ('Paste after', self.no_op, '', '', 'Insert the copied selector after the current one'),
-                ('Paste before', self.no_op, '', '', 'Insert the copied selector before the current one'),
-            ),),
-            ('&Property', (
-                ('Add', self.no_op, '', '', 'Add a new property under the current selector'),
-                ('Insert after', self.no_op, '', '', 'Add a new property after the current one'),
-                ('Insert before', self.no_op, '', '', 'Add a new property before the current one'),
-                ('Delete', self.no_op, '', '', 'Delete the current property'),
-                ('Cut', self.no_op, '', '', 'Cut (copy and delete) the current property'),
-                ('Copy', self.no_op, '', '', 'Copy the current property'),
-                ('Paste after', self.no_op, '', '', 'Insert the copied property after the current one'),
-                ('Paste before', self.no_op, '', '', 'Insert the copied property before the current one'),
-            ),),
-            ('&Value', (
-                ('Add', self.no_op, '', '', 'Add a new data value under the current property'),
-                ('Insert after', self.no_op, '', '', 'Add a new data value after the current one'),
-                ('Insert before', self.no_op, '', '', 'Add a new data value before the current one'),
-                ('Delete', self.no_op, '', '', 'Delete the current data value'),
-                ('Cut', self.no_op, '', '', 'Cut (copy and delete) the current data value'),
-                ('Copy', self.no_op, '', '', 'Copy the current data value'),
-                ('Paste after', self.no_op, '', '', 'Insert the copied data value after the current one'),
-                ('Paste before', self.no_op, '', '', 'Insert the copied data value before the current one'),
-            ),),
+                ('Show &Log', self.show_log, 'Ctrl+Shift+L', '',
+                    'Show messages from parsing this file'),
+                ),),
+            ('&Rule', (
+                ('Add', self.no_op, '', '',
+                    'Add a new CSS rule under the current node'),
+                ('Insert after', self.no_op, '', '',
+                    'Add a new rule after the current one'),
+                ('Insert before', self.no_op, '', '',
+                    'Add a new rule before the current one'),
+                ('Delete', self.no_op, '', '', 'Delete the current rule'),
+                ('Cut', self.no_op, '', '',
+                    'Cut (copy and delete) the current rule'),
+                ('Copy', self.no_op, '', '', 'Copy the current rule'),
+                ('Paste after', self.no_op, '', '',
+                    'Insert the copied rule after the current one'),
+                ('Paste before', self.no_op, '', '',
+                    'Insert the copied rule before the current one'),
+                ),),
+            ('Rule &Component', (
+                ('Edit', self.edit, 'F2,Ctrl+E', '', 'Edit a rule component'),
+                ),),
             ))
         ## self.undo_stack = UndoRedoStack(self)
         self.css = None
@@ -462,7 +740,7 @@ class MainWindow(gui.QMainWindow):
                 mld += '{} warnings'.format(warn)
                 if err > 0 and misc > 0:
                     mld += ', '
-                else:
+                elif err > 0 or misc > 0:
                     mld += ' and '
             if err > 0:
                 mld += '{} errors'.format(err)
@@ -474,7 +752,8 @@ class MainWindow(gui.QMainWindow):
 
     def openfile(self, event=None):
         ok, filename = self.getfilename(title=self.app_title + ' - open file')
-        self.open(filename=filename)
+        if ok:
+            self.open(filename=filename)
 
     def reopenfile(self, event=None):
         self.open(filename=self.project_file)
@@ -488,58 +767,9 @@ class MainWindow(gui.QMainWindow):
             ## self.close()
 
     def texttotree(self):
-        data = []
-        for key, value in self.css.treedata.items():
-            if key == ed.comment_tag:
-                for seq, item in value.items():
-                    selectoritem = gui.QTreeWidgetItem()
-                    selectoritem.setText(0, key.rstrip())
-                    selectoritem.setToolTip(0, key.rstrip())
-                    dataitem = gui.QTreeWidgetItem()
-                    dataitem.setText(0, item.rstrip())
-                    dataitem.setToolTip(0, item.rstrip())
-                    data.append((seq, selectoritem, ((dataitem,),)))
-                continue
-
-            selector = key
-            if not isinstance(selector, str):
-                for seq, item in value.items():
-                    selectoritem = gui.QTreeWidgetItem()
-                    selectoritem.setText(0, str(key))
-                    selectoritem.setToolTip(0, str(key))
-                    dataitem = gui.QTreeWidgetItem()
-                    dataitem.setText(0, item.rstrip())
-                    dataitem.setToolTip(0, item.rstrip())
-                    data.append((seq, selectoritem, ((dataitem,),)))
-                continue
-
-            selectoritem = gui.QTreeWidgetItem()
-            selectoritem.setText(0, selector)
-            selectoritem.setToolTip(0, selector)
-
-            dataitems = []
-            for item, contents in sorted(value.items()):
-                if item =='last':
-                    seq = contents
-                    continue
-                propertyitem = gui.QTreeWidgetItem()
-                propertyitem.setText(0, item)
-                propertyitem.setToolTip(0, item)
-                valueitem = gui.QTreeWidgetItem()
-                valueitem.setText(0, contents)
-                valueitem.setToolTip(0, contents)
-                dataitems.append((propertyitem, valueitem))
-
-            data.append((seq, selectoritem, dataitems))
-
-        for seq, item, subitemlist in sorted(data):
-            self.tree.add_to_parent_2(item, self.root)
-            for subitem in subitemlist:
-                if len(subitem) == 1:
-                    self.tree.add_to_parent_2(subitem[0], item)
-                else:
-                    self.tree.add_to_parent_2(subitem[0], item)
-                    self.tree.add_to_parent_2(subitem[1], subitem[0])
+        self.visual_data = read_rules(self.css.textdata)
+        for item in self.visual_data:
+            self.root.addChild(item)
 
     def treetotext(self):
         data = []
@@ -593,6 +823,131 @@ class MainWindow(gui.QMainWindow):
             self.css.return_to_source()
             self.parent.styledata = self.css.data
         gui.QMainWindow.close(self)
+    def checkselection(self):
+        "controleer of er wel iets geselecteerd is (behalve de filenaam)"
+        sel = True
+        self.item = self.tree.currentItem()
+        if self.item is None or self.item == self.root:
+            gui.QMessageBox.information(self, self.app_title,
+                'You need to select an element or text first')
+            sel = False
+        return sel
+
+    def mark_dirty(self, state):
+        if state:
+            self.setWindowTitle(self.app_title + ' *')
+        else:
+            self.setWindowTitle(self.app_title)
+        self.project_dirty = False
+
+    def edit(self, evt=None):
+        "start edit m.b.v. dialoog"
+        if not self.checkselection(): return
+        msg = ''
+        modified = False
+        data = str(self.item.text(0))
+        ruletype = str(self.item.parent().text(0)).lower()
+        title = "{} - edit '{}' node for {}".format(self.app_title, data, ruletype)
+        if data in ed.RTYPES:
+            msg = 'Edit rule via subordinate item'
+        elif data in CTYPES[0]:
+            modified = self.edit_text_node(title)
+        elif data in CTYPES[1:4]:
+            modified = self.edit_list_node(title) # rules, selectors
+        elif data in CTYPES[4]:
+            modified = self.edit_grid_node(title) #styles
+        else:
+            msg = "You can't edit this type of node"
+        if msg:
+            gui.QMessageBox.information(self, self.app_title, msg)
+        elif modified:
+            self.mark_dirty(True)
+
+    def edit_text_node(self, title):
+        textnode = self.item.child(0)
+        self.data = ()
+        data = textnode.text(0) # or textnode.data(0, core.Qt.UserRole)
+        modified = False
+        edt = TextDialog(self, title, data).exec_()
+        if edt == gui.QDialog.Accepted:
+            newdata = self.dialog_data
+            if newdata != data:
+                modified = True
+                textnode.setText(0, newdata)
+                ## textnode.setData(0, newdata, core.Qt.UserRole
+        return modified
+
+    def edit_list_node(self, title):
+        count = self.item.childCount()
+        itemlist = [self.item.child(i).text(0) for i in range(count)]
+        ## datalist = [self.item.child(i).data(0, core.Qt.UserRole)
+            ## for i in range(count)]
+        ## print(datalist)
+        maxlen = len(itemlist)
+        modified = False
+        edt = ListDialog(self, title, itemlist).exec_()
+        if edt == gui.QDialog.Accepted:
+            newitemlist = self.dialog_data
+            for ix, item in enumerate(newitemlist):
+                if ix < maxlen:
+                    if item != itemlist[ix]:
+                        modified = True
+                        node = self.item.child(ix)
+                        node.setText(0, item)
+                        node.setData(0, core.Qt.UserRole, item)
+                else:
+                    modified = True
+                    newnode = gui.QTreeWidgetItem()
+                    newnode.setText(0, item)
+                    newnode.setData(0, core.Qt.UserRole, item)
+                    self.item.addChild(newnode)
+            test = len(newitemlist)
+            if test < maxlen:
+                modified = True
+                for ix in range(maxlen - 1, test, -1):
+                    self.item.removeChild(ix)
+        return modified
+
+    def edit_grid_node(self, title):
+        count = self.item.childCount()
+        itemlist = [(self.item.child(i).text(0), self.item.child(i).child(0).text(0))
+            for i in range(count)]
+        ## datalist = [(
+                ## self.item.child(i).data(0, core.Qt.UserRole),
+                ## self.item.child(i).child(0).data(0, core.Qt.UserRole))
+            ## for i in range(count)]
+        maxlen = len(itemlist)
+        modified = False
+        edt = GridDialog(self, title, itemlist).exec_()
+        if edt == gui.QDialog.Accepted:
+            newitemlist = self.dialog_data
+            for ix, item in enumerate(newitemlist):
+                node = self.item.child(ix)
+                if ix < maxlen:
+                    if item[0] != itemlist[ix][0]:
+                        modified = True
+                        node.setText(0, item[0])
+                        node.setData(0, core.Qt.UserRole, item[0])
+                    if item[1] != itemlist[ix][1]:
+                        modified = True
+                        node.child(0).setText(0, item[1])
+                        node.child(0).setData(0, core.Qt.UserRole, item[1])
+                else:
+                    modified = True
+                    newnode = gui.QTreeWidgetItem()
+                    newnode.setText(0, item[0])
+                    newnode.setData(0, core.Qt.UserRole, item[0])
+                    newsubnode = gui.QTreeWidgetItem()
+                    newsubnode.setText(0, item[1])
+                    newsubnode.setData(0, core.Qt.UserRole, item[1])
+                    newnode.addChild(newsubnode)
+                    self.item.addChild(newnode)
+            test = len(newitemlist)
+            if test < maxlen:
+                modified = True
+                for ix in range(maxlen - 1, test, -1):
+                    self.item.removeChild(ix)
+        return modified
 
 def main(**kwargs):
     app = gui.QApplication(sys.argv)
