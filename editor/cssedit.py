@@ -1,3 +1,4 @@
+import sys
 import os
 import shutil
 ## import pathlib - don't think this is suitable
@@ -9,9 +10,33 @@ format_types = ("long", "medium", "short", "compressed")
 comment_tag = '/**/'
 logline_elements = ["severity", "subject", "message", "line", "pos", "data"]
 LogLine = collections.namedtuple('LogLine', logline_elements)
+RTYPES = ['STYLE_RULE', 'MEDIA_RULE', 'COMMENT', 'UNKNOWN_RULE']
+
+# TODO: @media queries op niet-standaard attributen (bv, -webkit-min-device-pixel-ratio:2
+#   gaan mis, dwz de css tekst gaat verloren
+# Ik krijg hier meldingen op in de log:
+# ERROR	MediaQuery: Unexpected syntax, expected "and" but found "(". [1:703: (]
+# ERROR	MediaQuery: Unexpected syntax, expected "and" but found ":". [1:734: :]
+# ERROR	Unexpected token (NUMBER, 2, 1, 735)
+# ERROR	MediaQuery: Unexpected syntax, expected "and" but found ")". [1:736: )]
+# ERROR	MediaList: Invalid MediaQuery:  (-webkit-min-device-pixel-ratio:2)
+# is dit een bug (alleen een conditie in een mediaquery moet ook toegestaan zijn)?
+# als ik (resolution:2) specificeer pikt-ie het ook niet dus ik denk van wel
+# "A <media-query> is composed of a media type and/or a number of media features"
+# maar:
+# "A shorthand syntax is offered for media queries that apply to all media types;
+#   the keyword ‘all’ can be left out (along with the trailing ‘and’).
+#   I.e. if the media type is not explicitly given it is ‘all’."
 
 def load(filename):
     "Note: does not return a string but a CSSStyleSheet instance"
+    # compensate for missing feature(s)
+    got_media = -1
+    with open(filename) as f:
+        data = f.read()
+        got_media = data.find('@media (')
+    if got_media > -1:
+        return cssutils.parseString(data.replace('@media (', '@media all and ('))
     return cssutils.parseFile(filename)
 
 def get_for_single_tag(cssdata):
@@ -68,6 +93,18 @@ def get_definition_from_file(file, line, pos):
     start = data.rfind('}', 0, pos) + 1
     text = data[start:end]
     return text
+
+def get_stylerule_data(rule):
+    ruledata = {}
+    sellist = []
+    for selector in rule.selectorList:
+        sellist.append(selector.selectorText)
+    ruledata['selectors'] = sellist
+    propdict = {}
+    for prop in rule.style.getProperties():
+        propdict[prop.name] = prop.propertyValue.cssText
+    ruledata['styles'] = propdict
+    return ruledata
 
 def parse_log_line(line):
     """turn a log line into a LogLine instance
@@ -126,7 +163,9 @@ class Editor:
             raise ValueError('Too many arguments')
 
         self.data = []
-        hdlr = self.set_logger()
+        hlp = '' if not self.filename else '_' + os.path.basename(self.filename)
+        logfile = '/tmp/cssedit{}.log'.format(hlp)
+        hdlr = self.set_logger(logfile)
         if self.filename:
             self.data = load(self.filename)
         elif self.tag:
@@ -149,17 +188,17 @@ class Editor:
 
         hdlr.close()
         self.log = ['unable to get log info']
-        with open('/tmp/cssedit.log') as _log:
+        with open(logfile) as _log:
             self.log = [line.strip() for line in _log]
 
         if not self.data:
             raise ValueError("Incorrect css data")
 
-    def set_logger(self):
+    def set_logger(self, logfile):
         ## with open('/tmp/cssedit.log', 'w') as _log:
             ## cssutils.log.setLog(_log)
         log = logging.getLogger('CSSEDIT')
-        hdlr = logging.FileHandler('/tmp/cssedit.log', mode='w')
+        hdlr = logging.FileHandler(logfile, mode='w')
         formatter = logging.Formatter('%(levelname)s\t%(message)s')
         hdlr.setFormatter(formatter)
         log.addHandler(hdlr)
@@ -170,76 +209,56 @@ class Editor:
     def datatotext(self):
         """turn the cssutils structure into a more generic one
         """
-        self.treedata = []
-        self.treedata = collections.defaultdict(dict)
-        for ix, value in enumerate(list(self.data)):
-            ## print(value.selectorText)
-            ## print(value.selectorList)
-            ## print(list(value.selectorList))
-            try:
-                selector_list = list(value.selectorList)
-            except AttributeError as e:
-                if isinstance(value, cssutils.css.CSSComment):
-                    ## self.treedata.append((comment_tag, value.cssText[1:-1].strip()))
-                    self.treedata[comment_tag][ix] = value.cssText[1:-1].strip()
-                elif isinstance(value, cssutils.css.cssmediarule.CSSMediaRule):
-                    pass # TODO
-                else:
-                    # TODO: newlines weer gewoon doorgeven en in GUI in zo'n geval een multiline veld maken oid
-                    ## self.treedata.append((type(value), value.cssText[1:-1].replace(
-                        ## '\n', '').strip()), ix)
-                    self.treedata[type(value)][ix] = value.cssText[1:-1].replace(
-                        '\n', '').strip()
+        # redesign: see trac ticket
+        self.textdata = []
+        for ix, rule in enumerate(list(self.data)):
+            ruledata = {} # collections.defaultdict(dict)
+            ruledata['seqnum'] = ix
+            if rule.type == cssutils.css.CSSRule.STYLE_RULE:
+                ruledata = get_stylerule_data(rule)
+            elif rule.type == cssutils.css.CSSRule.MEDIA_RULE:
+                ruledata['media'] = []
+                for item in rule.media:
+                    ruledata['media'].append(item.mediaText)
+                ruledata['rules'] = []
+                for item in rule.cssRules:
+                    ruledata['rules'].append((item.typeString, get_stylerule_data(item)))
+            elif rule.type == cssutils.css.CSSRule.COMMENT:
+                ruledata['text'] = rule.cssText[2:-2].strip()
             else:
-                propdict = {}
-                for prop in value.style.getProperties():
-                    propdict[prop.name] = prop.propertyValue.cssText
-                for selector in selector_list:
-                    self.treedata[selector.selectorText].update(propdict)
-                    self.treedata[selector.selectorText]['last'] = ix
-        ## # TODO: reorganize self.treedata so that for each tag there is only one style definition
-        ## prev_selector = ''
-        ## data = []
-        ## # for any given selector: collect all style definitions and keep the highest sequence
-        ## #   number; this is intended to put the comments back in the right place
-        ## for selector, propdict, ix in sorted(self.treedata, key=lambda x: x[2]):
-            ## if selector != prev_selector:
-                ## if prev_selector:
-                    ## data.append((highest_seq, (prev_selector, expanded_propdict,
-                        ## highest_seq)))
-                ## prev_selector = selector
-                ## expanded_propdict = {}
-                ## highest_seq = 0
-            ## expanded_propdict.update(propdict)
-            ## if ix > highest_seq: highest_seq = ix
-        ## self.treedata = []
-        ## for _, item in sorted(data):
-            ## self.treedata.append(item)
+                ruledata['text'] = rule.cssText.strip()
+            self.textdata.append((rule.typeString, ruledata))
 
     def texttodata(self):
         """turn the generic structure into a cssutils one
         """
-        # TODO: first reorganize self.treedata so that common definitions are collected
-        data = cssutils.css.CSSStyleSheet()
-        for selector, propertydata in self.treedata:
-            print(selector, propertydata)
-            if selector == comment_tag:
-                rule = cssutils.css.CSSComment(
-                    cssText='/* {} */'.format(propertydata))
-            else:
+        self.data = cssutils.css.CSSStyleSheet()
+        for ruletype, ruledata in self.textdata:
+            ## print(selector, propertydata)
+            # ruletype is een typeString
+            # ruledata is een dict met mogelijke keys selectors, styles, seqnum, text, ...
+            if 'selectors' in ruledata:
+                rule = cssutils.css.CSSStyleRule()
+                sellist = cssutils.css.SelectorList()
+                for selector in ruledata['selectors']:
+                    sellist.append(selector)
+                rule.selectorList = sellist
                 style = cssutils.css.CSSStyleDeclaration()
-                try:
-                    for property, value in propertydata.items():
-                        style[property] = value
-                except TypeError as e:
-                    print(e)
-                    print(type(propertydata), str(propertydata))
-                    rule = None
+                for property, value in ruledata['styles'].items():
+                    style[property] = value
+                rule.style = style
+            elif 'media' in ruledata:
+                rule = cssutils.css.CSSMediaRule()
+                # TODO: finish this
+            elif 'text' in ruledata:
+                if ruletype == cssutils.css.CSSComment().typeString:
+                    rule = cssutils.css.CSSComment(cssText='/* {} */'.format(
+                        ruledata['text']))
                 else:
-                    rule = cssutils.css.CSSStyleRule(selectorText=selector.selectorText,
-                        style=style)
-            if rule: data.add(rule)
-        self.data = data # compile(data)
+                    ## rule = cssutils.css.CSSRule()
+                    ## rule.cssText=ruledata['text']
+                    rule = cssutils.css.CSSComment(cssText=ruledata['text'])
+            self.data.add(rule)
 
     def return_to_source(self, backup=True, savemode="compressed"):
         "ahem"
@@ -260,27 +279,21 @@ class Editor:
 
 if __name__ == "__main__":
     ## testdata = "../tests/simplecss-long.css"
-    ## for logline in [
-        ## " transition]",
-        ## "WARNING	Property: Unknown Property name. [1:2511: flex-flow]",
-        ## "ERROR	Unexpected token (NUMBER, 2, 1, 735)",
-        ## "ERROR	MediaList: Invalid MediaQuery:  (-webkit-min-device-pixel-ratio:2)",
-            ## ]:
-        ## print(parse_log_line(logline))
-    ## sys.exit(0)
-    testdata = "../tests/common_pt1.css"
+    testdata = "../tests/common_pt4.css"
     ## testdata = "../../htmledit/ashe/test.css"
+    testname = os.path.basename(testdata)
     test = Editor(filename=testdata)
-    ## for x in test.log:
-        ## print(x.strip())
-        ## y = parse_log_line(x)
-        ## print(y)
-        ## z = get_definition_from_file(testdata, y.line, y.pos)
-        ## print(z)
+    ## with open("/tmp/{}_na_open".format(testname), "w") as f:
+        ## for item in list(test.data): print(item, file=f)
+    olddata = test.data
     test.datatotext()
-    for item in test.treedata.items():
-        print(item)
-    ## test.texttodata()
+    ## with open("/tmp/{}_na_datatotext".format(testname), "w") as f:
+        ## for item in test.textdata: print(item, file=f)
+    test.texttodata()
+    print('nieuw = oud:', test.data == olddata)
+    with open("/tmp/{}_na_texttodata".format(testname), "w") as f:
+        for item in list(test.data): print(item, file=f)
+
     ## text = get_definition_from_file("../tests/common.css", 1, 60)
     ## print(text)
 
