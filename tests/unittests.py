@@ -125,6 +125,21 @@ class TestFunctions(unittest.TestCase):
             # + * { display: inline; } div { margin: 0 0 0 0; padding: 0 0 0 0; } p { text-align: center; vertical-align: middle } img { border: 1px solid } .red { color: red; font-weight: bold } #page-title { font-size: 55 } p::first-child { text-decoration: underline; } li:nth-child(3) { background-color: green } a:hover { background-color: blue } p.oms:before { content: "Hello, it's me" } div div { display: block; } ul>li>ul>li { list-style: square; } ul + p { font-style: italic } p ~ p { font-variant: small-caps; } a[title] { color: yellowish; } td[valign="top"] { font-weight: bold; } a[href*="ads"] { display: none; } a[href^="http"]{ background: url(path/to/external/icon.png) no-repeat; padding-left: 10px; } a[href$="jpg"] { text-decoration: line-through; }
             self.assertEqual(cssedit.load(name).cssText, result) # str() werkt niet
 
+    def test_log(self):
+        for logline in [
+            " transition]",
+            "WARNING	Property: Unknown Property name. [1:2511: flex-flow]",
+            "ERROR	Unexpected token (NUMBER, 2, 1, 735)",
+            "ERROR	MediaList: Invalid MediaQuery:  (-webkit-min-device-pixel-ratio:2)",
+                ]:
+            print(parse_log_line(logline))
+    ## for x in test.log:
+        ## print(x.strip())
+        ## y = parse_log_line(x)
+        ## print(y)
+        ## z = get_definition_from_file(testdata, y.line, y.pos)
+        ## print(z)
+
 
 class TestSaveFunction(unittest.TestCase):
     """save function has a separate class because of special setup and teardown
