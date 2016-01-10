@@ -15,7 +15,11 @@ except ImportError as e:
     except ImportError as e:
         import cssedit as ed
 
-CTYPES = ["text", "media", "rules", "selectors", "styles"] # component types
+RTYPES, CTYPES = [], set()
+for ruletype, components in ed.RTYPES.items():
+    RTYPES.append(components[0])
+    CTYPES.update([x for x in components[1]])
+
 def newitem(text):
     text = str(text)
     selectoritem = gui.QTreeWidgetItem()
@@ -32,7 +36,7 @@ def read_rules(data):
             if key == 'seqnum': continue
             value = rldata[key]
             ruletopitem = newitem(key)
-            if key == 'text':
+            if key in ('text', 'data'):
                 rulekeyitem = newitem(value)
                 ruletopitem.addChild(rulekeyitem)
             elif key == 'rules':
@@ -276,6 +280,7 @@ class ListDialog(gui.QDialog):
         self._parent = parent
         gui.QDialog.__init__(self, parent)
         self.setWindowTitle(title)
+        self.is_rules_node = "'rules'" in title
         vbox = gui.QVBoxLayout()
 
         sbox = gui.QFrame()
@@ -330,16 +335,31 @@ class ListDialog(gui.QDialog):
 
     def on_add(self, evt=None):
         "item toevoegen"
-        text, ok = gui.QInputDialog.getText(self, 'Add item to list',
-            'Enter text for this item')
+        if self.is_rules_node:
+            ruletypes = sorted([(x, y[0]) for x, y in ed.RTYPES.items()],
+                key = lambda item: item[1])
+            options = [x[1] for x in ruletypes]
+            text, ok = gui.QInputDialog.getItem(self, self._parent.app_title,
+                "Choose type for this rule", options, editable=False)
+        else:
+            text, ok = gui.QInputDialog.getText(self, 'Add item to list',
+                'Enter text for this item')
         self.list.addItem(text)
 
     def on_edit(self, evt=None):
         "item wijzigen"
         current = self.list.currentItem()
         oldtext = current.text()
-        text, ok = gui.QInputDialog.getText(self, 'Edit list item',
-            'Enter text for this item:', text=oldtext)
+        if self.is_rules_node:
+            ruletypes = sorted([(x, y[0]) for x, y in ed.RTYPES.items()],
+                key = lambda item: item[1])
+            options = [x[1] for x in ruletypes]
+            current_index = options.index(oldtext) if oldtext else 0
+            text, ok = gui.QInputDialog.getItem(self, self._parent.app_title,
+                "Choose type for this rule", options, current_index, editable=False)
+        else:
+            text, ok = gui.QInputDialog.getText(self, 'Edit list item',
+                'Enter text for this item:', text=oldtext)
         if ok and text != oldtext:
             current.setText(text)
 
@@ -610,11 +630,11 @@ class MainWindow(gui.QMainWindow):
                     'Show messages from parsing this file'),
                 ),),
             ('&Rule', (
-                ('Add', self.no_op, '', '',
-                    'Add a new CSS rule under the current node'),
-                ('Insert after', self.no_op, '', '',
+                ('Add under root', self.add, 'Ctrl+N', '',
+                    'Add a new top level CSS rule at the end'),
+                ('Insert after', self.add_after, 'Shift+Ctrl+N', '',
                     'Add a new rule after the current one'),
-                ('Insert before', self.no_op, '', '',
+                ('Insert before', self.add_before, 'Ctrl+Alt+N', '',
                     'Add a new rule before the current one'),
                 ('Delete', self.no_op, '', '', 'Delete the current rule'),
                 ('Cut', self.no_op, '', '',
@@ -840,6 +860,53 @@ class MainWindow(gui.QMainWindow):
             self.setWindowTitle(self.app_title)
         self.project_dirty = False
 
+    def add(self, evt=None):
+        self.add_rule()
+
+    def add_after(self, evt=None):
+        if not self.checkselection(): return
+        self.add_rule(end=False)
+
+    def add_before(self, evt=None):
+        if not self.checkselection(): return
+        self.add_rule(end=False, after=False)
+
+    def add_rule(self, end=True, after=True):
+        """add new rule
+        "at the end" is only possible on top level - otherwise use the "rules" node
+        """
+        if end == True:
+            parent = self.root
+        else:
+            parent = self.item.parent()
+        # collect all ruletypes, build and display choicedialog
+        ruletypes = sorted([(x, y[0]) for x, y in ed.RTYPES.items()],
+            key = lambda item: item[1])
+        typename, ok = gui.QInputDialog.getItem(self, self.app_title,
+            "Choose type for new rule", [x[1] for x in ruletypes], editable=False)
+        # after selection, create he rule node and the component nodes
+        # use ed.init_ruledata(ruletype) for this
+        if ok:
+            ruletype = None
+            for rtype, name in ruletypes:
+                if name == typename:
+                    ruletype = rtype
+                    break
+            if ruletype is None: return
+            newitem = gui.QTreeWidgetItem()
+            newitem.setText(0, typename)
+            for name in sorted([x for x in ed.init_ruledata(ruletype)]):
+                subitem = gui.QTreeWidgetItem()
+                subitem.setText(0, name)
+                newitem.addChild(subitem)
+            if end:
+                parent.addChild(newitem)
+            else:
+                ix = parent.indexOfChild(self.item)
+                if after:
+                    ix += 1
+                parent.insertChild(ix, newitem)
+
     def edit(self, evt=None):
         "start edit m.b.v. dialoog"
         if not self.checkselection(): return
@@ -850,11 +917,11 @@ class MainWindow(gui.QMainWindow):
         title = "{} - edit '{}' node for {}".format(self.app_title, data, ruletype)
         if data in ed.RTYPES:
             msg = 'Edit rule via subordinate item'
-        elif data in CTYPES[0]:
+        elif data in [x for x, y in CTYPES if y == ed.text_type]:
             modified = self.edit_text_node(title)
-        elif data in CTYPES[1:4]:
+        elif data in [x for x, y in CTYPES if y == ed.list_type]:
             modified = self.edit_list_node(title) # rules, selectors
-        elif data in CTYPES[4]:
+        elif data in [x for x, y in CTYPES if y == ed.table_type]:
             modified = self.edit_grid_node(title) #styles
         else:
             msg = "You can't edit this type of node"
@@ -901,6 +968,18 @@ class MainWindow(gui.QMainWindow):
                     newnode.setText(0, item)
                     newnode.setData(0, core.Qt.UserRole, item)
                     self.item.addChild(newnode)
+                    if self.item.text(0) == 'rules':
+                        ruletype = None
+                        for rtype, name in [(x, y[0]) for x, y in ed.RTYPES.items()]:
+                            if name == item:
+                                ruletype = rtype
+                                break
+                        if ruletype is None: continue
+                        for name in sorted([x for x in ed.init_ruledata(ruletype)]):
+                            subnode = gui.QTreeWidgetItem()
+                            subnode.setText(0, name)
+                            newnode.addChild(subnode)
+
             test = len(newitemlist)
             if test < maxlen:
                 modified = True

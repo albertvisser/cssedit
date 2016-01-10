@@ -14,10 +14,14 @@ text_type, list_type, table_type = '1', 'n', 'n*2'
 
 cssutils.css.CSSRule.STYLE_RULE # dit is een integer net als cssutils.css.CSSStyleRule.type
 RTYPES = {
-    cssutils.css.CSSRule.STYLE_RULE: [("selectors", list_type), ("styles", table_type)],
-    cssutils.css.CSSRule.MEDIA_RULE: [("media", list_type), ("rules", list_type)],
-    cssutils.css.CSSRule.COMMENT: [("text", text_type)],
-    cssutils.css.CSSRule.UNKNOWN_RULE: [("data", text_type)]
+    cssutils.css.CSSRule.STYLE_RULE: ('STYLE_RULE',
+        [("selectors", list_type), ("styles", table_type)]),
+    cssutils.css.CSSRule.MEDIA_RULE: ('MEDIA_RULE',
+        [("media", list_type), ("rules", list_type)]),
+    cssutils.css.CSSRule.COMMENT: ('COMMENT',
+        [("text", text_type)]),
+    cssutils.css.CSSRule.UNKNOWN_RULE: ('UNKNOWN_RULE',
+        [("data", text_type)])
     }
 
 # TODO: @media queries op niet-standaard attributen (bv, -webkit-min-device-pixel-ratio:2
@@ -104,7 +108,7 @@ def get_definition_from_file(file, line, pos):
 
 def init_ruledata(ruletype):
     ruledata = {} # {'selectors': [], 'styles', {}}
-    for x, y in RTYPES[ruletype]:
+    for x, y in RTYPES[ruletype][1]:
         ruledata[x] = {} if y == table_type else [] if y == list_type else ''
     return ruledata
 
@@ -226,7 +230,6 @@ class Editor:
     def datatotext(self):
         """turn the cssutils structure into a more generic one
         """
-        # redesign: see trac ticket
         self.textdata = []
         for ix, rule in enumerate(list(self.data)):
             ruledata = init_ruledata(rule.type) # collections.defaultdict(dict)
@@ -284,25 +287,29 @@ class Editor:
 
 
 if __name__ == "__main__":
-    ## testdata = "../tests/simplecss-long.css"
-    testdata = "../tests/common_pt1.css"
-    ## testdata = "../tests/common_pt4.css"
-    ## testdata = "../../htmledit/ashe/test.css"
-    testname = os.path.basename(testdata)
-    test = Editor(filename=testdata)
-    ## with open("/tmp/{}_na_open".format(testname), "w") as f:
-        ## for item in list(test.data): print(item, file=f)
-    olddata = test.data
-    test.datatotext()
-    with open("/tmp/{}_na_datatotext".format(testname), "w") as f:
-        for item in test.textdata: print(item, file=f)
-    ## test.texttodata()
-    ## print('nieuw = oud:', test.data == olddata)
-    ## with open("/tmp/{}_na_texttodata".format(testname), "w") as f:
-        ## for item in list(test.data): print(item, file=f)
+    testdata = [
+        "../tests/simplecss-long.css",
+        "../tests/common_pt1.css",
+        "../tests/common_pt4.css",
+        "../../htmledit/ashe/test.css"
+        ]
+    testdata = [testdata[2]]
+    for item in testdata:
+        testname = os.path.basename(item)
+        test = Editor(filename=item)
+        ## with open("/tmp/{}_na_open".format(testname), "w") as f:
+            ## for item in list(test.data): print(item, file=f)
+        olddata = test.data
+        test.datatotext()
+        with open("/tmp/{}_na_datatotext".format(testname), "w") as f:
+            for item in test.textdata: print(item, file=f)
+        ## test.texttodata()
+        ## print('nieuw = oud:', test.data == olddata)
+        ## with open("/tmp/{}_na_texttodata".format(testname), "w") as f:
+            ## for item in list(test.data): print(item, file=f)
 
-    ## text = get_definition_from_file("../tests/common.css", 1, 60)
-    ## print(text)
+        ## text = get_definition_from_file("../tests/common.css", 1, 60)
+        ## print(text)
 
 
 
