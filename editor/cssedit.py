@@ -10,7 +10,15 @@ format_types = ("long", "medium", "short", "compressed")
 comment_tag = '/**/'
 logline_elements = ["severity", "subject", "message", "line", "pos", "data"]
 LogLine = collections.namedtuple('LogLine', logline_elements)
-RTYPES = ['STYLE_RULE', 'MEDIA_RULE', 'COMMENT', 'UNKNOWN_RULE']
+text_type, list_type, table_type = '1', 'n', 'n*2'
+
+cssutils.css.CSSRule.STYLE_RULE # dit is een integer net als cssutils.css.CSSStyleRule.type
+RTYPES = {
+    cssutils.css.CSSRule.STYLE_RULE: [("selectors", list_type), ("styles", table_type)],
+    cssutils.css.CSSRule.MEDIA_RULE: [("media", list_type), ("rules", list_type)],
+    cssutils.css.CSSRule.COMMENT: [("text", text_type)],
+    cssutils.css.CSSRule.UNKNOWN_RULE: [("data", text_type)]
+    }
 
 # TODO: @media queries op niet-standaard attributen (bv, -webkit-min-device-pixel-ratio:2
 #   gaan mis, dwz de css tekst gaat verloren
@@ -94,16 +102,25 @@ def get_definition_from_file(file, line, pos):
     text = data[start:end]
     return text
 
-def get_stylerule_data(rule):
-    ruledata = {}
-    sellist = []
-    for selector in rule.selectorList:
-        sellist.append(selector.selectorText)
-    ruledata['selectors'] = sellist
-    propdict = {}
-    for prop in rule.style.getProperties():
-        propdict[prop.name] = prop.propertyValue.cssText
-    ruledata['styles'] = propdict
+def init_ruledata(ruletype):
+    ruledata = {} # {'selectors': [], 'styles', {}}
+    for x, y in RTYPES[ruletype]:
+        ruledata[x] = {} if y == table_type else [] if y == list_type else ''
+    return ruledata
+
+def complete_ruledata(ruledata, rule):
+    if rule.type == cssutils.css.CSSRule.STYLE_RULE:
+        ruledata['selectors'] = [x.selectorText for x in rule.selectorList]
+        ruledata['styles'] = {x.name: x.propertyValue.cssText
+            for x in rule.style.getProperties()}
+    elif rule.type == cssutils.css.CSSRule.MEDIA_RULE:
+        ruledata['media'] = [x.mediaText for x in rule.media]
+        ruledata['rules'] = [(x.typeString, complete_ruledata(init_ruledata(x.type),
+            x)) for x in rule.cssRules]
+    elif rule.type == cssutils.css.CSSRule.COMMENT:
+        ruledata['text'] = rule.cssText[2:-2].strip()
+    else:
+        ruledata['data'] = rule.cssText.strip()
     return ruledata
 
 def parse_log_line(line):
@@ -212,21 +229,9 @@ class Editor:
         # redesign: see trac ticket
         self.textdata = []
         for ix, rule in enumerate(list(self.data)):
-            ruledata = {} # collections.defaultdict(dict)
+            ruledata = init_ruledata(rule.type) # collections.defaultdict(dict)
             ruledata['seqnum'] = ix
-            if rule.type == cssutils.css.CSSRule.STYLE_RULE:
-                ruledata = get_stylerule_data(rule)
-            elif rule.type == cssutils.css.CSSRule.MEDIA_RULE:
-                ruledata['media'] = []
-                for item in rule.media:
-                    ruledata['media'].append(item.mediaText)
-                ruledata['rules'] = []
-                for item in rule.cssRules:
-                    ruledata['rules'].append((item.typeString, get_stylerule_data(item)))
-            elif rule.type == cssutils.css.CSSRule.COMMENT:
-                ruledata['text'] = rule.cssText[2:-2].strip()
-            else:
-                ruledata['text'] = rule.cssText.strip()
+            ruledata = complete_ruledata(ruledata, rule)
             self.textdata.append((rule.typeString, ruledata))
 
     def texttodata(self):
@@ -257,6 +262,7 @@ class Editor:
                 else:
                     ## rule = cssutils.css.CSSRule()
                     ## rule.cssText=ruledata['text']
+                    # for want of something better
                     rule = cssutils.css.CSSComment(cssText=ruledata['text'])
             self.data.add(rule)
 
@@ -279,7 +285,8 @@ class Editor:
 
 if __name__ == "__main__":
     ## testdata = "../tests/simplecss-long.css"
-    testdata = "../tests/common_pt4.css"
+    testdata = "../tests/common_pt1.css"
+    ## testdata = "../tests/common_pt4.css"
     ## testdata = "../../htmledit/ashe/test.css"
     testname = os.path.basename(testdata)
     test = Editor(filename=testdata)
@@ -287,12 +294,12 @@ if __name__ == "__main__":
         ## for item in list(test.data): print(item, file=f)
     olddata = test.data
     test.datatotext()
-    ## with open("/tmp/{}_na_datatotext".format(testname), "w") as f:
-        ## for item in test.textdata: print(item, file=f)
-    test.texttodata()
-    print('nieuw = oud:', test.data == olddata)
-    with open("/tmp/{}_na_texttodata".format(testname), "w") as f:
-        for item in list(test.data): print(item, file=f)
+    with open("/tmp/{}_na_datatotext".format(testname), "w") as f:
+        for item in test.textdata: print(item, file=f)
+    ## test.texttodata()
+    ## print('nieuw = oud:', test.data == olddata)
+    ## with open("/tmp/{}_na_texttodata".format(testname), "w") as f:
+        ## for item in list(test.data): print(item, file=f)
 
     ## text = get_definition_from_file("../tests/common.css", 1, 60)
     ## print(text)
