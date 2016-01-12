@@ -580,28 +580,17 @@ class MainWindow(gui.QMainWindow):
     def __init__(self, parent=None):
         self.parent = parent
         gui.QMainWindow.__init__(self)
-        ## Mixin.__init__(self)
         offset = 40 if os.name != 'posix' else 10
         self.move(offset, offset)
         self.app_title = 'CSSEdit'
-        ## self.app_icon = gui.QIcon('cssedit.png')
-
-        ## self.nt_icon = gui.QIcon(os.path.join(HERE, "doctree.xpm"))
-        ## self.tray_icon = gui.QSystemTrayIcon(self.nt_icon, self)
-        ## self.tray_icon.setToolTip("Click to revive DocTree")
-        ## self.connect(self.tray_icon, core.SIGNAL('clicked'),
-            ## self.revive) # werkt dit wel?
-        ## self.tray_icon.activated.connect(self.revive)
-        ## self.tray_icon.hide()
+        self.app_icon = gui.QIcon('/home/albert/cssfile_1.xpm')
 
         self.statusbar = self.statusBar()
         self.statusbar.showMessage('Ready')
 
-        ## self.opts = init_opts()
-        ## self.resize(self.opts['ScreenSize'][0], self.opts['ScreenSize'][1]) # 800, 500)
         self.resize(800, 500)
         self.setWindowTitle(self.app_title)
-        ## self.setWindowIcon(self.app_icon)
+        self.setWindowIcon(self.app_icon)
 
         self.tree = TreePanel(self)
         self.setCentralWidget(self.tree)
