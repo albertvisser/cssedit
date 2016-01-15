@@ -20,12 +20,32 @@ for ruletype, components in ed.RTYPES.items():
     RTYPES.append(components[0])
     CTYPES.update([x for x in components[1]])
 
-def newitem(text):
+def newitem(text, data=None):
     text = str(text)
-    selectoritem = gui.QTreeWidgetItem()
-    selectoritem.setText(0, text)
-    selectoritem.setToolTip(0, text)
-    return selectoritem
+    # if data = None:
+        # data = text
+    item = gui.QTreeWidgetItem()
+    item.setText(0, text)
+    # item.setData(0, data, core.Qt.UserRole)
+    item.setToolTip(0, text)
+    return item
+
+def _addsubitems(root, item):
+    for idx in range(item.childCount()):
+        child = item.child(idx)
+        subitem = newitem(child.text(0)) # , item.data(0)
+        print("adding node with text {}".format(subitem.text(0)))
+        root.addChild(subitem)
+        _addsubitems(subitem, child)
+
+def _paste(item, parent, under, ix=-1):
+    new = newitem(item.text(0)) # , item.data(0)
+    print("adding node with text {}".format(new.text(0)))
+    if under:
+        parent.addChild(new)
+    else:
+        parent.insertChild(ix, new)
+    _addsubitems(new, item)
 
 def read_rules(data):
     "recursive structure to read rules"
@@ -621,25 +641,34 @@ class MainWindow(gui.QMainWindow):
             ('&Rule', (
                 ('Add under root', self.add, 'Ctrl+N', '',
                     'Add a new top level CSS rule at the end'),
-                ('Insert after', self.add_after, 'Shift+Ctrl+N', '',
+                ('Insert after', self.add_after, 'Ctrl+Shift+N', '',
                     'Add a new rule after the current one'),
                 ('Insert before', self.add_before, 'Ctrl+Alt+N', '',
                     'Add a new rule before the current one'),
-                ('Delete', self.no_op, '', '', 'Delete the current rule'),
-                ('Cut', self.no_op, '', '',
+                ('Add under "rules" node', self.add_under, 'Alt+Shift+N', '',
+                    'Add a new CSS rule at the end ("rules" node only)'),
+                ('Delete', self.delete, 'Del,Ctrl+D', '', 'Delete the current rule'),
+                ('Cut', self.cut, 'Ctrl+X', '',
                     'Cut (copy and delete) the current rule'),
-                ('Copy', self.no_op, '', '', 'Copy the current rule'),
-                ('Paste after', self.no_op, '', '',
+                ('Copy', self.copy, 'Ctrl+C', '', 'Copy the current rule'),
+                ('Paste after', self.paste_after, 'Ctrl+V', '',
                     'Insert the copied rule after the current one'),
-                ('Paste before', self.no_op, '', '',
+                ('Paste before', self.paste_before, 'Shift+Ctrl+V', '',
                     'Insert the copied rule before the current one'),
+                ('Paste under "rules" node', self.paste_under, 'Ctrl+Alt+V', '',
+                    'Insert the copied rule beneath the current node ("rules" only)'),
                 ),),
             ('Rule &Component', (
                 ('Edit', self.edit, 'F2,Ctrl+E', '', 'Edit a rule component'),
                 ),),
+            ## ('&Node', (
+                ## ('&Show level', self.show_level, '', '',
+                    ## 'Show number of levels under root'),
+                ## ),),
             ))
         ## self.undo_stack = UndoRedoStack(self)
         self.css = None
+        self.cut_item, self.cutlevel = None, 0
         self.project_dirty = False
 
     def create_menu(self, menubar, menudata):
@@ -726,6 +755,7 @@ class MainWindow(gui.QMainWindow):
         self.css.datatotext()
         self.texttotree()
         self.show_statusmessage(self.build_loaded_message())
+        self.mark_dirty(False)
 
         item_to_activate = self.root
         ## self.resize(*self.opts["ScreenSize"])
@@ -767,14 +797,6 @@ class MainWindow(gui.QMainWindow):
     def reopenfile(self, event=None):
         self.open(filename=self.project_file)
 
-    def savefile(self, event=None, filename=''):
-        filename = filename or self.project_file
-        self.css.data = self.treetotext()
-        self.css.texttodata()
-        self.css.return_to_source()
-        ## if not self.project_file: # embedded use
-            ## self.close()
-
     def texttotree(self):
         self.visual_data = read_rules(self.css.textdata)
         for item in self.visual_data:
@@ -806,9 +828,17 @@ class MainWindow(gui.QMainWindow):
             ix += 1
         return data
 
+    def savefile(self, event=None, filename=''):
+        filename = filename or self.project_file
+        self.css.data = self.treetotext()
+        self.css.texttodata()
+        self.css.return_to_source()
+        ## if not self.project_file: # embedded use
+            ## self.close()
+
     def savefileas(self, event=None):
         ok, filename = self.getfilename(title=self.app_title + ' - save file as',
-            save=True)
+            start=self.project_file, save=True)
         self.savefile(filename=filename)
 
     def show_log(self):
@@ -816,9 +846,6 @@ class MainWindow(gui.QMainWindow):
             win = LogDialog(self, self.css.log)
         else:
             self.statusbar.showMessage('Load a css file first')
-
-    def no_op(self, event=None):
-        pass
 
     def exit(self, event=None):
         self.close()
@@ -832,42 +859,72 @@ class MainWindow(gui.QMainWindow):
             self.css.return_to_source()
             self.parent.styledata = self.css.data
         gui.QMainWindow.close(self)
+    def determine_level(self, item):
+        if item.parent() == self.root:
+            return 1
+        else:
+            return self.determine_level(item.parent()) + 1
+
     def checkselection(self):
         "controleer of er wel iets geselecteerd is (behalve de filenaam)"
         sel = True
         self.item = self.tree.currentItem()
+        if self.item is not None: text = self.item.text(0) # waarom?
+        self.itemlevel = 0
         if self.item is None or self.item == self.root:
             gui.QMessageBox.information(self, self.app_title,
                 'You need to select an element or text first')
             sel = False
+        else:
+            self.itemlevel = self.determine_level(self.item) # TODO: check
         return sel
+
+    def is_rule_parent(self, item):
+        ok = False
+        if item == self.root or item.text(0) == "rules": ok = True
+        if not ok:
+            gui.QMessageBox.information(self, self.app_title,
+                "Can't add a rule under this parent")
+        return ok
+
+    def is_rule_item(self, item):
+        ok = True
+        test = item.text(0)
+        if test not in RTYPES: ok = False
+        if not ok:
+            gui.QMessageBox.information(self, self.app_title,
+                "Can't do this; {} is not a rule item".format(test))
+        return ok
 
     def mark_dirty(self, state):
         if state:
             self.setWindowTitle(self.app_title + ' *')
         else:
             self.setWindowTitle(self.app_title)
-        self.project_dirty = False
+        self.project_dirty = state
 
     def add(self, evt=None):
-        self.add_rule()
+        self.add_rule(parent=self.root)
 
     def add_after(self, evt=None):
         if not self.checkselection(): return
-        self.add_rule(end=False)
+        self.add_rule(after=True)
 
     def add_before(self, evt=None):
         if not self.checkselection(): return
-        self.add_rule(end=False, after=False)
+        self.add_rule(after=False)
 
-    def add_rule(self, end=True, after=True):
+    def add_under(self, evt=None):
+        if not self.checkselection(): return
+        self.add_rule(parent=self.item)
+
+    def add_rule(self, parent=None, after=None):
         """add new rule
         "at the end" is only possible on top level - otherwise use the "rules" node
         """
-        if end == True:
-            parent = self.root
-        else:
+        if parent is None:
             parent = self.item.parent()
+        if not self.is_rule_parent(parent): return
         # collect all ruletypes, build and display choicedialog
         ruletypes = sorted([(x, y[0]) for x, y in ed.RTYPES.items()],
             key = lambda item: item[1])
@@ -888,7 +945,7 @@ class MainWindow(gui.QMainWindow):
                 subitem = gui.QTreeWidgetItem()
                 subitem.setText(0, name)
                 newitem.addChild(subitem)
-            if end:
+            if after is None:
                 parent.addChild(newitem)
             else:
                 ix = parent.indexOfChild(self.item)
@@ -1016,6 +1073,82 @@ class MainWindow(gui.QMainWindow):
                 for ix in range(maxlen - 1, test, -1):
                     self.item.removeChild(ix)
         return modified
+    def delete(self, evt=None):
+        self.copy_rule(cut=True, retain=False)
+
+    def cut(self, evt=None):
+        self.copy_rule(cut=True, retain=True)
+
+    def copy(self, evt=None):
+        self.copy_rule(cut=False, retain=True)
+
+    def copy_rule(self, cut=True, retain=True):
+        if not self.checkselection(): return
+        if not self.is_rule_item(self.item): return
+        if retain:
+            self.cut_item = self.item
+            self.cutlevel = self.itemlevel
+        if cut:
+            parent = self.item.parent()
+            ix = parent.indexOfChild(self.item)
+            if ix > 0:
+                ix -= 1
+                ## prev = parent.child(ix)
+            ## else:
+                ## prev = parent
+                ## if prev == self.root:
+                    ## prev = parent.child(ix+1)
+            parent.removeChild(self.item)
+            self.mark_dirty(True)
+            ## self.tree.setCurrentItem(prev)
+        print(self.cut_item, self.cutlevel)
+
+    # TODO: the rest of these methods is as yet untested code
+    def paste_under(self, evt=None):
+        self.paste_rule(under=True)
+
+    def paste_after(self, evt=None):
+        self.paste_rule()
+
+    def paste_before(self, evt=None):
+        self.paste_rule(after=False)
+
+    def paste_rule(self, under=False, after=True):
+        if not self.checkselection(): return
+        parent = self.item if under else self.item.parent()
+        if not self.is_rule_parent(parent): return
+        ## ok_to_paste = True
+        ## if under and self.itemlevel - self.cutlevel != 1: ok_to_paste = False
+        ## elif self.itemlevel != self.cutlevel: ok_to_paste = False
+        ## if not ok_to_paste:
+            ## return
+        if under:
+            print('adding under')
+            _paste(self.cut_item, parent, under=True)
+            ## parent.addChild(self.cut_item)
+        else:
+            indx = parent.indexOfChild(self.item)
+            if after:
+                ## indx += 1
+                text = 'after'
+            else:
+                indx -= 1
+                text = 'before'
+            print('adding {} {}, index is {}, '.format(self.cut_item, text, indx))
+            _paste(self.cut_item, parent, under=False)
+            ## parent.insertChild(indx, self.cut_item)
+        self.mark_dirty(True)
+    # temporary methods
+    def no_op(self, event=None):
+        pass
+
+    def show_level(self, event=None):
+        """test method for determine_level"""
+        if not self.checkselection(): return
+        level = self.determine_level(self.item)
+        gui.QMessageBox.information(self, self.app_title,
+            'This element is at level {}'.format(level))
+
 
 def main(**kwargs):
     app = gui.QApplication(sys.argv)
