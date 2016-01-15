@@ -62,6 +62,7 @@ def return_for_single_tag(cssdata):
     ## for property, value in sorted(cssdata.items()):
         ## properties.append("{}: {};".format(property, value))
     ## return " ".join(properties)
+    # perhaps return str(cssdata)
 
 def parse(text):
     "Note: does not return a string but a CSSStyleSheet instance or..."
@@ -86,14 +87,18 @@ def set_format(mode="compressed"):
 
 def save(data, filename, backup=True):
     "expects data to be a CSSStyleSheet instance"
+    print(type(data), type(data.cssText))
     if backup and os.path.exists(filename):
         shutil.copyfile(filename, filename + "~")
-    with open(filename, 'w', encoding='utf-8') as f_out:
+    try_again = False
+    with open(filename, 'wb') as f_out:
         try:
-            print(data.cssText, file=f_out)
+            f_out.write(data.cssText)
         except AttributeError:
+            try_again = True
+    if try_again:
+        with open(filename, 'w', encoding='utf-8') as f_out:
             print(data, file=f_out)
-
 
 def get_definition_from_file(file, line, pos):
     with open(file) as _in:
@@ -283,7 +288,7 @@ class Editor:
         elif self.tag:
             self.data = return_for_single_tag(self.data)
         else:
-            self.data = self.data.cssText
+            self.data = self.data.cssText # maybe need to stringify this?
 
 
 if __name__ == "__main__":

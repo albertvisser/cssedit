@@ -742,9 +742,11 @@ class MainWindow(gui.QMainWindow):
 
     def open(self, **kwargs):
         try:
-            self.project_file = kwargs['filename']
+            fname = kwargs['filename']
         except KeyError:
             self.project_file = ""
+        else:
+            self.project_file = os.path.abspath(fname)
         self.tree.takeTopLevelItem(0)
         self.root = gui.QTreeWidgetItem()
         self.root.setText(0, self.project_file or "(no file)")
@@ -829,17 +831,19 @@ class MainWindow(gui.QMainWindow):
         return data
 
     def savefile(self, event=None, filename=''):
-        filename = filename or self.project_file
+        self.css.filename = filename or self.project_file
         self.css.data = self.treetotext()
         self.css.texttodata()
         self.css.return_to_source()
-        ## if not self.project_file: # embedded use
-            ## self.close()
+        self.mark_dirty(False)
 
     def savefileas(self, event=None):
         ok, filename = self.getfilename(title=self.app_title + ' - save file as',
             start=self.project_file, save=True)
-        self.savefile(filename=filename)
+        if ok:
+            self.project_file = filename
+            self.savefile()
+            self.root.setText(0, self.project_file)
 
     def show_log(self):
         if self.css:
@@ -898,7 +902,7 @@ class MainWindow(gui.QMainWindow):
 
     def mark_dirty(self, state):
         if state:
-            self.setWindowTitle(self.app_title + ' *')
+            self.setWindowTitle(self.app_title + ' (modified)')
         else:
             self.setWindowTitle(self.app_title)
         self.project_dirty = state
