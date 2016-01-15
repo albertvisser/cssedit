@@ -659,10 +659,16 @@ class MainWindow(gui.QMainWindow):
             ('Rule &Component', (
                 ('Edit', self.edit, 'F2,Ctrl+E', '', 'Edit a rule component'),
                 ),),
-            ## ('&Node', (
+            ('&Node', (
                 ## ('&Show level', self.show_level, '', '',
                     ## 'Show number of levels under root'),
-                ## ),),
+                ## ('Expand', self.expand_item, 'Alt+Plus', '', 'Expand tree item'),
+                ## ('Collapse', self.collapse_item, 'Alt+Minus', '', 'Collapse tree item'),
+                ('Expand all', self.expand_all, 'Ctrl++', '',
+                    'Expand all subitems'),
+                ('Collapse all', self.collapse_all, 'Ctrl+-', '',
+                    'Collapse all subitems'),
+                ),),
             ))
         ## self.undo_stack = UndoRedoStack(self)
         self.css = None
@@ -906,21 +912,21 @@ class MainWindow(gui.QMainWindow):
         self.project_dirty = state
 
     def add(self, evt=None):
-        self.add_rule(parent=self.root)
+        self._add_rule(parent=self.root)
 
     def add_after(self, evt=None):
         if not self.checkselection(): return
-        self.add_rule(after=True)
+        self._add_rule(after=True)
 
     def add_before(self, evt=None):
         if not self.checkselection(): return
-        self.add_rule(after=False)
+        self._add_rule(after=False)
 
     def add_under(self, evt=None):
         if not self.checkselection(): return
-        self.add_rule(parent=self.item)
+        self._add_rule(parent=self.item)
 
-    def add_rule(self, parent=None, after=None):
+    def _add_rule(self, parent=None, after=None):
         """add new rule
         "at the end" is only possible on top level - otherwise use the "rules" node
         """
@@ -966,11 +972,11 @@ class MainWindow(gui.QMainWindow):
         if data in ed.RTYPES:
             msg = 'Edit rule via subordinate item'
         elif data in [x for x, y in CTYPES if y == ed.text_type]:
-            modified = self.edit_text_node(title)
+            modified = self._edit_text_node(title)
         elif data in [x for x, y in CTYPES if y == ed.list_type]:
-            modified = self.edit_list_node(title) # rules, selectors
+            modified = self._edit_list_node(title) # rules, selectors
         elif data in [x for x, y in CTYPES if y == ed.table_type]:
-            modified = self.edit_grid_node(title) #styles
+            modified = self._edit_grid_node(title) #styles
         else:
             msg = "You can't edit this type of node"
         if msg:
@@ -978,7 +984,7 @@ class MainWindow(gui.QMainWindow):
         elif modified:
             self.mark_dirty(True)
 
-    def edit_text_node(self, title):
+    def _edit_text_node(self, title):
         textnode = self.item.child(0)
         self.data = ()
         data = textnode.text(0) # or textnode.data(0, core.Qt.UserRole)
@@ -992,7 +998,7 @@ class MainWindow(gui.QMainWindow):
                 ## textnode.setData(0, newdata, core.Qt.UserRole
         return modified
 
-    def edit_list_node(self, title):
+    def _edit_list_node(self, title):
         count = self.item.childCount()
         itemlist = [self.item.child(i).text(0) for i in range(count)]
         ## datalist = [self.item.child(i).data(0, core.Qt.UserRole)
@@ -1035,7 +1041,7 @@ class MainWindow(gui.QMainWindow):
                     self.item.removeChild(ix)
         return modified
 
-    def edit_grid_node(self, title):
+    def _edit_grid_node(self, title):
         count = self.item.childCount()
         itemlist = [(self.item.child(i).text(0), self.item.child(i).child(0).text(0))
             for i in range(count)]
@@ -1076,15 +1082,15 @@ class MainWindow(gui.QMainWindow):
                     self.item.removeChild(ix)
         return modified
     def delete(self, evt=None):
-        self.copy_rule(cut=True, retain=False)
+        self._copy_rule(cut=True, retain=False)
 
     def cut(self, evt=None):
-        self.copy_rule(cut=True, retain=True)
+        self._copy_rule(cut=True, retain=True)
 
     def copy(self, evt=None):
-        self.copy_rule(cut=False, retain=True)
+        self._copy_rule(cut=False, retain=True)
 
-    def copy_rule(self, cut=True, retain=True):
+    def _copy_rule(self, cut=True, retain=True):
         if not self.checkselection(): return
         if not self.is_rule_item(self.item): return
         if retain:
@@ -1105,15 +1111,15 @@ class MainWindow(gui.QMainWindow):
             ## self.tree.setCurrentItem(prev)
 
     def paste_under(self, evt=None):
-        self.paste_rule(under=True)
+        self._paste_rule(under=True)
 
     def paste_after(self, evt=None):
-        self.paste_rule()
+        self._paste_rule()
 
     def paste_before(self, evt=None):
-        self.paste_rule(after=False)
+        self._paste_rule(after=False)
 
-    def paste_rule(self, under=False, after=True):
+    def _paste_rule(self, under=False, after=True):
         if not self.checkselection(): return
         parent = self.item if under else self.item.parent()
         if not self.is_rule_parent(parent): return
@@ -1129,6 +1135,43 @@ class MainWindow(gui.QMainWindow):
                 text = 'before'
             _paste(self.cut_item, parent, indx)
         self.mark_dirty(True)
+
+    def expand_item(self):
+        self._expand()
+
+    def collapse_item(self):
+        self._collapse()
+
+    def expand_all(self):
+        self._expand(recursive=True)
+
+    def collapse_all(self):
+        self._collapse(recursive=True)
+
+    def _expand(self, recursive=False):
+        "expandeer tree vanaf huidige item"
+        def expand_all(item):
+            for ix in range(item.childCount()):
+                sub = item.child(ix)
+                sub.setExpanded(True)
+                expand_all(sub)
+        item = self.tree.currentItem()
+        self.tree.expandItem(item)
+        if recursive:
+            expand_all(item)
+
+    def _collapse(self, recursive=False):
+        "collapse huidige item en daaronder"
+        def collapse_all(item):
+            for ix in range(item.childCount()):
+                sub = item.child(ix)
+                collapse_all(sub)
+                sub.setExpanded(False)
+        item = self.tree.currentItem()
+        if recursive:
+            collapse_all(item)
+        self.tree.collapseItem(item)
+
 
     # temporary methods
     def no_op(self, event=None):
