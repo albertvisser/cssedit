@@ -87,7 +87,6 @@ def set_format(mode="compressed"):
 
 def save(data, filename, backup=True):
     "expects data to be a CSSStyleSheet instance"
-    print(type(data), type(data.cssText))
     if backup and os.path.exists(filename):
         shutil.copyfile(filename, filename + "~")
     try_again = False

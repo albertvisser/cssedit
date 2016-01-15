@@ -30,18 +30,16 @@ def newitem(text, data=None):
     item.setToolTip(0, text)
     return item
 
-def _addsubitems(root, item):
+def _addsubitems(parent, item):
     for idx in range(item.childCount()):
         child = item.child(idx)
         subitem = newitem(child.text(0)) # , item.data(0)
-        print("adding node with text {}".format(subitem.text(0)))
-        root.addChild(subitem)
+        parent.addChild(subitem)
         _addsubitems(subitem, child)
 
-def _paste(item, parent, under, ix=-1):
+def _paste(item, parent, ix=-1):
     new = newitem(item.text(0)) # , item.data(0)
-    print("adding node with text {}".format(new.text(0)))
-    if under:
+    if ix == -1:
         parent.addChild(new)
     else:
         parent.insertChild(ix, new)
@@ -888,7 +886,7 @@ class MainWindow(gui.QMainWindow):
         if item == self.root or item.text(0) == "rules": ok = True
         if not ok:
             gui.QMessageBox.information(self, self.app_title,
-                "Can't add a rule under this parent")
+                "Can't add or paste rule here")
         return ok
 
     def is_rule_item(self, item):
@@ -1105,9 +1103,7 @@ class MainWindow(gui.QMainWindow):
             parent.removeChild(self.item)
             self.mark_dirty(True)
             ## self.tree.setCurrentItem(prev)
-        print(self.cut_item, self.cutlevel)
 
-    # TODO: the rest of these methods is as yet untested code
     def paste_under(self, evt=None):
         self.paste_rule(under=True)
 
@@ -1121,27 +1117,19 @@ class MainWindow(gui.QMainWindow):
         if not self.checkselection(): return
         parent = self.item if under else self.item.parent()
         if not self.is_rule_parent(parent): return
-        ## ok_to_paste = True
-        ## if under and self.itemlevel - self.cutlevel != 1: ok_to_paste = False
-        ## elif self.itemlevel != self.cutlevel: ok_to_paste = False
-        ## if not ok_to_paste:
-            ## return
         if under:
-            print('adding under')
-            _paste(self.cut_item, parent, under=True)
-            ## parent.addChild(self.cut_item)
+            _paste(self.cut_item, parent)
         else:
             indx = parent.indexOfChild(self.item)
             if after:
-                ## indx += 1
+                indx += 1
                 text = 'after'
             else:
-                indx -= 1
+                ## indx -= 1
                 text = 'before'
-            print('adding {} {}, index is {}, '.format(self.cut_item, text, indx))
-            _paste(self.cut_item, parent, under=False)
-            ## parent.insertChild(indx, self.cut_item)
+            _paste(self.cut_item, parent, indx)
         self.mark_dirty(True)
+
     # temporary methods
     def no_op(self, event=None):
         pass
@@ -1152,7 +1140,6 @@ class MainWindow(gui.QMainWindow):
         level = self.determine_level(self.item)
         gui.QMessageBox.information(self, self.app_title,
             'This element is at level {}'.format(level))
-
 
 def main(**kwargs):
     app = gui.QApplication(sys.argv)
