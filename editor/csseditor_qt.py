@@ -626,6 +626,7 @@ class MainWindow(gui.QMainWindow):
                 ('E&xit', self.exit, 'Ctrl+Q', '', 'Quit the application' ),
                 ),),
             ('&File', (
+                ('&New', self.newfile, 'Ctrl+Insert', '', 'Start a new css file'),
                 ('&Open', self.openfile, 'Ctrl+O', '', 'Open a css file'),
                 ('&Reload', self.reopenfile, 'Ctrl+R', '',
                     'Discard all changes and reopen the current css file'),
@@ -673,7 +674,7 @@ class MainWindow(gui.QMainWindow):
         ## self.undo_stack = UndoRedoStack(self)
         self.css = None
         self.cut_item, self.cutlevel = None, 0
-        self.project_dirty = False
+        self.newfile()
 
     def create_menu(self, menubar, menudata):
         """bouw het menu en de meeste toolbars op"""
@@ -726,11 +727,6 @@ class MainWindow(gui.QMainWindow):
     def show_statusmessage(self, text):
         self.statusbar.showMessage(text)
 
-    def set_title(self, title):
-        """standaard titel updaten"""
-        self.setWindowTitle("{}{} (view: {}) - DocTree".format(title,
-            '*' if self.project_dirty else ''))
-
     def getfilename(self, title='', start='', save=False):
         if title == '':
             title = 'Save File' if save else 'Open File'
@@ -744,6 +740,17 @@ class MainWindow(gui.QMainWindow):
         ok = True if filename else False
         return ok, filename
 
+    def newfile(self, event=None):
+        self.tree.takeTopLevelItem(0)
+        self.project_file = ""
+        self.css = ed.Editor(new=True)
+        self.root = gui.QTreeWidgetItem()
+        self.root.setText(0, "(untitled)")
+        self.tree.addTopLevelItem(self.root)
+        self.activeitem = self.root
+        self.root.setExpanded(True)
+        self.mark_dirty(False)
+
     def open(self, **kwargs):
         try:
             fname = kwargs['filename']
@@ -751,21 +758,17 @@ class MainWindow(gui.QMainWindow):
             self.project_file = ""
         else:
             self.project_file = os.path.abspath(fname)
-        self.tree.takeTopLevelItem(0)
-        self.root = gui.QTreeWidgetItem()
+        self.newfile()
         self.root.setText(0, self.project_file or "(no file)")
-        self.tree.addTopLevelItem(self.root)
-        self.activeitem = item_to_activate = self.root
 
         self.css = ed.Editor(**kwargs)
         self.css.datatotext()
         self.texttotree()
         self.show_statusmessage(self.build_loaded_message())
-        self.mark_dirty(False)
 
         item_to_activate = self.root
         ## self.resize(*self.opts["ScreenSize"])
-        self.root.setExpanded(True)
+        ## self.root.setExpanded(True)
         self.tree.setCurrentItem(item_to_activate)
         self.tree.setFocus()
 
@@ -811,43 +814,54 @@ class MainWindow(gui.QMainWindow):
     def treetotext(self):
         data = []
         count = self.root.childCount()
-        ix = 0
-        while ix < count:
-            selector_item = self.root.child(ix)
-            selector_name = selector_item.text(0)
-            if selector_name == ed.comment_tag:
-                comment_item = selector_item.child(0)
-                comment = comment_item.text(0)
-                data.append((selector_name, comment))
-            else:
-                propertydict = {}
-                count2 = selector_item.childCount()
-                ix2 = 0
-                while ix2 < count2:
-                    property_item = selector_item.child(ix2)
-                    property_name = property_item.text(0)
-                    value_item = property_item.child(0)
-                    value_text = value_item.text(0)
-                    propertydict[property_name] = value_text
-                    ix2 += 1
-                data.append((selector_name, propertydict))
-            ix += 1
+        for ix in range(count):
+            rule_item = self.root.child(ix)
+            rule_type = rule_item.text(0)
+            rule_data = {}
+            for ix2 in range(rule_item.childCount()):
+                key_item = rule_item.child(ix2)
+                key_text = key_item.text(0)
+                if key_text in ('text', 'data'):
+                    key_data = key_item.child(0).text(0)
+                elif key_text in ('selectors', 'media', 'rules'):
+                    key_data = []
+                    for ix3 in range(key_item.childCount()):
+                        list_item = key_item.child(ix3)
+                        key_data.append(list_item.text(0))
+                        if key_text == 'rules':
+                            # TODO: onderliggende ruledata toevoegen
+                            pass
+                elif key_text in ('styles'):
+                    key_data = {}
+                    for ix3 in range(key_item.childCount()):
+                        dict_item = key_item.child(ix3)
+                        dictitem_key = dict_item.text(0)
+                        dictitem_value = dict_item.child(0).text(0)
+                        key_data[dictitem_key] = dictitem_value
+                rule_data[key_text] = key_data
+            data.append((rule_type, rule_data))
         return data
 
-    def savefile(self, event=None, filename=''):
-        self.css.filename = filename or self.project_file
-        self.css.data = self.treetotext()
-        self.css.texttodata()
-        self.css.return_to_source()
-        self.mark_dirty(False)
+    def savefile(self, event=None):
+        if self.project_file:
+            self.save()
+        else:
+            self.savefileas()
 
     def savefileas(self, event=None):
         ok, filename = self.getfilename(title=self.app_title + ' - save file as',
             start=self.project_file, save=True)
         if ok:
             self.project_file = filename
-            self.savefile()
+            self.save()
             self.root.setText(0, self.project_file)
+
+    def save(self):
+        self.css.filename = self.project_file
+        self.css.textdata = self.treetotext()
+        self.css.texttodata()
+        self.css.return_to_source()
+        self.mark_dirty(False)
 
     def show_log(self):
         if self.css:
@@ -960,6 +974,9 @@ class MainWindow(gui.QMainWindow):
                 if after:
                     ix += 1
                 parent.insertChild(ix, newitem)
+        self.mark_dirty(True)
+        newitem.setExpanded(True)
+        self.tree.setCurrentItem(newitem)
 
     def edit(self, evt=None):
         "start edit m.b.v. dialoog"
@@ -982,18 +999,25 @@ class MainWindow(gui.QMainWindow):
         if msg:
             gui.QMessageBox.information(self, self.app_title, msg)
         elif modified:
+            self.item.setExpanded(True)
             self.mark_dirty(True)
 
     def _edit_text_node(self, title):
         textnode = self.item.child(0)
         self.data = ()
-        data = textnode.text(0) # or textnode.data(0, core.Qt.UserRole)
+        if textnode:
+            data = textnode.text(0) # or textnode.data(0, core.Qt.UserRole)
+        else:
+            data = ''
         modified = False
         edt = TextDialog(self, title, data).exec_()
         if edt == gui.QDialog.Accepted:
             newdata = self.dialog_data
             if newdata != data:
                 modified = True
+                if not textnode:
+                    textnode = gui.QTreeWidgetItem()
+                    self.item.addChild(textnode)
                 textnode.setText(0, newdata)
                 ## textnode.setData(0, newdata, core.Qt.UserRole
         return modified
@@ -1139,14 +1163,8 @@ class MainWindow(gui.QMainWindow):
     def expand_item(self):
         self._expand()
 
-    def collapse_item(self):
-        self._collapse()
-
     def expand_all(self):
         self._expand(recursive=True)
-
-    def collapse_all(self):
-        self._collapse(recursive=True)
 
     def _expand(self, recursive=False):
         "expandeer tree vanaf huidige item"
@@ -1159,6 +1177,12 @@ class MainWindow(gui.QMainWindow):
         self.tree.expandItem(item)
         if recursive:
             expand_all(item)
+
+    def collapse_item(self):
+        self._collapse()
+
+    def collapse_all(self):
+        self._collapse(recursive=True)
 
     def _collapse(self, recursive=False):
         "collapse huidige item en daaronder"

@@ -168,7 +168,12 @@ class Editor:
         """get css from a source and turn it into a structure
         """
         self.filename = self.tag = ""
+        self.data = []
+        newfile = False
         text = None # must be allowed to be empty (to create new inline style)
+        try:
+            if kwargs.pop('new'): newfile = True
+        except KeyError: pass
         try:
             self.filename = kwargs.pop('filename')
         except KeyError: pass
@@ -178,8 +183,10 @@ class Editor:
         try:
             text = kwargs.pop('text')
         except KeyError: pass
+        if newfile: return
+
         if self.filename:
-            if self.tag or text:
+            if any((self.tag, text)):
                 raise ValueError('Ambiguous arguments')
         else:
             if text is None:
@@ -187,7 +194,7 @@ class Editor:
         if kwargs:
             raise ValueError('Too many arguments')
 
-        self.data = []
+        if newfile: return
         hlp = '' if not self.filename else '_' + os.path.basename(self.filename)
         logfile = '/tmp/cssedit{}.log'.format(hlp)
         hdlr = self.set_logger(logfile)
@@ -247,8 +254,6 @@ class Editor:
         self.data = cssutils.css.CSSStyleSheet()
         for ruletype, ruledata in self.textdata:
             ## print(selector, propertydata)
-            # ruletype is een typeString
-            # ruledata is een dict met mogelijke keys selectors, styles, seqnum, text, ...
             if 'selectors' in ruledata:
                 rule = cssutils.css.CSSStyleRule()
                 sellist = cssutils.css.SelectorList()
@@ -261,7 +266,23 @@ class Editor:
                 rule.style = style
             elif 'media' in ruledata:
                 rule = cssutils.css.CSSMediaRule()
-                # TODO: finish this
+                medialist = cssutils.css.MediaList()
+                for medium in ruledata['media']:
+                    medialist.append(medium)
+                rule.mediaList = medialist
+                rule.styles = cssutils.css.RuleList()
+                for name, value in ruledata['rules']:
+                    srule = cssutils.css.CSSStyleRule()
+                    ssellist = cssutils.css.SelectorList()
+                    for selector in value['selectors']:
+                        ssellist.append(selector)
+                    srule.selectorList = ssellist
+                    sstyle = cssutils.css.CSSStyleDeclaration()
+                    for sprop, sdata in value['styles'].items():
+                        sstyle[sprop] = sdata
+                    srule.style = sstyle
+                rule.styles.append(srule)
+
             elif 'text' in ruledata:
                 if ruletype == cssutils.css.CSSComment().typeString:
                     rule = cssutils.css.CSSComment(cssText='/* {} */'.format(
