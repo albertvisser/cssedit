@@ -752,13 +752,13 @@ class MainWindow(gui.QMainWindow):
         self.mark_dirty(False)
 
     def open(self, **kwargs):
+        self.newfile()
         try:
             fname = kwargs['filename']
         except KeyError:
             self.project_file = ""
         else:
             self.project_file = os.path.abspath(fname)
-        self.newfile()
         self.root.setText(0, self.project_file or "(no file)")
 
         self.css = ed.Editor(**kwargs)
