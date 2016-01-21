@@ -637,6 +637,16 @@ class MainWindow(gui.QMainWindow):
                 ('Show &Log', self.show_log, 'Ctrl+Shift+L', '',
                     'Show messages from parsing this file'),
                 ),),
+            ('&View', (
+                ## ('&Show level', self.show_level, '', '',
+                    ## 'Show number of levels under root'),
+                ## ('Expand', self.expand_item, 'Alt+Plus', '', 'Expand tree item'),
+                ## ('Collapse', self.collapse_item, 'Alt+Minus', '', 'Collapse tree item'),
+                ('&Expand all', self.expand_all, 'Ctrl++', '',
+                    'Expand all subitems'),
+                ('&Collapse all', self.collapse_all, 'Ctrl+-', '',
+                    'Collapse all subitems'),
+                ),),
             ('&Rule', (
                 ('Add under root', self.add, 'Ctrl+N', '',
                     'Add a new top level CSS rule at the end'),
@@ -659,16 +669,6 @@ class MainWindow(gui.QMainWindow):
                 ),),
             ('Rule &Component', (
                 ('Edit', self.edit, 'F2,Ctrl+E', '', 'Edit a rule component'),
-                ),),
-            ('&Node', (
-                ## ('&Show level', self.show_level, '', '',
-                    ## 'Show number of levels under root'),
-                ## ('Expand', self.expand_item, 'Alt+Plus', '', 'Expand tree item'),
-                ## ('Collapse', self.collapse_item, 'Alt+Minus', '', 'Collapse tree item'),
-                ('Expand all', self.expand_all, 'Ctrl++', '',
-                    'Expand all subitems'),
-                ('Collapse all', self.collapse_all, 'Ctrl+-', '',
-                    'Collapse all subitems'),
                 ),),
             ))
         ## self.undo_stack = UndoRedoStack(self)
