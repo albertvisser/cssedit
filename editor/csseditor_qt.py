@@ -1,9 +1,6 @@
 import os
 import sys
 
-# TODO: textdialog en listdialog nog checken of updaten ook werkt, griddialog nog helemaal
-# maken; als het werkt titels e.d. nog eens langslopen
-
 import PyQt4.QtGui as gui
 import PyQt4.QtCore as core
 

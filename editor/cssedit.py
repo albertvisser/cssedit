@@ -12,33 +12,49 @@ logline_elements = ["severity", "subject", "message", "line", "pos", "data"]
 LogLine = collections.namedtuple('LogLine', logline_elements)
 text_type, list_type, table_type = '1', 'n', 'n*2'
 
-cssutils.css.CSSRule.STYLE_RULE # dit is een integer net als cssutils.css.CSSStyleRule.type
 RTYPES = {
     cssutils.css.CSSRule.STYLE_RULE: ('STYLE_RULE',
         [("selectors", list_type), ("styles", table_type)]),
+    cssutils.css.CSSRule.CHARSET_RULE: ('CHARSET_RULE',
+        [("name", text_type)]),
+    cssutils.css.CSSRule.IMPORT_RULE: ('IMPORT_RULE',
+        [("uri", text_type), ("media", list_type)]), # media is optional
     cssutils.css.CSSRule.MEDIA_RULE: ('MEDIA_RULE',
-        [("media", list_type), ("rules", list_type)]),
+        [("media", list_type), ("rules", list_type)]), # media is optional
+    cssutils.css.CSSRule.FONT_FACE_RULE: ('FONT_FACE_RULE',
+        [("styles", table_type)]),
+    cssutils.css.CSSRule.PAGE_RULE: ('PAGE_RULE',
+        [("selectors", list_type), ("styles", table_type)]),
+    cssutils.css.CSSRule.NAMESPACE_RULE: ('NAMESPACE_RULE',
+        [("name", text_type), ("uri", text_type)]),  # name (prefix) is optional
     cssutils.css.CSSRule.COMMENT: ('COMMENT',
         [("text", text_type)]),
+    ## cssutils.css.CSSRule.MARGIN_RULE: ('MARGIN_RULE',
+        ## []), # experimental rule not in the offical spec
+    ## cssutils.css.CSSRule.VARIABLES_RULE: ('VARIABLES_RULE',
+        ## []), # experimental rule not in the offical spec
+    ## # volgens MozDEv zijn er nog een aantal ruletypes (experimental) :
+    ## @supports
+    ## - text subnode (feature test)
+    ## - list subnode (rules)
+    ## @document
+    ## - text subnode (url/url-prefix/domain/regexp)
+    ## - table subnode (styles)
+    ## @keyframes
+    ## @viewport
+    ## - table subnode (styles)
+    ## @counter-style
+    ## - text subnode (name of counter-style)
+    ## - table subnode (declarations/styles)
+    ## @font-feature-values
+    ## - subrules: @swash @annotation @ornaments @stylistic @styleset @character-variant
     cssutils.css.CSSRule.UNKNOWN_RULE: ('UNKNOWN_RULE',
         [("data", text_type)])
     }
 
-# TODO: @media queries op niet-standaard attributen (bv, -webkit-min-device-pixel-ratio:2
+# @media queries op niet-standaard attributen (bv, -webkit-min-device-pixel-ratio:2
 #   gaan mis, dwz de css tekst gaat verloren
-# Ik krijg hier meldingen op in de log:
-# ERROR	MediaQuery: Unexpected syntax, expected "and" but found "(". [1:703: (]
-# ERROR	MediaQuery: Unexpected syntax, expected "and" but found ":". [1:734: :]
-# ERROR	Unexpected token (NUMBER, 2, 1, 735)
-# ERROR	MediaQuery: Unexpected syntax, expected "and" but found ")". [1:736: )]
-# ERROR	MediaList: Invalid MediaQuery:  (-webkit-min-device-pixel-ratio:2)
-# is dit een bug (alleen een conditie in een mediaquery moet ook toegestaan zijn)?
-# als ik (resolution:2) specificeer pikt-ie het ook niet dus ik denk van wel
-# "A <media-query> is composed of a media type and/or a number of media features"
-# maar:
-# "A shorthand syntax is offered for media queries that apply to all media types;
-#   the keyword ‘all’ can be left out (along with the trailing ‘and’).
-#   I.e. if the media type is not explicitly given it is ‘all’."
+# Ik heb hier een fix op gemaakt maar cssutils zou het eigenlijk aan moeten kunnen
 
 def load(filename):
     "Note: does not return a string but a CSSStyleSheet instance"
