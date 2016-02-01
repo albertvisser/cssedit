@@ -590,9 +590,10 @@ class TreePanel(gui.QTreeWidget):
 
 class MainWindow(gui.QMainWindow):
     """Hoofdscherm van de applicatie"""
-# TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan) - ook in properties voor bekijken gelijksoortige stijlen
+    # TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan) - ook in properties voor bekijken gelijksoortige stijlen
 
     def __init__(self, parent=None):
+        print("incoming parent:", parent)
         self.parent = parent
         gui.QMainWindow.__init__(self)
         offset = 40 if os.name != 'posix' else 10
@@ -872,12 +873,17 @@ class MainWindow(gui.QMainWindow):
     def close(self, event=None):
         """for "embedded" use: return modified data to parent before closing
         """
+        print(self.parent)
         if self.parent:
-            self.css.data = self.treetotext()
+            self.css.textdata = self.treetotext()
+            print("na treetotext:", self.css.textdata)
             self.css.texttodata()
+            print("na texttodata:", self.css.data)
             self.css.return_to_source()
+            print("na return_to_source:", self.css.data)
             self.parent.styledata = self.css.data
         gui.QMainWindow.close(self)
+
     def determine_level(self, item):
         if item.parent() == self.root:
             return 1
