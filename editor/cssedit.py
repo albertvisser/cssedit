@@ -72,13 +72,11 @@ def get_for_single_tag(cssdata):
     return cssutils.parseStyle(cssdata)
 
 def return_for_single_tag(cssdata):
-    "not sure what to do with this one yet"
-    ## " dict naar tekst"
-    ## properties = []
-    ## for property, value in sorted(cssdata.items()):
-        ## properties.append("{}: {};".format(property, value))
-    ## return " ".join(properties)
-    # perhaps return str(cssdata)
+    "return rule text or empty string"
+    if list(cssdata):
+        return list(cssdata)[0].style.getCssText()
+    else:
+        return ""
 
 def parse(text):
     "Note: does not return a string but a CSSStyleSheet instance or..."
