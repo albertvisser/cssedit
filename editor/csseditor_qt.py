@@ -594,6 +594,7 @@ class MainWindow(gui.QMainWindow):
 
     def __init__(self, parent=None):
         self.parent = parent
+        self.mode = ''
         gui.QMainWindow.__init__(self)
         offset = 40 if os.name != 'posix' else 10
         self.move(offset, offset)
@@ -749,6 +750,9 @@ class MainWindow(gui.QMainWindow):
         self.mark_dirty(False)
 
     def open(self, **kwargs):
+        if 'filename' in kwargs: self.mode = 'file'
+        elif 'tag' in kwargs: self.mode = 'tag'
+        else: self.mode = 'text'
         self.newfile()
         try:
             fname = kwargs['filename']
@@ -949,14 +953,22 @@ class MainWindow(gui.QMainWindow):
         if parent is None:
             parent = self.item.parent()
         if not self.is_rule_parent(parent): return
+        if self.mode == 'tag' and parent.childCount() == 1:
+            gui.QMessageBox.information(self, self.app_title, 'Only one rule '
+                'allowed when editing tag style')
+            return
         # collect all ruletypes, build and display choicedialog
         ruletypes = sorted([(x, y[0]) for x, y in ed.RTYPES.items()],
             key = lambda item: item[1])
         typename, ok = gui.QInputDialog.getItem(self, self.app_title,
             "Choose type for new rule", [x[1] for x in ruletypes], editable=False)
-        # after selection, create he rule node and the component nodes
+        # after selection, create the rule node and the component nodes
         # use ed.init_ruledata(ruletype) for this
         if ok:
+            if self.mode == 'tag' and typename != 'STYLE_RULE':
+                gui.QMessageBox.information(self, self.app_title, 'Only style rule'
+                    ' allowed when editing tag style')
+                return
             ruletype = None
             for rtype, name in ruletypes:
                 if name == typename:
