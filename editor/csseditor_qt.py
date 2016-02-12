@@ -593,7 +593,6 @@ class MainWindow(gui.QMainWindow):
     # TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan) - ook in properties voor bekijken gelijksoortige stijlen
 
     def __init__(self, parent=None):
-        print("incoming parent:", parent)
         self.parent = parent
         gui.QMainWindow.__init__(self)
         offset = 40 if os.name != 'posix' else 10
@@ -1105,9 +1104,10 @@ class MainWindow(gui.QMainWindow):
             test = len(newitemlist)
             if test < maxlen:
                 modified = True
-                for ix in range(maxlen - 1, test, -1):
-                    self.item.removeChild(ix)
+                for ix in range(maxlen - 1, test - 1, -1):
+                    self.item.takeChild(ix)
         return modified
+
     def delete(self, evt=None):
         self._copy_rule(cut=True, retain=False)
 
