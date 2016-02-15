@@ -764,7 +764,6 @@ class MainWindow(gui.QMainWindow):
 
         self.css = ed.Editor(**kwargs)
         self.css.datatotext()
-        for item in self.css.textdata: print(item)
         self.texttotree()
         self.show_statusmessage(self.build_loaded_message())
 
@@ -877,14 +876,10 @@ class MainWindow(gui.QMainWindow):
     def close(self, event=None):
         """for "embedded" use: return modified data to parent before closing
         """
-        print(self.parent)
         if self.parent:
             self.css.textdata = self.treetotext()
-            print("na treetotext:", self.css.textdata)
             self.css.texttodata()
-            print("na texttodata:", self.css.data)
             self.css.return_to_source()
-            print("na return_to_source:", self.css.data)
             self.parent.styledata = self.css.data
         gui.QMainWindow.close(self)
 

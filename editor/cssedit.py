@@ -13,22 +13,40 @@ LogLine = collections.namedtuple('LogLine', logline_elements)
 text_type, list_type, table_type = '1', 'n', 'n*2'
 
 RTYPES = {
-    cssutils.css.CSSRule.STYLE_RULE: ('STYLE_RULE',
-        [("selectors", list_type), ("styles", table_type)]),
-    cssutils.css.CSSRule.CHARSET_RULE: ('CHARSET_RULE',
-        [("name", text_type)]),
-    cssutils.css.CSSRule.IMPORT_RULE: ('IMPORT_RULE',
-        [("uri", text_type), ("media", list_type)]), # media is optional
-    cssutils.css.CSSRule.MEDIA_RULE: ('MEDIA_RULE',
-        [("media", list_type), ("rules", list_type)]), # media is optional
-    cssutils.css.CSSRule.FONT_FACE_RULE: ('FONT_FACE_RULE',
-        [("styles", table_type)]),
-    cssutils.css.CSSRule.PAGE_RULE: ('PAGE_RULE',
-        [("selector", list_type), ("styles", table_type)]),
-    cssutils.css.CSSRule.NAMESPACE_RULE: ('NAMESPACE_RULE',
-        [("name", text_type), ("uri", text_type)]),  # name (prefix) is optional
-    cssutils.css.CSSRule.COMMENT: ('COMMENT',
-        [("text", text_type)]),
+    cssutils.css.CSSRule.STYLE_RULE: ('STYLE_RULE', [
+        ("selectors", list_type, lambda rule: [x.selectorText for x in
+            rule.selectorList]),
+        ("styles", table_type, lambda rule: {x.name: x.propertyValue.cssText
+            for x in rule.style.getProperties()})
+        ]),
+    cssutils.css.CSSRule.CHARSET_RULE: ('CHARSET_RULE', [
+        ("name", text_type, lambda rule: rule.encoding)
+        ]),
+    cssutils.css.CSSRule.IMPORT_RULE: ('IMPORT_RULE', [
+        ("uri", text_type, lambda rule: rule.href),
+        ("media", list_type, lambda rule: [x.mediaText for x in rule.media])
+        ]), # media is optional
+    cssutils.css.CSSRule.MEDIA_RULE: ('MEDIA_RULE', [
+        ("media", list_type, lambda rule: [x.mediaText for x in rule.media]),
+        ("rules", list_type, lambda rule: [(x.typeString,
+            complete_ruledata(init_ruledata(x.type), x)) for x in rule.cssRules])
+        ]), # media is optional
+    cssutils.css.CSSRule.FONT_FACE_RULE: ('FONT_FACE_RULE', [
+        ("styles", table_type, lambda rule: {x.name: x.propertyValue.cssText
+            for x in rule.style.getProperties()})
+        ]),
+    cssutils.css.CSSRule.PAGE_RULE: ('PAGE_RULE', [
+        ("selector", list_type, lambda rule: rule.selectorText),
+        ("styles", table_type, lambda rule: {x.name: x.propertyValue.cssText
+            for x in rule.style.getProperties()})
+        ]),
+    cssutils.css.CSSRule.NAMESPACE_RULE: ('NAMESPACE_RULE', [
+        ("name", text_type, lambda rule: rule.prefix),
+        ("uri", text_type, lambda rule: rule.namespaceURI)
+        ]),  # name (prefix) is optional
+    cssutils.css.CSSRule.COMMENT: ('COMMENT', [
+        ("text", text_type, lambda rule: rule.cssText[2:-2].strip())
+        ]),
     ## cssutils.css.CSSRule.MARGIN_RULE: ('MARGIN_RULE',
         ## []), # experimental rule not in the offical spec
     ## cssutils.css.CSSRule.VARIABLES_RULE: ('VARIABLES_RULE',
@@ -48,8 +66,9 @@ RTYPES = {
     ## - table subnode (declarations/styles)
     ## @font-feature-values
     ## - subrules: @swash @annotation @ornaments @stylistic @styleset @character-variant
-    cssutils.css.CSSRule.UNKNOWN_RULE: ('UNKNOWN_RULE',
-        [("data", text_type)])
+    cssutils.css.CSSRule.UNKNOWN_RULE: ('UNKNOWN_RULE', [
+        ("data", text_type, lambda rule: rule.cssText.strip())
+        ])
     }
 
 # @media queries op niet-standaard attributen (bv, -webkit-min-device-pixel-ratio:2
@@ -126,38 +145,13 @@ def get_definition_from_file(file, line, pos):
 
 def init_ruledata(ruletype):
     ruledata = {} # {'selectors': [], 'styles', {}}
-    for x, y in RTYPES[ruletype][1]:
+    for x, y, _ in RTYPES[ruletype][1]:
         ruledata[x] = {} if y == table_type else [] if y == list_type else ''
     return ruledata
 
 def complete_ruledata(ruledata, rule):
-    if rule.type == cssutils.css.CSSRule.STYLE_RULE:
-        ruledata['selectors'] = [x.selectorText for x in rule.selectorList]
-        ruledata['styles'] = {x.name: x.propertyValue.cssText
-            for x in rule.style.getProperties()}
-    elif rule.type == cssutils.css.CSSRule.CHARSET_RULE:
-        ruledata["name"] = rule.encoding
-    elif rule.type == cssutils.css.CSSRule.IMPORT_RULE:
-        ruledata['media'] = [x.mediaText for x in rule.media]
-        ruledata['uri'] = rule.href
-    elif rule.type == cssutils.css.CSSRule.MEDIA_RULE:
-        ruledata['media'] = [x.mediaText for x in rule.media]
-        ruledata['rules'] = [(x.typeString, complete_ruledata(init_ruledata(x.type),
-            x)) for x in rule.cssRules]
-    elif rule.type == cssutils.css.CSSRule.FONT_FACE_RULE:
-        ruledata['styles'] = {x.name: x.propertyValue.cssText
-            for x in rule.style.getProperties()}
-    elif rule.type == cssutils.css.CSSRule.PAGE_RULE:
-        ruledata['selector'] = rule.selectorText # [x.selectorText for x in rule.selectorList]
-        ruledata['styles'] = {x.name: x.propertyValue.cssText
-            for x in rule.style.getProperties()}
-    elif rule.type == cssutils.css.CSSRule.NAMESPACE_RULE:
-        ruledata["name"] = rule.prefix
-        ruledata['uri'] = rule.namespaceURI
-    elif rule.type == cssutils.css.CSSRule.COMMENT:
-        ruledata['text'] = rule.cssText[2:-2].strip()
-    else:
-        ruledata['data'] = rule.cssText.strip()
+    for x, y, z in RTYPES[rule.type][1]:
+        ruledata[x] = z(rule)
     return ruledata
 
 def parse_log_line(line):
@@ -239,12 +233,6 @@ class Editor:
             text = str(self.data.cssText)
             if not text:
                 self.data = None
-            else:
-                print('full text input in cssedit:', self.data.cssText)
-            ## if isinstance(data, cssutils.css.CSSStyleSheet):
-                ## self.data = data
-            ## elif isinstance(data, cssutils.css.CSSStyleDeclaration):
-                ## self.data = None
             # TODO: raise error when this doesn't parse into a CSSStylesheet
 
         hdlr.close()
