@@ -24,7 +24,7 @@ RTYPES = {
     cssutils.css.CSSRule.FONT_FACE_RULE: ('FONT_FACE_RULE',
         [("styles", table_type)]),
     cssutils.css.CSSRule.PAGE_RULE: ('PAGE_RULE',
-        [("selectors", list_type), ("styles", table_type)]),
+        [("selector", list_type), ("styles", table_type)]),
     cssutils.css.CSSRule.NAMESPACE_RULE: ('NAMESPACE_RULE',
         [("name", text_type), ("uri", text_type)]),  # name (prefix) is optional
     cssutils.css.CSSRule.COMMENT: ('COMMENT',
@@ -135,10 +135,25 @@ def complete_ruledata(ruledata, rule):
         ruledata['selectors'] = [x.selectorText for x in rule.selectorList]
         ruledata['styles'] = {x.name: x.propertyValue.cssText
             for x in rule.style.getProperties()}
+    elif rule.type == cssutils.css.CSSRule.CHARSET_RULE:
+        ruledata["name"] = rule.encoding
+    elif rule.type == cssutils.css.CSSRule.IMPORT_RULE:
+        ruledata['media'] = [x.mediaText for x in rule.media]
+        ruledata['uri'] = rule.href
     elif rule.type == cssutils.css.CSSRule.MEDIA_RULE:
         ruledata['media'] = [x.mediaText for x in rule.media]
         ruledata['rules'] = [(x.typeString, complete_ruledata(init_ruledata(x.type),
             x)) for x in rule.cssRules]
+    elif rule.type == cssutils.css.CSSRule.FONT_FACE_RULE:
+        ruledata['styles'] = {x.name: x.propertyValue.cssText
+            for x in rule.style.getProperties()}
+    elif rule.type == cssutils.css.CSSRule.PAGE_RULE:
+        ruledata['selector'] = rule.selectorText # [x.selectorText for x in rule.selectorList]
+        ruledata['styles'] = {x.name: x.propertyValue.cssText
+            for x in rule.style.getProperties()}
+    elif rule.type == cssutils.css.CSSRule.NAMESPACE_RULE:
+        ruledata["name"] = rule.prefix
+        ruledata['uri'] = rule.namespaceURI
     elif rule.type == cssutils.css.CSSRule.COMMENT:
         ruledata['text'] = rule.cssText[2:-2].strip()
     else:
@@ -330,9 +345,10 @@ if __name__ == "__main__":
         "../tests/simplecss-long.css",
         "../tests/common_pt1.css",
         "../tests/common_pt4.css",
+        "../tests/extra_ruletypes.css",
         "../../htmledit/ashe/test.css"
         ]
-    testdata = [testdata[2]]
+    testdata = [testdata[3]]
     for item in testdata:
         testname = os.path.basename(item)
         test = Editor(filename=item)

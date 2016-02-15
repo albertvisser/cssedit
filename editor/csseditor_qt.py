@@ -51,7 +51,7 @@ def read_rules(data):
             if key == 'seqnum': continue
             value = rldata[key]
             ruletopitem = newitem(key)
-            if key in ('text', 'data'):
+            if key in ('text', 'data', 'name', 'uri', 'selector'):
                 rulekeyitem = newitem(value)
                 ruletopitem.addChild(rulekeyitem)
             elif key == 'rules':
@@ -764,6 +764,7 @@ class MainWindow(gui.QMainWindow):
 
         self.css = ed.Editor(**kwargs)
         self.css.datatotext()
+        for item in self.css.textdata: print(item)
         self.texttotree()
         self.show_statusmessage(self.build_loaded_message())
 
