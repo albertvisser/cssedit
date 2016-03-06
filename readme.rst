@@ -1,10 +1,14 @@
-CSSEDIT
+CSSEdit
 =======
 
 A simple tree-based CSS editor.
 
-Inspired by two things: the wish to have a tool that I can view "compressed" CSS files in without performing some magic in a text editor first, and the opportunity to have this pop up from within my HTML editor.
+Inspired by two things: the wish to have a tool that I can view "compressed" CSS files in without performing some magic in a text editor first; and the opportunity to have this pop up from within my HTML editor.
 And, last but not least, a fresh case of Not Invented Here syndrom.
+
+
+Usage
+=====
 
 The standalone version can be started with the `start_editor.py` script in this directory. Optionally you can provide a filename as parameter.
 
@@ -23,3 +27,10 @@ For the embedded version, the output will be returned the way it was provided; a
 
 In the standalone version, the same options will be available when saving to a file.
 
+
+Dependencies
+============
+
+- Python
+- PyQt4
+- cssutils
