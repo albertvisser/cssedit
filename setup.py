@@ -38,8 +38,8 @@ setup(
         ## 'console_scripts': [
             ## 'start_csseditor = editor.csseditor_qt:main'
         ## ],
-        'gui_scripts': [
-            'cssedit = editor.csseditor_qt:main'
-        ],
+        ## 'gui_scripts': [
+            ## 'cssedit = editor.csseditor_qt:main'
+        ## ],
     }
 )
