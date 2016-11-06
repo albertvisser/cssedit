@@ -1,6 +1,6 @@
 import sys
-## from editor.csseditor_qt import main
-from editor.csseditor_qt5 import main
+## from editor.csseditor_qt4 import main
+from editor.csseditor_qt import main
 if len(sys.argv) == 2:
     main(filename=sys.argv[1])
 elif len(sys.argv) == 3:
