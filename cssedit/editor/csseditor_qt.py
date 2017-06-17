@@ -610,7 +610,7 @@ class MainWindow(qtw.QMainWindow):
         offset = 40 if os.name != 'posix' else 10
         self.move(offset, offset)
         self.app_title = 'CSSEdit'
-        self.app_icon = gui.QIcon('/home/albert/cssfile_1.xpm')
+        self.app_icon = gui.QIcon('/home/albert/.icons/cssfile_1.xpm')
 
         self.statusbar = self.statusBar()
         self.statusbar.showMessage('Ready')

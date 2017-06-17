@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 import sys
 ## from editor.csseditor_qt4 import main
 from editor.csseditor_qt import main
