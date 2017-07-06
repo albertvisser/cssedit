@@ -24,10 +24,10 @@ RTYPES = {
         ]),
     cssutils.css.CSSRule.IMPORT_RULE: ('IMPORT_RULE', [
         ("uri", text_type, lambda rule: rule.href),
-        ("media", list_type, lambda rule: [x.mediaText for x in rule.media])
+        ("media", list_type, lambda rule: [x.value.mediaText for x in rule.media])
         ]), # media is optional
     cssutils.css.CSSRule.MEDIA_RULE: ('MEDIA_RULE', [
-        ("media", list_type, lambda rule: [x.mediaText for x in rule.media]),
+        ("media", list_type, lambda rule: [x.value.mediaText for x in rule.media]),
         ("rules", list_type, lambda rule: [(x.typeString,
             complete_ruledata(init_ruledata(x.type), x)) for x in rule.cssRules])
         ]), # media is optional
