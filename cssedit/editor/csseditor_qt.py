@@ -1,6 +1,6 @@
 import os
 import sys
-
+import contextlib
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as gui
 import PyQt5.QtCore as core
@@ -70,6 +70,12 @@ def read_rules(data):
             ruletypeitem.addChild(ruletopitem)
         rules.append(ruletypeitem)
     return rules
+
+@contextlib.contextmanager
+def wait_cursor(self):
+    self.app.setOverrideCursor(gui.QCursor(core.Qt.WaitCursor))
+    yield
+    self.app.restoreOverrideCursor()
 
 class LogDialog(qtw.QDialog):
     "Simple Log display"
@@ -604,6 +610,7 @@ class MainWindow(qtw.QMainWindow):
     # TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan) - ook in properties voor bekijken gelijksoortige stijlen
 
     def __init__(self, parent=None):
+        self.app = qtw.QApplication(sys.argv)
         self.parent = parent
         self.mode = ''
         super().__init__()
@@ -773,9 +780,10 @@ class MainWindow(qtw.QMainWindow):
             self.project_file = os.path.abspath(fname)
         self.root.setText(0, self.project_file or "(no file)")
 
-        self.css = ed.Editor(**kwargs)
-        self.css.datatotext()
-        self.texttotree()
+        with wait_cursor(self):
+            self.css = ed.Editor(**kwargs)
+            self.css.datatotext()
+            self.texttotree()
         self.show_statusmessage(self.build_loaded_message())
 
         item_to_activate = self.root
@@ -1231,7 +1239,6 @@ class MainWindow(qtw.QMainWindow):
             'This element is at level {}'.format(level))
 
 def main(**kwargs):
-    app = qtw.QApplication(sys.argv)
     main = MainWindow()
     ## app.setWindowIcon(main.nt_icon)
     main.show()
@@ -1239,4 +1246,4 @@ def main(**kwargs):
         main.open(**kwargs) # no error return, throws an exception if needed
     ## if err:
         ## qtw.QMessageBox.information(main, "Error", err, qtw.QMessageBox.Ok)
-    app.exec_()
+    main.app.exec_()
