@@ -27,13 +27,13 @@ setup(
     author_email='albert.visser@gmail.com',
 
     license="Don't know yet",
-    classifiers=[], # this is for PyPI, let's leave it alone for now
+    classifiers=[],  # this is for PyPI, let's leave it alone for now
     keywords="css editing",
 
     packages=find_packages(),
     install_requires=['cssutils', 'PyQt4'],
-    package_data={}, # we don't need this here
-    data_files=[], # we also don't need this
+    package_data={},  # we don't need this here
+    data_files=[],  # we also don't need this
     entry_points={
         ## 'console_scripts': [
             ## 'start_csseditor = editor.csseditor_qt:main'

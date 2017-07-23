@@ -1,3 +1,5 @@
+"""csseditor backend not using cssutils library
+"""
 # primary function: take a piece of css code and show it in a treeview
 # making no difference between a "formatted" and a "compressed" version
 
@@ -19,6 +21,7 @@ import collections
 format_types = ("long", "medium", "short", "compressed")
 comment_tag = '/**/'
 
+
 def fsplit(text, delimiter, multi=False):
     """split text, but keep split character attached to first part
     """
@@ -26,25 +29,33 @@ def fsplit(text, delimiter, multi=False):
         data = text.split(delimiter)
     else:
         data = text.split(delimiter, 1)
-    for idx, item in enumerate(data[:-1]):
+    for idx, _ in enumerate(data[:-1]):
         data[idx] += delimiter.strip()
     return data
 
+
 def load(filename):
-    # TODO: handle blank lines (wrt output = input)
+    """load from file
+
+    TODO: handle blank lines (wrt output = input)
+    """
     with open(filename) as f_in:
         result = " ".join([x.strip() for x in f_in.readlines()])
     return result
+
 
 def get_for_single_tag(cssdata):
     " tekst naar dict"
     propdict = {}
     for item in cssdata.split(';'):
-        if item.strip() == "": continue
-        if ':' not in item: continue
+        if item.strip() == "":
+            continue
+        if ':' not in item:
+            continue
         prop, value = item.split(':')
         propdict[prop.strip()] = value.strip()
-    return propdict # of moet tag ook mee voor het onthouden?
+    return propdict  # of moet tag ook mee voor het onthouden?
+
 
 def return_for_single_tag(cssdata):
     " dict naar tekst"
@@ -53,16 +64,21 @@ def return_for_single_tag(cssdata):
         properties.append("{}: {};".format(property, value))
     return " ".join(properties)
 
+
 def parse(text):
-    # TODO: handle inline comments
-    def nodes():
-        return collections.defaultdict(dict)
+    """Parse part of the file data
+
+    TODO: handle inline comments
+    """
+    ## def nodes():
+        ## return collections.defaultdict(dict)
     seq = 0
     lines = text.split('}')
     selectors = []
     for line in lines:
         # skip empty lines
-        if '{' not in line: continue
+        if '{' not in line:
+            continue
         # collect comments separately - works only for in between selectors
         comments = fsplit(line, '*/', multi=True)
         for item in comments[:-1]:
@@ -74,12 +90,15 @@ def parse(text):
         properties = data.split(';')
         propdict = {}
         for item in properties:
-            if item.strip() == "": continue
-            if ':' not in item: continue
+            if item.strip() == "":
+                continue
+            if ':' not in item:
+                continue
             prop, value = item.split(':')
             propdict[prop.strip()] = value.strip()
         selectors.append((node, propdict))
     return selectors
+
 
 ## def compile(inputlist):
     ## # compile should not return a string but a list, so format knows better about separate lines`
@@ -99,8 +118,9 @@ def parse(text):
     ## return result
 
 def format(inputlist, mode="compressed"):
-    "returns a text unless the compression mode is wrong"
-    if mode not in (format_types):
+    """returns a text unless the compression mode is wrong
+    """
+    if mode not in format_types:
         return
     lines = []
     for selector, data in inputlist:
@@ -119,7 +139,7 @@ def format(inputlist, mode="compressed"):
         selectorline = " ".join((selector_start, propertiesline, selector_end))
         if mode in ("compressed", "short"):
             lines.append(selectorline)
-        else: # mode in ("medium", "long")
+        else:  # mode in ("medium", "long")
             lines.append(selector_start)
             if mode == "medium":
                 lines.append("    {}".format(propertiesline))
@@ -131,7 +151,10 @@ def format(inputlist, mode="compressed"):
     else:
         return "\n".join(lines)
 
+
 def save(data, filename, backup=True):
+    """save to file
+    """
     if backup and os.path.exists(filename):
         shutil.copyfile(filename, filename + "~")
     with open(filename, 'w') as f_out:
@@ -139,8 +162,9 @@ def save(data, filename, backup=True):
 
 
 class Editor:
-
-    def __init__(self, **kwargs): # filename="", tag="", text=""):
+    """Basic editor functionality
+    """
+    def __init__(self, **kwargs):  # filename="", tag="", text=""):
         """get css from a source and turn it into a structure
         """
         self.filename = self.tag = text = ''
@@ -168,31 +192,36 @@ class Editor:
         # TODO: andere controles op deze data
 
     def datatotext(self):
+        """turn the internal structure into a more generic one
+        """
         self.treedata = self.data
 
     def texttodata(self):
+        """turn the generic structure into a cssutils one
+        """
         self.data = self.treedata
 
     def return_to_source(self, backup=True, savemode="compressed"):
-        if savemode not in (format_types):
+        """turn generic structure back into style(sheet) source
+        """
+        if savemode not in format_types:
             info = "`, `".join(format_types[:-1])
             info = "` or `".join((info, format_types[-1]))
             raise AttributeError("wrong format type for save, should be either of "
-                "`{}`".format(info))
+                                 "`{}`".format(info))
         ## data = compile(self.data)
         if self.filename:
             save(format(self.data, savemode), self.filename, backup)
         elif self.tag:
             self.cssdata = return_for_single_tag(self.data[0][1])
         else:
-            self.data = format(self.data, savemode) # otherwise it's not accessible
+            self.data = format(self.data, savemode)  # otherwise it's not accessible
 
 
 class DemoEditor:
     """Simple demo class using Editor
     """
-
-    def __init__():
+    def __init__(self):
         self.css = Editor(filename="../tests/simplecss-long.css")
         self.css.datatotext()
         self.texttotree()
@@ -203,7 +232,7 @@ class DemoEditor:
         """turn the structure into a generic thing
         """
         self.visual_data = []
-        for ix, value in enumerate(self.css.data):
+        for value in self.css.data:
             ## self.treedata.append(str(ix + 1))
             item, contents = value
             if item == comment_tag:
@@ -222,7 +251,7 @@ class DemoEditor:
         data = []
         propdict = {}
         in_comment = False
-        for item in self.treedata:
+        for item in self.visual_data:
             if not item.startswith('    '):
                 if propdict:
                     data.append((selector, propdict))
@@ -256,13 +285,3 @@ class DemoEditor:
 
 # might be useful to try and use the "cssutils" package
 # instead of trying to solve this myself
-
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,6 @@
 #! /usr/bin/env python3
+"""CSSEditor - Start GUI
+"""
 import sys
 ## from editor.csseditor_qt4 import main
 from editor.csseditor_qt import main
@@ -11,4 +13,3 @@ elif len(sys.argv) == 3:
         main(tag=sys.argv[1], text=sys.argv[2])
 else:
     main()
-

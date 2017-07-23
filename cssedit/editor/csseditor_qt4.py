@@ -1,3 +1,5 @@
+"""Graphical frontend (PyQt4 version) - currently unmaintained
+"""
 import os
 import sys
 

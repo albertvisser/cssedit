@@ -1,8 +1,32 @@
+"""data definitions to compare test results with
+"""
 data = {
     'load_function': {
-        'compressed': """* { display: inline; } div { margin: 0 0 0 0; padding: 0 0 0 0; } p { text-align: center; vertical-align: middle } img { border: 1px solid } .red { color: red; font-weight: bold } #page-title { font-size: 55 } p::first-child { text-decoration: underline; } li:nth-child(3) { background-color: green } a:hover { background-color: blue } p.oms:before { content: "Hello, it's me" } div div { display: block; } ul>li>ul>li { list-style: square; } ul + p { font-style: italic } p ~ p { font-variant: small-caps; } a[title] { color: yellowish; } td[valign="top"] { font-weight: bold; } a[href*="ads"] { display: none; } a[href^="http"]{ background: url(path/to/external/icon.png) no-repeat; padding-left: 10px; } a[href$="jpg"] { text-decoration: line-through; }""",
-        'other': """/* simple css in this case means one selector for one definition */  /* some simple elements */ * { display: inline; } div { margin: 0 0 0 0; padding: 0 0 0 0; } p { text-align: center; vertical-align: middle } img { border: 1px solid }  /* classes, ids and pseudo-classes */ .red { color: red; font-weight: bold } #page-title { font-size: 55 } p::first-child { text-decoration: underline; } li:nth-child(3) { background-color: green } a:hover { background-color: blue } p.oms:before { content: "Hello, it's me" }  /* document hierarchies */ div div { display: block; } ul>li>ul>li { list-style: square; } ul + p { font-style: italic } p ~ p { font-variant: small-caps; } a[title] { color: yellowish; } td[valign="top"] { font-weight: bold; } a[href*="ads"] { display: none; } a[href^="http"] { background: url(path/to/external/icon.png) no-repeat; padding-left: 10px; } a[href$="jpg"] { text-decoration: line-through; }"""
-},
+        'compressed': '* { display: inline; } div { margin: 0 0 0 0; padding: 0 0 0 0; } '
+                      ' p { text-align: center; vertical-align: middle } img { border: 1p'
+                      'x solid } .red { color: red; font-weight: bold } #page-title { fon'
+                      't-size: 55 } p::first-child { text-decoration: underline; } li:nth'
+                      '-child(3) { background-color: green } a:hover { background-color: '
+                      'blue } p.oms:before { content: "Hello, it`s me" } div div { displa'
+                      'y: block; } ul>li>ul>li { list-style: square; } ul + p { font-styl'
+                      'e: italic } p ~ p { font-variant: small-caps; } a[title] { color: '
+                      'yellowish; } td[valign="top"] { font-weight: bold; } a[href*="ads"'
+                      '] { display: none; } a[href^="http"]{ background: url(path/to/exte'
+                      'rnal/icon.png) no-repeat; padding-left: 10px; } a[href$="jpg"] { t'
+                      'ext-decoration: line-through; }',
+        'other': '/* simple css in this case means one selector for one definition */  /*'
+                 ' some simple elements */ * { display: inline; } div { margin: 0 0 0 0; '
+                 'padding: 0 0 0 0; } p { text-align: center; vertical-align: middle } im'
+                 'g { border: 1px solid }  /* classes, ids and pseudo-classes */ .red { c'
+                 'olor: red; font-weight: bold } #page-title { font-size: 55 } p::first-c'
+                 'hild { text-decoration: underline; } li:nth-child(3) { background-color'
+                 ': green } a:hover { background-color: blue } p.oms:before { content: "H'
+                 'ello, it`s me" }  /* document hierarchies */ div div { display: block; '
+                 '} ul>li>ul>li { list-style: square; } ul + p { font-style: italic } p ~'
+                 ' p { font-variant: small-caps; } a[title] { color: yellowish; } td[vali'
+                 'gn="top"] { font-weight: bold; } a[href*="ads"] { display: none; } a[hre'
+                 'f^="http"] { background: url(path/to/external/icon.png) no-repeat; paddi'
+                 'ng-left: 10px; } a[href$="jpg"] { text-decoration: line-through; }'},
     'parse_function': [
         ('/**/', 'simple css in this case means one selector for one definition'),
         ('/**/', 'some simple elements'),
@@ -25,7 +49,8 @@ data = {
         ('a[title]', {'color': 'yellowish'}),
         ('td[valign="top"]', {'font-weight': 'bold'}),
         ('a[href*="ads"]', {'display': 'none'}),
-        ('a[href^="http"]', {'background': 'url(path/to/external/icon.png) no-repeat', 'padding-left': '10px'}),
+        ('a[href^="http"]', {'background': 'url(path/to/external/icon.png) no-repeat',
+                             'padding-left': '10px'}),
         ('a[href$="jpg"]', {'text-decoration': 'line-through'})
         ],
     'editor_file': {
@@ -47,7 +72,8 @@ data = {
             ('a[title]', {'color': 'yellowish'}),
             ('td[valign="top"]', {'font-weight': 'bold'}),
             ('a[href*="ads"]', {'display': 'none'}),
-            ('a[href^="http"]', {'background': 'url(path/to/external/icon.png) no-repeat', 'padding-left': '10px'}),
+            ('a[href^="http"]', {'background': 'url(path/to/external/icon.png) no-repeat',
+                                 'padding-left': '10px'}),
             ('a[href$="jpg"]', {'text-decoration': 'line-through'})
             ],
         'other': [], # should be same as 'parse_function' value above

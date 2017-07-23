@@ -1,11 +1,17 @@
+"""Plain text frontend (terminal version)
+"""
 import sys
 import os
 from cssedit import Editor, comment_tag
 
+
 def formatted(text, indent):
-    text = str(text) # make sure it's a string
-    start = indent * ' '
-    return start + text
+    "return text with leading spaces"
+    ## text = str(text) # make sure it's a string
+    ## start = indent * ' '
+    ## return start + text
+    return text.rjust(len(text) + indent)
+
 
 def read_rules(data, indent):
     "recursive structure to read rules"
@@ -23,54 +29,43 @@ def read_rules(data, indent):
                     retval.append(formatted(it, indent + 8))
                     try:
                         retval.append(formatted(value[it], indent + 12))
-                    except TypeError as e:
+                    except TypeError:
                         pass
     return retval
+
 
 class DemoEditor:
     """Simple demo class using Editor
     """
-
     def __init__(self, fname):
+        """load css from file
+        """
         self.outname = os.path.join('/tmp', os.path.basename(fname)) + '.out'
         self.css = Editor(filename=fname)
         self.css.datatotext()
         self.texttotree()
         with open(self.outname, 'w') as f:
-            for line in self.visual_data: print(line, file=f)
+            for line in self.visual_data:
+                print(line, file=f)
 
     def save(self):
+        """save css back
+        """
         self.treetotext()
         self.css.texttodata()
 
     def texttotree(self):
-        """turn the structure into a generic thing
+        """convert the internal structure into visual data
         """
         self.visual_data = read_rules(self.css.textdata, 0)
 
-            ## if item == comment_tag:
-                ## self.visual_data.append(item)
-                ## self.visual_data.append('    {}'.format(contents))
-                ## continue
-            ## else:
-                ## try:
-                    ## selector = item.selectorText
-                ## except AttributeError:
-                    ## self.visual_data.append(str(selector))
-                    ## self.visual_data.append('    {}'.format(contents))
-                    ## continue
-                ## self.visual_data.append("{}".format(selector))
-                ## for property, value in sorted(contents.items()):
-                    ## self.visual_data.append("    {}".format(property))
-                    ## self.visual_data.append("        {}".format(value))
-
     def treetotext(self):
-        """turn the visual thing into a structure
+        """convert the visual data into an internal structure
         """
         data = []
         propdict = {}
         in_comment = False
-        for item in self.treedata:
+        for item in self.visual_data:
             if not item.startswith('    '):
                 if propdict:
                     data.append((selector, propdict))
