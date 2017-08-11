@@ -649,9 +649,9 @@ class MainWindow(qtw.QMainWindow):
     """Hoofdscherm van de applicatie
     """
     # TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan) - ook in properties voor bekijken gelijksoortige stijlen
-    def __init__(self, parent=None):
-        self.app = qtw.QApplication(sys.argv)
+    def __init__(self, parent=None, app=None):
         self.parent = parent
+        self.app = app
         self.mode = ''
         super().__init__()
         offset = 40 if os.name != 'posix' else 10
@@ -1366,11 +1366,12 @@ class MainWindow(qtw.QMainWindow):
 
 def main(**kwargs):
     "entry point"
-    main = MainWindow()
+    app = qtw.QApplication(sys.argv)
+    main = MainWindow(app=app)
     ## app.setWindowIcon(main.nt_icon)
     main.show()
     if kwargs:
         main.open(**kwargs)  # no error return, throws an exception if needed
     ## if err:
         ## qtw.QMessageBox.information(main, "Error", err, qtw.QMessageBox.Ok)
-    main.app.exec_()
+    app.exec_()
