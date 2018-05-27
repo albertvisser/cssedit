@@ -105,7 +105,7 @@ class TestFunctions(unittest.TestCase):
                   'text-decoration': 'none'}
         # Traceback (most recent call last):
         # File "/home/albert/projects/cssedit/tests/unittests.py", line 100, in test_get_return_single
-             # self.assertEqual(str(cssedit.get_for_single_tag(data)), result)
+        #     self.assertEqual(str(cssedit.get_for_single_tag(data)), result)
         # AssertionError: '<cssutils.css.CSSStyleDeclaration object length=3 (all: 3) at 0x7f58125db978>' != {'text-decoration': 'none', 'border': '5px solid red', 'content': '"gargl"'}
         self.assertEqual(cssedit.get_for_single_tag(data).cssText, result)
         self.assertEqual(cssedit.return_for_single_tag(result), data_out)
@@ -122,7 +122,7 @@ class TestFunctions(unittest.TestCase):
                 result = results.data['load_function']['other']
             # Traceback (most recent call last):
             # File "/home/albert/projects/cssedit/tests/unittests.py", line 112, in test_load
-                 # self.assertEqual(str(cssedit.load(name)), result)
+            #    self.assertEqual(str(cssedit.load(name)), result)
             # AssertionError: "<cssutils.css.CSSStyleSheet object encod[135 chars]ef0>" != '* { display: inline; } div { margin: 0 0[713 chars]h; }'
             # - <cssutils.css.CSSStyleSheet object encoding='utf-8' href='file:/home/albert/projects/cssedit/tests/simplecss-compressed.css' media=None title=None namespaces={} at 0x7f580d125ef0>
             # + * { display: inline; } div { margin: 0 0 0 0; padding: 0 0 0 0; } p { text-align: center; vertical-align: middle } img { border: 1px solid } .red { color: red; font-weight: bold } #page-title { font-size: 55 } p::first-child { text-decoration: underline; } li:nth-child(3) { background-color: green } a:hover { background-color: blue } p.oms:before { content: "Hello, it's me" } div div { display: block; } ul>li>ul>li { list-style: square; } ul + p { font-style: italic } p ~ p { font-variant: small-caps; } a[title] { color: yellowish; } td[valign="top"] { font-weight: bold; } a[href*="ads"] { display: none; } a[href^="http"]{ background: url(path/to/external/icon.png) no-repeat; padding-left: 10px; } a[href$="jpg"] { text-decoration: line-through; }

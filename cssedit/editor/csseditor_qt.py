@@ -95,7 +95,8 @@ def wait_cursor(self):
     self.app.restoreOverrideCursor()
 
 
-#convenience functions for tree - copied from DocTree but not used
+#  convenience functions for tree - copied from DocTree but not used
+
     def add_to_parent(titel, parent, pos=-1):
         """apparently unused?
         """
@@ -1361,7 +1362,6 @@ class MainWindow(qtw.QMainWindow):
         level = self.determine_level(self.item)
         qtw.QMessageBox.information(self, self.app_title,
                                     'This element is at level {}'.format(level))
-
 
 
 def main(**kwargs):
