@@ -31,7 +31,7 @@ setup(
     keywords="css editing",
 
     packages=find_packages(),
-    install_requires=['cssutils', 'PyQt4'],
+    install_requires=['cssutils', 'PyQt5'],
     package_data={},  # we don't need this here
     data_files=[],  # we also don't need this
     entry_points={
