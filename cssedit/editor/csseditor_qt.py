@@ -97,65 +97,73 @@ def wait_cursor(self):
 
 #  convenience functions for tree - copied from DocTree but not used
 
-    def add_to_parent(titel, parent, pos=-1):
-        """apparently unused?
-        """
-        new = qtw.QTreeWidgetItem()
-        new.setText(0, titel.rstrip())
-        new.setToolTip(0, titel.rstrip())
-        if pos == -1:
-            parent.addChild(new)
-        else:
-            parent.insertChild(pos, new)
-        return new
+def add_to_parent(titel, parent, pos=-1):
+    """apparently unused?
+    """
+    new = qtw.QTreeWidgetItem()
+    new.setText(0, titel.rstrip())
+    new.setToolTip(0, titel.rstrip())
+    if pos == -1:
+        parent.addChild(new)
+    else:
+        parent.insertChild(pos, new)
+    return new
 
-    def add_item_to_parent(item, parent, pos=-1):
-        """apparently unused?
-        """
-        if pos == -1:
-            parent.addChild(item)
-        else:
-            parent.insertChild(pos, item)
-        ## return item
 
-    def _getitemdata(item):   # not used
-        "get text and stored data from item"
-        return item.text(0), str(item.text(1))  # kan integer zijn
+def add_item_to_parent(item, parent, pos=-1):
+    """apparently unused?
+    """
+    if pos == -1:
+        parent.addChild(item)
+    else:
+        parent.insertChild(pos, item)
+    ## return item
 
-    def _getitemtitle(item):   # not used
-        "titel in de visual tree ophalen"
-        return item.text(0)
 
-    def _getitemkey(item):   # not used
-        "sleutel voor de itemdict ophalen"
-        value = item.text(1)
-        try:
-            value = int(value)
-        except ValueError:  # root item heeft tekst in plaats van itemdict key
-            pass
-        return value
+def _getitemdata(item):   # not used
+    "get text and stored data from item"
+    return item.text(0), str(item.text(1))  # kan integer zijn
 
-    def _setitemtitle(item, title):   # not used
-        "set text and tooltip for the item"
-        item.setText(0, title)
-        item.setToolTip(0, title)
 
-    def _setitemtext(item, text):   # not used
-        """Meant to set the text for the root item (goes in same place as the keys
-        for the other items)
-        """
-        item.setText(1, text)
+def _getitemtitle(item):   # not used
+    "titel in de visual tree ophalen"
+    return item.text(0)
 
-    def _getitemkids(item):   # not used
-        return [item.child(num) for num in range(item.childCount())]
 
-    def _getitemparentpos(item):   # not used
-        root = item.parent()
-        if root:
-            pos = root.indexOfChild(item)
-        else:
-            pos = -1
-        return root, pos
+def _getitemkey(item):   # not used
+    "sleutel voor de itemdict ophalen"
+    value = item.text(1)
+    try:
+        value = int(value)
+    except ValueError:  # root item heeft tekst in plaats van itemdict key
+        pass
+    return value
+
+
+def _setitemtitle(item, title):   # not used
+    "set text and tooltip for the item"
+    item.setText(0, title)
+    item.setToolTip(0, title)
+
+
+def _setitemtext(item, text):   # not used
+    """Meant to set the text for the root item (goes in same place as the keys
+    for the other items)
+    """
+    item.setText(1, text)
+
+
+def _getitemkids(item):   # not used
+    return [item.child(num) for num in range(item.childCount())]
+
+
+def _getitemparentpos(item):   # not used
+    root = item.parent()
+    if root:
+        pos = root.indexOfChild(item)
+    else:
+        pos = -1
+    return root, pos
 
 
 class LogDialog(qtw.QDialog):
@@ -768,6 +776,13 @@ class MainWindow(qtw.QMainWindow):
                     menu.addAction(action)
                     self.actiondict[label] = action
 
+    def show_from_external(self, modal=True):
+        """blokkerend gedrag instellen als aangestuurd vanuit bv. Htmledit
+        (werkt alleen als de "parent" applicatie ook Qt is)
+        """
+        modality = core.Qt.ApplicationModal if modal else core.Qt.NonModal
+        self.setWindowModality(modality)
+
     def show_message(self, text, title=""):
         "show a message in a box with a title"
         title = title or self.app_title
@@ -965,10 +980,10 @@ class MainWindow(qtw.QMainWindow):
     def determine_level(self, item):
         """determine the level of a node in the tree
         """
+        level = 0
         if item.parent() == self.root:
-            return 1
-        else:
-            return self.determine_level(item.parent()) + 1
+            level =  self.determine_level(item.parent())
+        return level + 1
 
     def checkselection(self):
         """controleer of er wel iets geselecteerd is (behalve de filenaam)
