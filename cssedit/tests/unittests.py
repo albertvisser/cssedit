@@ -8,14 +8,20 @@ import cssutils
 HERE = os.path.dirname(os.path.abspath(__file__))
 try:
     import editor.cssedit as cssedit
+    print('importing cssedit from HERE:', HERE)
 except ImportError:
-    sys.path.append(os.path.join(os.path.dirname(HERE), 'editor'))
-    import cssedit
-    import csseditor_qt as gui
+    here = os.path.join(os.path.dirname(HERE), 'editor')
+    sys.path.append(here)
+    # import cssedit
+    import cssedit.editor.cssedit as cssedit
+    print('importing cssedit from here:', here)
+    # import csseditor_qt as gui
+    import cssedit.editor.csseditor_qt as gui
 else:
     import editor.csseditor_qt as gui
 
-import expected_results as results
+# print(dir(cssedit))
+import tests.expected_results as results
 testfiles = (('compressed', os.path.join(HERE, "simplecss-compressed.css")),
              ('short', os.path.join(HERE, "simplecss-short.css")),
              ('medium', os.path.join(HERE, "simplecss-medium.css")),
@@ -130,12 +136,23 @@ class TestFunctions(unittest.TestCase):
 
     def test_log(self):
         ""
-        for logline in [" transition]",
-                        "WARNING	Property: Unknown Property name. [1:2511: flex-flow]",
-                        "ERROR	Unexpected token (NUMBER, 2, 1, 735)",
-                        "ERROR	MediaList: Invalid MediaQuery:  "
-                        "(-webkit-min-device-pixel-ratio:2)"]:
-            print(parse_log_line(logline))
+        for logline, result in zip(
+                [" transition]",
+                 "WARNING	Property: Unknown Property name. [1:2511: flex-flow]",
+                 "ERROR	Unexpected token (NUMBER, 2, 1, 735)",
+                 "ERROR	MediaList: Invalid MediaQuery:  "
+                 "(-webkit-min-device-pixel-ratio:2)"],
+                [None,
+                 cssedit.LogLine(severity='WARNING', subject='Property',
+                                 message='Unknown Property name.', line=1, pos=2511,
+                                 data='flex-flow'),
+                 cssedit.LogLine(severity='ERROR', subject='NUMBER',
+                                 message='Unexpected token (NUMBER, 2, 1, 735)', line=1, pos=735,
+                                 data=' 2'),
+                 cssedit.LogLine(severity='ERROR', subject='MediaList',
+                                 message='Invalid MediaQuery',
+                                 line=-1, pos=-1, data=' (-webkit-min-device-pixel-ratio:2)')]):
+            self.assertEqual(cssedit.parse_log_line(logline), result)
     ## for x in test.log:
         ## print(x.strip())
         ## y = parse_log_line(x)
@@ -222,7 +239,7 @@ class TestEditorCreate(TestEditor):
     """Various ways of creating an Editor class
     """
     def test_editor_badargs(self):
-        ""
+        "positional arguments only"
         # No arguments
         with self.assertRaises(ValueError):
             ed = cssedit.Editor()
@@ -240,7 +257,7 @@ class TestEditorCreate(TestEditor):
             ed = cssedit.Editor('snork', filename=testfiles[0][1])
 
     def test_editor_filename(self):
-        ""
+        "cases where at least the filename argument is given"
         # filename as positional arg
         with self.assertRaises(TypeError):
             ed = cssedit.Editor(testfiles[0][1])
@@ -262,28 +279,28 @@ class TestEditorCreate(TestEditor):
             ## self.assertEqual(ed.data.cssText, ''.join(result))
 
     def test_editor_tag(self):
-        ""
+        "cases where at least the tag argument is given"
         # treedata for empty tag
         with self.assertRaises(ValueError):
             ed = cssedit.Editor(tag='')
         # treedata for ok tag
         with self.assertRaises(ValueError):
             ed = cssedit.Editor(tag=self.tagname)
-        # treedata for empty tag and empty text
-        with self.assertRaises(ValueError):
-            ed = cssedit.Editor(tag="", text="")
-        # treedata for ok tag and empty text
-        with self.assertRaises(ValueError):
-            ed = cssedit.Editor(tag=self.tagname, text="")
+        # treedata for empty tag and empty text - is actually ok
+        # with self.assertRaises(ValueError):
+        #     ed = cssedit.Editor(tag="", text="")
+        # treedata for ok tag and empty text - this is also ok
+        # with self.assertRaises(ValueError):
+        #     ed = cssedit.Editor(tag=self.tagname, text="")
         # treedata for ok tag and nonsense text
-        ## with self.assertRaises(ValueError):
-            ## ed = cssedit.Editor(tag=self.tagname, text=self.bad_tagtext)
+        # with self.assertRaises(ValueError):
+        #     ed = cssedit.Editor(tag=self.tagname, text=self.bad_tagtext)
         # treedata for ok tag and ok text
         ed = cssedit.Editor(tag=self.tagname, text=self.good_tagtext)
         self.assertEqual(ed.data.cssText, results.data['editor_tag'])
 
     def test_editor_text(self):
-        ""
+        "cases where at least the text argument is given"
         # treedata for nonsense text
         # moet wel een fout uitkomen maar wanneer?
         ## ed = cssedit.Editor(text="snorckenbocken") # works like text only - raises ValueError
@@ -336,8 +353,8 @@ class TestEditorMethods(TestEditor):
         # +  '        "gargl"',
         # +  '    text-decoration',
         # +  '        none']
-        self.assertEqual(self.ed.treedata, results.data['editor_text2tree']['one'])
-        self.assertEqual(self.edm.treedata, results.data['editor_text2tree']['more'])
+        self.assertEqual(self.ed.textdata, results.data['editor_text2tree']['one'])
+        self.assertEqual(self.edm.textdata, results.data['editor_text2tree']['more'])
 
     def test_editor_treetotext(self):
         ""
@@ -391,8 +408,8 @@ class TestEditorReturnTag(TestEditor):
     def test_return_for_tag(self):
         ""
         self.ed.return_to_source()
-        # sequence of properties is different du to sorting
-        self.assertEqual(self.ed.cssdata, self.tagtext_sorted)
+        # sequence of properties is different due to sorting
+        self.assertEqual(self.ed.textdata, self.tagtext_sorted)
 
 
 class TestEditorReturnText(TestEditor):

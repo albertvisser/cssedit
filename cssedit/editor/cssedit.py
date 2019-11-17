@@ -263,7 +263,7 @@ class Editor:
         self.filename = self.tag = ""
         self.data = []
         newfile = False
-        text = None  # must be allowed to be empty (to create new inline style)
+        # text = None  # must be allowed to be empty (to create new inline style)
         try:
             if kwargs.pop('new'):
                 newfile = True

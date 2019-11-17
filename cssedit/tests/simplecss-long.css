@@ -1,5 +1,11 @@
 /* simple css in this case means one selector for one definition */
 
+/* empty selectors */
+p {
+}
+div { /* contains only a comment */
+}
+
 /* some simple elements */
 * {
 	display: inline;
