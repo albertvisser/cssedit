@@ -280,7 +280,7 @@ class Editor:
         try:
             text = kwargs.pop('text')
         except KeyError:
-            pass
+            text = ''  # pass
         if newfile:
             return
 
