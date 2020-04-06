@@ -12,7 +12,7 @@ Usage
 
 The standalone version can be started with the `start_editor.py` script in this directory. Optionally you can provide a filename as parameter.
 
-The embedded version is to be started from within an HTML editor, obviously; for that, import and call the `main` function from `cssedit_qt.py` in the `editor` subdirectory with either of the following arguments:
+The embedded version is meant to be started from within an HTML editor, obviously; for that, import and call the `main` function from `cssedit_qt.py` in the `editor` subdirectory with either of the following arguments:
 
 - filename = <filename>
 - tag = <css selector>, data = <value of the tag's `style` attribute>
@@ -32,5 +32,5 @@ Dependencies
 ============
 
 - Python
-- PyQt4
+- PyQt(5)
 - cssutils
