@@ -88,7 +88,7 @@ def read_rules(data):
 
 @contextlib.contextmanager
 def wait_cursor(self):
-    """change cursor bfore and after executing some function
+    """change cursor before and after executing some function
     """
     self.app.setOverrideCursor(gui.QCursor(core.Qt.WaitCursor))
     yield
@@ -154,10 +154,12 @@ def _setitemtext(item, text):   # not used
 
 
 def _getitemkids(item):   # not used
+    "return list of children for the current item"
     return [item.child(num) for num in range(item.childCount())]
 
 
 def _getitemparentpos(item):   # not used
+    "return parent of current item and sequential position under it"
     root = item.parent()
     if root:
         pos = root.indexOfChild(item)
@@ -782,6 +784,7 @@ class MainWindow(qtw.QMainWindow):
         """
         modality = core.Qt.ApplicationModal if modal else core.Qt.NonModal
         self.setWindowModality(modality)
+        self.show()
 
     def show_message(self, text, title=""):
         "show a message in a box with a title"
@@ -973,8 +976,16 @@ class MainWindow(qtw.QMainWindow):
         if self.parent:
             self.css.textdata = self.treetotext()
             self.css.texttodata()
-            self.css.return_to_source()
-            self.parent.styledata = self.css.data
+            self.css.return_to_source(savemode='compressed')
+            # if we've saved, the data is not bytes but a stylesheet. So we need to get the text
+            try:
+                self.parent.styledata = self.css.data.cssText
+            except AttributeError:
+                self.parent.styledata = self.css.data
+            self.parent.styledata = self.parent.styledata.decode()
+            # voor zolang als de output optie nog niet in te stellen is
+            self.parent.styledata = self.parent.styledata.replace('\n', '').replace(' ', '')
+            self.parent.cssfilename = self.project_file
         super().close()
 
     def determine_level(self, item):
