@@ -6,22 +6,13 @@ import unittest
 import cssutils
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-try:
-    import editor.cssedit as cssedit
-    print('importing cssedit from HERE:', HERE)
-except ImportError:
-    here = os.path.join(os.path.dirname(HERE), 'editor')
-    sys.path.append(here)
-    # import cssedit
-    import cssedit.editor.cssedit as cssedit
-    print('importing cssedit from here:', here)
-    # import csseditor_qt as gui
-    import cssedit.editor.csseditor_qt as gui
-else:
-    import editor.csseditor_qt as gui
+here = os.path.join(os.path.dirname(HERE), 'editor')
+sys.path.append(here)
+# import cssedit
+import cssedit.editor.cssedit as cssedit
+import cssedit.editor.csseditor_qt as gui
 
-# print(dir(cssedit))
-import tests.expected_results as results
+import cssedit.tests.expected_results as results
 testfiles = (('compressed', os.path.join(HERE, "simplecss-compressed.css")),
              ('short', os.path.join(HERE, "simplecss-short.css")),
              ('medium', os.path.join(HERE, "simplecss-medium.css")),
