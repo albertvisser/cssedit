@@ -1,8 +1,8 @@
-"""csseditor backend
+"""csseditor backenreturn data
 """
 import os
 import shutil
-## import pathlib - don't think this is suitable if cssutls only woks with Python 2
+## import pathlib - don't think this is suitable if cssutls only works with Python 2
 import collections
 import logging
 import cssutils
@@ -23,6 +23,12 @@ RTYPES = {
              table_type,
              lambda rule: {x.name: x.propertyValue.cssText
                            for x in rule.style.getProperties()})]),
+             # dit werkt niet als ik in een grid wil kunnen editen
+             # list_type,
+             # lambda rule: [(item.name, item.propertyValue.cssText)      # ofwel een style
+             #                if item in rule.style.getProperties() else  # ofwel een andere rule
+             #                (item.typeString, complete_ruledata(init_ruledata(item.type), item))
+             #               for item in rule.style.children()])]),
     cssutils.css.CSSRule.CHARSET_RULE: (
         'CHARSET_RULE', [
             ("name",
@@ -194,17 +200,37 @@ def save(data, filename, backup=True):
 
 
 def get_definition_from_file(file, line, pos):
-    """snip inline css definition from an HTML file
+    """snip inline css definition from an HTML file (or a definition from a css file)
     """
-    with open(file) as _in:
-        count = line
-        while count > 0:
-            data = _in.readline()
-            count -= 1
-    end = data.find('}', pos) + 1
-    start = data.rfind('}', 0, pos) + 1
-    text = data[start:end]
-    return text
+    import linecache
+    data = []
+    if line == -1:
+        return 'unknown - position in css file could not be determined'
+    lineno = line
+    while True:  # voorbij eof gaan is niet mogelijk omdat er altijd een afsluitende } moet zijn
+        line_read = linecache.getline(file, lineno)
+        # eventueel restant van de voorgaande definitie verwijderen
+        # als dat er is dan ook positie aanpassen en zorgen dat we niet gaan terug lezen
+        if '}' in line_read and line_read.index('}') < pos:
+            first_part, line_read = line_read.split('}', 1)
+            pos = pos - len(first_part)
+            line = 1
+        # alles dat volgt na de huidige definitie verwijderen
+        if '}' in line_read and (line_read.index('}') > pos or lineno > line):
+            data.append(line_read.split('}', 1)[0] + '}')
+            break
+        data.append(line_read)
+        lineno += 1
+    lineno = line - 1
+    while True and lineno > 0:
+        line_read = linecache.getline(file, lineno)
+        # restant van de voorgaande definitie verwijderen
+        if '}' in line_read and (line_read.index('}') < pos or lineno < line):
+            data.insert(0, line_read.rsplit('}', 1)[0])
+            break
+        data.insert(0, line_read)
+        lineno -= 1
+    return ''.join(data).strip()
 
 
 def init_ruledata(ruletype):
@@ -239,13 +265,22 @@ def parse_log_line(line):
     test = rest.split(": ", 1)
     if len(test) == 1:  # unexpected token
         message = rest
-        _, rest = message.split(" (", 1)
-        subject, data, line, pos = rest[:-1].split(',')
+        try:
+            subject, rest = message.split(" (", 1)
+        except ValueError:
+            subject, line, pos, data = '', -1, -1, ''
+        else:
+            message = ''
+            text, data, line, pos = rest[:-1].split(',')
+            subject += ' ' + text
     else:
         subject, rest = test
         test = rest.split(" [", 1)
         if len(test) == 1:
-            message, data = rest.split(": ")
+            try:
+                message, data = rest.split(": ")
+            except ValueError:
+                message = rest
             line = pos = "-1"
         else:
             message, rest = test
@@ -260,29 +295,29 @@ class Editor:
     def __init__(self, **kwargs):  # filename="", tag="", text=""):
         """get css from a source and turn it into a structure
         """
-        self.filename = self.tag = ""
         self.data = []
-        newfile = False
-        # text = None  # must be allowed to be empty (to create new inline style)
         try:
-            if kwargs.pop('new'):
-                newfile = True
+            if kwargs.pop('new'):  # newfile = bool(kwargs.pop('new'))
+                newfile = True  # newfile = kwargs.get('new', None) is not None
         except KeyError:
-            pass
+            newfile = False
         try:
             self.filename = kwargs.pop('filename')
         except KeyError:
-            pass
+            self.filename = ''  # self.filename = kwargs.get('filename', '')
         try:
             self.tag = kwargs.pop('tag')
         except KeyError:
-            pass
+            self.tag = ""  # self.rag = kwargs.get('tag', '')
         try:
-            text = kwargs.pop('text')
+            text = kwargs.pop('text')  # text =
         except KeyError:
-            text = ''  # pass
+            text = None      # must be allowed to be empty (to create new inline style)
+            # text = ''      # so empty string should be passed in explicitely
         if newfile:
             return
+        if kwargs:
+            raise ValueError('Wrong arguments')
 
         if self.filename:
             if any((self.tag, text)):
@@ -290,11 +325,7 @@ class Editor:
         else:
             if text is None:
                 raise ValueError("Not enough arguments")
-        if kwargs:
-            raise ValueError('Too many arguments')
 
-        if newfile:
-            return
         hlp = '' if not self.filename else '_' + os.path.basename(self.filename)
         logfile = '/tmp/cssedit{}.log'.format(hlp)
         hdlr = set_logger(logfile)
@@ -348,11 +379,12 @@ class Editor:
                 rule.style = style
             elif 'media' in ruledata:
                 rule = cssutils.css.CSSMediaRule()
-                medialist = cssutils.css.MediaList()
+                medialist = cssutils.stylesheets.MediaList()
                 for medium in ruledata['media']:
                     medialist.append(medium)
                 rule.mediaList = medialist
-                rule.styles = cssutils.css.RuleList()
+                # rule.styles = cssutils.css.RuleList()
+                rule.cssRules = cssutils.css.CSSRuleList()
                 for name, value in ruledata['rules']:
                     srule = cssutils.css.CSSStyleRule()
                     ssellist = cssutils.css.SelectorList()
@@ -363,7 +395,7 @@ class Editor:
                     for sprop, sdata in value['styles'].items():
                         sstyle[sprop] = sdata
                     srule.style = sstyle
-                rule.styles.append(srule)
+                rule.cssRules.append(srule)
 
             elif 'text' in ruledata:
                 if ruletype == cssutils.css.CSSComment().typeString:
@@ -392,29 +424,3 @@ class Editor:
             self.data = return_for_single_tag(self.data)
         else:
             self.data = self.data.cssText  # maybe need to stringify this?
-
-
-if __name__ == "__main__":
-    testdata = ["../tests/simplecss-long.css",
-                "../tests/common_pt1.css",
-                "../tests/common_pt4.css",
-                "../tests/extra_ruletypes.css",
-                "../../htmledit/ashe/test.css"]
-    testdata = [testdata[3]]
-    for item in testdata:
-        testname = os.path.basename(item)
-        test = Editor(filename=item)
-        ## with open("/tmp/{}_na_open".format(testname), "w") as f:
-            ## for item in list(test.data): print(item, file=f)
-        olddata = test.data
-        test.datatotext()
-        with open("/tmp/{}_na_datatotext".format(testname), "w") as f:
-            for item in test.textdata:
-                print(item, file=f)
-        ## test.texttodata()
-        ## print('nieuw = oud:', test.data == olddata)
-        ## with open("/tmp/{}_na_texttodata".format(testname), "w") as f:
-            ## for item in list(test.data): print(item, file=f)
-
-        ## text = get_definition_from_file("../tests/common.css", 1, 60)
-        ## print(text)
