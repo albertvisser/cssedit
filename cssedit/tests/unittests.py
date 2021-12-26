@@ -10,7 +10,7 @@ here = os.path.join(os.path.dirname(HERE), 'editor')
 sys.path.append(here)
 # import cssedit
 import cssedit.editor.cssedit as cssedit
-import cssedit.editor.csseditor_qt as gui
+# import cssedit.editor.csseditor_qt as gui  -- dit is de oude versie
 
 import cssedit.tests.expected_results as results
 testfiles = (('compressed', os.path.join(HERE, "simplecss-compressed.css")),
@@ -123,7 +123,7 @@ class TestFunctions(unittest.TestCase):
             # AssertionError: "<cssutils.css.CSSStyleSheet object encod[135 chars]ef0>" != '* { display: inline; } div { margin: 0 0[713 chars]h; }'
             # - <cssutils.css.CSSStyleSheet object encoding='utf-8' href='file:/home/albert/projects/cssedit/tests/simplecss-compressed.css' media=None title=None namespaces={} at 0x7f580d125ef0>
             # + * { display: inline; } div { margin: 0 0 0 0; padding: 0 0 0 0; } p { text-align: center; vertical-align: middle } img { border: 1px solid } .red { color: red; font-weight: bold } #page-title { font-size: 55 } p::first-child { text-decoration: underline; } li:nth-child(3) { background-color: green } a:hover { background-color: blue } p.oms:before { content: "Hello, it's me" } div div { display: block; } ul>li>ul>li { list-style: square; } ul + p { font-style: italic } p ~ p { font-variant: small-caps; } a[title] { color: yellowish; } td[valign="top"] { font-weight: bold; } a[href*="ads"] { display: none; } a[href^="http"]{ background: url(path/to/external/icon.png) no-repeat; padding-left: 10px; } a[href$="jpg"] { text-decoration: line-through; }
-            self.assertEqual(cssedit.load(name).cssText, result) # str() werkt niet
+            self.assertEqual(cssedit.load(name).cssText, result)  # str() werkt niet
 
     def test_log(self):
         ""
@@ -231,9 +231,9 @@ class TestEditorCreate(TestEditor):
     """
     def test_editor_badargs(self):
         "positional arguments only"
-        # No arguments
-        with self.assertRaises(ValueError):
-            ed = cssedit.Editor()
+        # No arguments  -- dit gaat niet meer fout vanwege genruik **kwargs
+        # with self.assertRaises(ValueError):
+        #     ed = cssedit.Editor()
         # Positional arg only: 1
         with self.assertRaises(TypeError):
             ed = cssedit.Editor('snork')
@@ -245,7 +245,7 @@ class TestEditorCreate(TestEditor):
             ed = cssedit.Editor('snork', 'bork', 'hork')
         # Positional arg with correct one
         with self.assertRaises(TypeError):
-            ed = cssedit.Editor('snork', filename=testfiles[0][1])
+            cssedit.Editor('snork', filename=testfiles[0][1])
 
     def test_editor_filename(self):
         "cases where at least the filename argument is given"
@@ -255,9 +255,10 @@ class TestEditorCreate(TestEditor):
         # treedata for file - empty filename
         with self.assertRaises(ValueError):
             ed = cssedit.Editor(filename="")
+        # self.assertEqual(ed.data.cssText, b'')
         # treedata for file - nonexistant
         with self.assertRaises(FileNotFoundError):
-            ed = cssedit.Editor(filename="nonexistant")
+            cssedit.Editor(filename="nonexistant")
         # treedata for file - valid file
         for method, name in testfiles:
             if method == 'compressed':
@@ -267,25 +268,31 @@ class TestEditorCreate(TestEditor):
             ed = cssedit.Editor(filename=name)
             self.assertIsInstance(ed.data, cssutils.css.CSSStyleSheet)
             # TODO: test op inhoud verbeteren
-            ## self.assertEqual(ed.data.cssText, ''.join(result))
+            print(ed.data.cssText)
+            print(result)
+            self.assertEqual(ed.data.cssText, ''.join(result))
 
     def test_editor_tag(self):
         "cases where at least the tag argument is given"
-        # treedata for empty tag
-        with self.assertRaises(ValueError):
-            ed = cssedit.Editor(tag='')
-        # treedata for ok tag
-        with self.assertRaises(ValueError):
-            ed = cssedit.Editor(tag=self.tagname)
+        # treedata for empty tag - ok because empty text is allowed
+        # with self.assertRaises(ValueError):
+        ed = cssedit.Editor(tag='')
+        self.assertEqual(ed.data.cssText, b'')
+        # treedata for ok tag - ok because empty text is allowed
+        # with self.assertRaises(ValueError):
+        ed = cssedit.Editor(tag=self.tagname)
+        self.assertEqual(ed.data.cssText, b'')
         # treedata for empty tag and empty text - is actually ok
         # with self.assertRaises(ValueError):
-        #     ed = cssedit.Editor(tag="", text="")
+        ed = cssedit.Editor(tag="", text="")
+        self.assertEqual(ed.data.cssText, b'')
         # treedata for ok tag and empty text - this is also ok
         # with self.assertRaises(ValueError):
-        #     ed = cssedit.Editor(tag=self.tagname, text="")
+        ed = cssedit.Editor(tag=self.tagname, text="")
         # treedata for ok tag and nonsense text
         # with self.assertRaises(ValueError):
-        #     ed = cssedit.Editor(tag=self.tagname, text=self.bad_tagtext)
+        ed = cssedit.Editor(tag=self.tagname, text=self.bad_tagtext)  # No Error?
+        self.assertEqual(ed.data.cssText, b'')
         # treedata for ok tag and ok text
         ed = cssedit.Editor(tag=self.tagname, text=self.good_tagtext)
         self.assertEqual(ed.data.cssText, results.data['editor_tag'])
