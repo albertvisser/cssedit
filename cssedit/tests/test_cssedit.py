@@ -1,4 +1,4 @@
-"""Unit tests for CSSEDitor
+"""Unit tests for CSSEDitor - herschreven voor gebruik pytest i.p.v. unittest
 """
 import os
 import sys
@@ -12,25 +12,25 @@ sys.path.append(here)
 # import cssedit
 import cssedit.editor.cssedit as cssedit
 
-import cssedit.tests.expected_results as results
-testfiles = (('compressed', os.path.join(HERE, "simplecss-compressed.css")),
-             ('short', os.path.join(HERE, "simplecss-short.css")),
-             ('medium', os.path.join(HERE, "simplecss-medium.css")),
-             ('long', os.path.join(HERE, "simplecss-long.css")),)
-formatted_css = """\
-/* this is a stupid comment */
-div p>span["red"]~a:hover {
-    border: 5px solid red;
-    text-decoration: none;
-    content: "gargl";
-}
-p {
-    font-family: Arial sans-serif
-}
-div {
-    display: inline;
-    float: left
-}"""
+# import cssedit.tests.expected_results as results
+# testfiles = (('compressed', os.path.join(HERE, "simplecss-compressed.css")),
+#              ('short', os.path.join(HERE, "simplecss-short.css")),
+#              ('medium', os.path.join(HERE, "simplecss-medium.css")),
+#              ('long', os.path.join(HERE, "simplecss-long.css")),)
+# formatted_css = """\
+# /* this is a stupid comment */
+# div p>span["red"]~a:hover {
+#     border: 5px solid red;
+#     text-decoration: none;
+#     content: "gargl";
+# }
+# p {
+#     font-family: Arial sans-serif
+# }
+# div {
+#     display: inline;
+#     float: left
+# }"""
 
 class Logger:
     def __init__(self, *args):
@@ -75,7 +75,6 @@ def _test_setlogger(monkeypatch, capsys):  # lijkt niet jofel te gaan vanwege ge
     monkeypatch.setattr(cssedit.logging, 'Formatter', LogFormatter)
     monkeypatch.setattr(cssedit.logging, 'getLogger', mock_getlogger)
     monkeypatch.setattr(cssedit.cssutils.log, 'setLog', mock_setlog)
-    import pdb; pdb.set_trace()
     assert str(cssedit.set_logger('logfile')) == 'mock handler'
     assert capsys.readouterr().out == ('')
 
@@ -193,36 +192,62 @@ def test_complete_ruledata(monkeypatch, capsys):
 def test_parse_log_line(monkeypatch, capsys):
     assert not cssedit.parse_log_line('wrong        Line with no tab in it')
     text = 'right\tline without opening parentheses is ok'
-    assert cssedit.parse_log_line(text) == cssedit.LogLine('right',
-            '', 'line without opening parentheses is ok', -1, -1, '')
+    assert cssedit.parse_log_line(text) == cssedit.LogLine('right', '', 'line without opening'
+                                                           ' parentheses is ok', -1, -1, '')
     text = 'right\tline (ok, correctly formatted, 1, 4)'
-    assert cssedit.parse_log_line(text) == cssedit.LogLine('right',
-            'line ok', '', 1, 4, ' correctly formatted')
+    assert cssedit.parse_log_line(text) == cssedit.LogLine('right', 'line ok', '', 1, 4,
+                                                           ' correctly formatted')
     text = 'xxx\tsubject: message: data'
     assert cssedit.parse_log_line(text) == cssedit.LogLine('xxx', 'subject', 'message', -1, -1,
                                                            'data')
     text = 'yyy\tzzz: test [2:3:result   ]'
-    assert cssedit.parse_log_line(text)== cssedit.LogLine('yyy', 'zzz', 'test', 2, 3, 'result')
+    assert cssedit.parse_log_line(text) == cssedit.LogLine('yyy', 'zzz', 'test', 2, 3, 'result')
+
 
 class MockStyleSheet:
     def __init__(self, *args):
         print('called stylesheet.__init__()')
+        self.cssText = 'text from stylesheet'
     def add(self, *args):
         print('called stylesheet.add()')
-    def cssText(self):
-        return 'text from stylesheet'
 
-class MockStyleDeclaration:
+
+class MockStyleDeclaration(dict):
     def __init__(self, *args, **kwargs):
         print('called styledeclaration.__init__()')
-    def cssText(self):
-        return 'text from style declaration'
+        self.cssText = 'text from style declaration'
 
-class MockStyleRule:
+
+class MockStyleRule(types.SimpleNamespace):
     def __init__(self, *args, **kwargs):
         print('called stylerule.__init__()')
-    def cssText(self):
-        return 'text from style rule'
+        self.cssText = 'text from style rule'
+
+
+class MockSelectorList(list):
+    def __init__(self, *args, **kwargs):
+        print('called selectorlist.__init__()')
+
+
+class MockMediaRule(types.SimpleNamespace):
+    def __init__(self, *args, **kwargs):
+        print('called mediarule.__init__()')
+
+
+class MockMediaList(list):
+    def __init__(self, *args, **kwargs):
+        print('called medialist.__init__()')
+
+
+class MockRuleList(list):
+    def __init__(self, *args, **kwargs):
+        print('called rulelist.__init__()')
+
+
+class MockComment(str):
+    def __init__(self, **kwargs):
+        print('called comment.__init__(`{}`)'.format(kwargs['cssText']))
+
 
 class TestEditor:
     def test_init(self, monkeypatch, capsys):
@@ -241,17 +266,21 @@ class TestEditor:
             return MockStyleSheet()
         with pytest.raises(ValueError):
             cssedit.Editor()  # Not enough arguments
+        with pytest.raises(TypeError):
+            testobj = cssedit.Editor('snork')  # positional argument(s) only
         testobj = cssedit.Editor(new=True)
         assert testobj.data == []
         assert not hasattr(testobj, 'log')
         with pytest.raises(ValueError):
             cssedit.Editor(fake=True)  # Wrong arguments
         with pytest.raises(ValueError):
-            cssedit.Editor(filename='text.css', tag='style') # Ambiguous arguments
+            cssedit.Editor(filename='text.css', tag='style')  # Ambiguous arguments
         with pytest.raises(ValueError):
-            cssedit.Editor(filename='text.css', text='style') # Ambiguous arguments
+            cssedit.Editor(filename='text.css', text='style')  # Ambiguous arguments
         with pytest.raises(ValueError):
-            cssedit.Editor(tag='style') # Not enough arguments
+            cssedit.Editor(tag='style')  # Not enough arguments
+        with pytest.raises(ValueError):
+            cssedit.Editor(filename='')  # empty filename
         monkeypatch.setattr(cssedit, 'set_logger', mock_set_logger)
         monkeypatch.setattr(cssedit, 'load', mock_load)
         testobj = cssedit.Editor(filename='text.css')
@@ -274,3 +303,115 @@ class TestEditor:
         assert capsys.readouterr().out == ('called cssedit.parse()\n'
                                            'called stylesheet.__init__()\n')
         assert type(testobj.data) == MockStyleSheet
+
+    def test_datatotext(self, monkeypatch, capsys):
+        def mock_init(self, *args):
+            print('called editor.__init__()')
+            self.data = []
+        def mock_init_ruledata(*args):
+            print('called init_ruledata()')
+            return {}
+        def mock_complete_ruledata(*args):
+            print('called complete_ruledata()')
+            return args[0]
+        monkeypatch.setattr(cssedit.Editor, '__init__', mock_init)
+        monkeypatch.setattr(cssedit, 'init_ruledata', mock_init_ruledata)
+        monkeypatch.setattr(cssedit, 'complete_ruledata', mock_complete_ruledata)
+        testobj = cssedit.Editor()
+        testobj.data = []
+        testobj.datatotext()
+        assert testobj.textdata == []
+        assert capsys.readouterr().out == ('called editor.__init__()\n')
+        testobj = cssedit.Editor()
+        testobj.data = (types.SimpleNamespace(type='1', typeString='type 1'),)
+        testobj.datatotext()
+        assert capsys.readouterr().out == ('called editor.__init__()\n'
+                                           'called init_ruledata()\n'
+                                           'called complete_ruledata()\n')
+        assert testobj.textdata == [('type 1', {'seqnum': 0})]
+
+    def test_texttodata(self, monkeypatch, capsys):
+        def mock_init(self, *args):
+            print('called editor.__init__()')
+            self.data = []
+        monkeypatch.setattr(cssedit.Editor, '__init__', mock_init)
+        monkeypatch.setattr(cssedit.cssutils.css, 'CSSStyleSheet', MockStyleSheet)
+        monkeypatch.setattr(cssedit.cssutils.css, 'CSSStyleRule', MockStyleRule)
+        monkeypatch.setattr(cssedit.cssutils.css, 'SelectorList', MockSelectorList)
+        monkeypatch.setattr(cssedit.cssutils.css, 'CSSStyleDeclaration', MockStyleDeclaration)
+        monkeypatch.setattr(cssedit.cssutils.css, 'CSSMediaRule', MockMediaRule)
+        monkeypatch.setattr(cssedit.cssutils.css, 'CSSRuleList', MockRuleList)
+        monkeypatch.setattr(cssedit.cssutils.stylesheets, 'MediaList', MockMediaList)
+        testobj = cssedit.Editor()
+        testobj.textdata = []
+        testobj.texttodata()
+        assert type(testobj.data) == cssedit.cssutils.css.CSSStyleSheet
+        assert capsys.readouterr().out == ('called editor.__init__()\n'
+                                           'called stylesheet.__init__()\n')
+        testobj = cssedit.Editor()
+        testobj.textdata = [('stylerule', {'selectors': ['x'], 'styles': {'xx': 'yy'}}),
+                            ('mediarule', {'media': ['y'],
+                                           'rules': [('stylerule', {'selectors': ['x'],
+                                                                    'styles': {'xx': 'yy'}})]}),
+                            (cssedit.cssutils.css.CSSComment().typeString, {'text': 'z'}),
+                            ('textrule_2', {'text': '/* z */'})]
+        testobj.texttodata()
+        assert type(testobj.data) == cssedit.cssutils.css.CSSStyleSheet
+        assert capsys.readouterr().out == ('called editor.__init__()\n'
+                                           'called stylesheet.__init__()\n'
+                                           'called stylerule.__init__()\n'
+                                           'called selectorlist.__init__()\n'
+                                           'called styledeclaration.__init__()\n'
+                                           'called stylesheet.add()\n'
+                                           'called mediarule.__init__()\n'
+                                           'called medialist.__init__()\n'
+                                           'called rulelist.__init__()\n'
+                                           'called stylerule.__init__()\n'
+                                           'called selectorlist.__init__()\n'
+                                           'called styledeclaration.__init__()\n'
+                                           'called stylesheet.add()\n'
+                                           'called stylesheet.add()\n'
+                                           'called stylesheet.add()\n')
+
+    def test_return_to_source(self, monkeypatch, capsys):
+        def mock_init(self, *args):
+            print('called editor.__init__()')
+            self.data = []
+        def mock_set_format(*args):
+            print('called cssedit.set_format(`{}`)'.format(args[0]))
+        def mock_save(*args):
+            print('called cssedit.save()')
+        def mock_return(*args):
+            return 'returned by cssedit.return_for_single_tag()'
+        monkeypatch.setattr(cssedit.Editor, '__init__', mock_init)
+        monkeypatch.setattr(cssedit, 'set_format', mock_set_format)
+        monkeypatch.setattr(cssedit, 'save', mock_save)
+        monkeypatch.setattr(cssedit, 'return_for_single_tag', mock_return)
+        testobj = cssedit.Editor()
+        with pytest.raises(AttributeError):
+            testobj.return_to_source(savemode='wrong')
+        assert capsys.readouterr().out == ('called editor.__init__()\n')
+        testobj = cssedit.Editor()
+        testobj.filename = 'x'
+        testobj.data = MockStyleSheet()
+        testobj.return_to_source()
+        assert capsys.readouterr().out == ('called editor.__init__()\n'
+                                           'called stylesheet.__init__()\n'
+                                           'called cssedit.set_format(`compressed`)\n'
+                                           'called cssedit.save()\n')
+        testobj = cssedit.Editor()
+        testobj.filename, testobj.tag = '', 'y'
+        testobj.data = MockStyleSheet()
+        testobj.return_to_source()
+        assert testobj.data == 'returned by cssedit.return_for_single_tag()'
+        assert capsys.readouterr().out == ('called editor.__init__()\n'
+                                           'called stylesheet.__init__()\n'
+                                           'called cssedit.set_format(`compressed`)\n')
+        testobj = cssedit.Editor()
+        testobj.filename = testobj.tag = ''
+        testobj.data = MockStyleSheet()
+        testobj.return_to_source()
+        assert testobj.data == 'text from stylesheet'
+        assert capsys.readouterr().out == ('called editor.__init__()\n'
+                                           'called stylesheet.__init__()\n'
+                                           'called cssedit.set_format(`compressed`)\n')
