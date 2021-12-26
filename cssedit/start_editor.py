@@ -2,14 +2,15 @@
 """CSSEditor - Start GUI
 """
 import sys
-## from editor.csseditor_qt4 import main
-from editor.csseditor_qt import main
+from editor.main import Editor
+ed = Editor()
 if len(sys.argv) == 2:
-    main(filename=sys.argv[1])
+    ed.open(filename=sys.argv[1])
 elif len(sys.argv) == 3:
     if sys.argv[1] == "":
-        main(text=sys.argv[2])
+        ed.open(text=sys.argv[2])
     else:
-        main(tag=sys.argv[1], text=sys.argv[2])
-else:
-    main()
+        ed.open(tag=sys.argv[1], text=sys.argv[2])
+# else:
+#     ed.openfile()  # open()
+ed.show_gui()
