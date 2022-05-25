@@ -4,13 +4,14 @@ import os
 import sys
 import contextlib
 
-# try:
-import cssedit.editor.cssedit as ed  # helper class for css specific stuff
-import cssedit.editor.gui as gui     # helper class for visualisation (a.k.a. GUI)
-# except ImportError as e:
+try:
+    import cssedit.editor.cssedit as ed  # helper class for css specific stuff
+    import cssedit.editor.gui as gui     # helper class for visualisation (a.k.a. GUI)
+except ImportError as e:
 #     try:
-#         import editor.cssedit as ed  # helper class for css specific stuff
-#         import editor.gui as gui     # helper class for visualisation (a.k.a. GUI)
+        # deze imports werken als ik cssedit standalone opstart
+        import editor.cssedit as ed  # helper class for css specific stuff
+        import editor.gui as gui     # helper class for visualisation (a.k.a. GUI)
 #     except ImportError as e:
 #         import cssedit as ed   # helper class for css specific stuff
 #         import gui             # helper class for visualisation (a.k.a. GUI)
