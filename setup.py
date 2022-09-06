@@ -6,15 +6,12 @@ https://github.com/pypa/sampleproject/setup.py
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
-# To use a consistent encoding
-from codecs import open
-from os import path
+import pathlib
 
-here = path.abspath(path.dirname(__file__))
+here = pathlib.Path(__file__).parent.resolve()
 
 # Get the long description from the README file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
+long_description = (here / "README.rst").read_text(encoding='utf-8')
 
 setup(
     name="cssedit",
@@ -22,11 +19,10 @@ setup(
     description="A simple csseditor",
     long_description=long_description,
 
-    url='https://bitbucket.org/avisser/cssedit',
+    url='https://github.com/albertvisser/cssedit',
     author='Albert Visser',
     author_email='albert.visser@gmail.com',
 
-    license="Don't know yet",
     classifiers=[],  # this is for PyPI, let's leave it alone for now
     keywords="css editing",
 
