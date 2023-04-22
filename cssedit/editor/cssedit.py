@@ -1,4 +1,4 @@
-"""csseditor backenreturn data
+"""csseditor backend
 """
 import os
 import shutil
@@ -296,24 +296,28 @@ class Editor:
         """get css from a source and turn it into a structure
         """
         self.data = []
-        try:
-            if kwargs.pop('new'):  # newfile = bool(kwargs.pop('new'))
-                newfile = True  # newfile = kwargs.get('new', None) is not None
-        except KeyError:
-            newfile = False
-        try:
-            self.filename = kwargs.pop('filename')
-        except KeyError:
-            self.filename = ''  # self.filename = kwargs.get('filename', '')
-        try:
-            self.tag = kwargs.pop('tag')
-        except KeyError:
-            self.tag = ""  # self.rag = kwargs.get('tag', '')
-        try:
-            text = kwargs.pop('text')  # text =
-        except KeyError:
-            text = None      # must be allowed to be empty (to create new inline style)
-            # text = ''      # so empty string should be passed in explicitely
+        # try:
+        #     if kwargs.pop('new'):  # newfile = bool(kwargs.pop('new'))
+        #         newfile = True  # newfile = kwargs.get('new', None) is not None
+        # except KeyError:
+        #     newfile = False
+        newfile = kwargs.pop('new') if 'new' in kwargs else False
+        # try:
+        #     self.filename = kwargs.pop('filename')
+        # except KeyError:
+        #     self.filename = ''  # self.filename = kwargs.get('filename', '')
+        self.filename = kwargs.pop('filename') if 'filename' in kwargs else ''
+        # try:
+        #     self.tag = kwargs.pop('tag')
+        # except KeyError:
+        #     self.tag = ""  # self.rag = kwargs.get('tag', '')
+        self.tag = kwargs.pop('tag') if 'tag' in kwargs else ''
+        # try:
+        #     text = kwargs.pop('text')  # text =
+        # except KeyError:
+        #     text = None      # must be allowed to be empty (to create new inline style)
+        #     # text = ''      # so empty string should be passed in explicitely
+        text = kwargs.pop('text') if 'text' in kwargs else None
         if newfile:
             return
         if kwargs:
@@ -342,6 +346,7 @@ class Editor:
             if not text:
                 self.data = None
             # TODO: raise error when this doesn't parse into a CSSStylesheet
+            # maar zie hierboven: text mag lege string zijn
 
         hdlr.close()
         self.log = ['unable to get log info']
