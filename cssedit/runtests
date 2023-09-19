@@ -1,6 +1,0 @@
-#! /bin/sh
-
-# cd tests
-# python3 -m unittest -v tests.unittests -f
-coverage run --include=editor/cssedit.py -m unittest -v tests.unittests -f
-coverage report -m
