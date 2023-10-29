@@ -5,7 +5,9 @@ import shutil
 ## import pathlib - don't think this is suitable if cssutls only works with Python 2
 import collections
 import logging
-import cssutils
+# import cssutils
+import css_parser as cssutils  # komt met distro mee, geen aparte install meer nodig
+# import tinycss2 as cssutils  # komt ook met distro mee, maar is geen drop-in replacement
 
 format_types = ("long", "medium", "short", "compressed")
 comment_tag = '/**/'
