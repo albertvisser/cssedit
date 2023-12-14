@@ -1,30 +1,30 @@
 """CSS Editor application - main, gui-independent code
 """
 import os
-import sys
+# import sys
 import contextlib
 
 try:
     import cssedit.editor.cssedit as ed  # helper class for css specific stuff
-    import cssedit.editor.gui as gui     # helper class for visualisation (a.k.a. GUI)
-except ImportError as e:
+    from cssedit.editor import gui       # helper class for visualisation (a.k.a. GUI)
+except ImportError:  #  as e:
 #     try:
         # deze imports werken als ik cssedit standalone opstart
         import editor.cssedit as ed  # helper class for css specific stuff
-        import editor.gui as gui     # helper class for visualisation (a.k.a. GUI)
-#     except ImportError as e:
+        from editor import gui       # helper class for visualisation (a.k.a. GUI)
+#     except ImportError  # as e:
 #         import cssedit as ed   # helper class for css specific stuff
 #         import gui             # helper class for visualisation (a.k.a. GUI)
 
 
 HERE = os.path.dirname(__file__)
 RTYPES, CTYPES = [], set()
-for ruletype, components in ed.RTYPES.items():
+for components in ed.RTYPES.values():
     RTYPES.append(components[0])
     CTYPES.update([x for x in components[1]])
 
 
-class Editor():
+class Editor:
     """Hoofdscherm van de applicatie
     """
     # TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan)
@@ -112,7 +112,7 @@ class Editor():
             filename = self.gui.show_save_dialog(start, filter)
         else:
             filename = self.gui.show_open_dialog(start, filter)
-        ok = True if filename else False
+        ok = bool(filename)
         return ok, filename
 
     def newfile(self):
@@ -162,17 +162,17 @@ class Editor():
         if warn + err + misc > 0:
             mld += ' with '
             if warn > 0:
-                mld += '{} warnings'.format(warn)
+                mld += f'{warn} warnings'
                 if err > 0 and misc > 0:
                     mld += ', '
                 elif err > 0 or misc > 0:
                     mld += ' and '
             if err > 0:
-                mld += '{} errors'.format(err)
+                mld += f'{err} errors'
                 if misc > 0:
                     mld += ' and '
             if misc > 0:
-                mld += '{} misc. messages'.format(misc)
+                mld += f'{misc} misc. messages'
         return mld
 
     def openfile(self):
@@ -285,7 +285,6 @@ class Editor():
             except AttributeError:
                 print("'sometimes it's not bytes but already a string")
                 # dat is blijkbaar als ik een inline style aan een element toevoeg
-                pass
             # voor zolang als de output optie nog niet in te stellen is
             self.parent.styledata = self.parent.styledata.replace('\n', '').replace(' ', '')
             self.parent.cssfilename = self.project_file
@@ -338,7 +337,7 @@ class Editor():
         if test not in RTYPES:
             ok = False
         if not ok:
-            self.gui.show_message("Can't do this; {} is not a rule item".format(test))
+            self.gui.show_message(f"Can't do this; {test} is not a rule item")
         return ok
 
     def mark_dirty(self, state):
@@ -405,7 +404,7 @@ class Editor():
             if ruletype is None:
                 return
             if after is None:
-                parent = parent
+                # parent = parent
                 pos = -1
             else:
                 pos = self.gui.tree.getitemparentpos(self.item)[1]
@@ -413,7 +412,7 @@ class Editor():
                     pos += 1
             newitem = self.gui.tree.add_to_parent(typename, parent, pos)
             for name in sorted([x for x in ed.init_ruledata(ruletype)]):
-                subitem = self.gui.tree.add_to_parent(name, newitem)
+                self.gui.tree.add_to_parent(name, newitem)
         self.mark_dirty(True)
         self.gui.tree.expand_item(newitem)
         self.gui.tree.setcurrent(newitem)
@@ -426,7 +425,7 @@ class Editor():
         modified = False
         data = self.gui.tree.get_itemtext(self.item)
         ruletype = self.gui.tree.get_itemtext(self.gui.tree.getitemparentpos(self.item)[0]).lower()
-        title = "{} - edit '{}' node for {}".format(self.app_title, data, ruletype)
+        title = f"{self.app_title} - edit '{data}' node for {ruletype}"
         if data in ed.RTYPES:
             msg = 'Edit rule via subordinate item'
         elif data in [x for x, y, z in CTYPES if y == ed.text_type]:
@@ -448,10 +447,7 @@ class Editor():
         """
         textnode = self.gui.tree.get_subitems(self.item)[0]
         self.data = ()
-        if textnode:
-            data = self.gui.tree.get_itemtext(textnode)
-        else:
-            data = ''
+        data = self.gui.tree.get_itemtext(textnode) if textnode else ''
         modified = False
         edt, newdata = self.gui.show_dialog(gui.TextDialog, title, data)
         if edt and newdata != data:
@@ -487,7 +483,7 @@ class Editor():
                         if ruletype is None:
                             continue
                         for name in sorted([x for x in ed.init_ruledata(ruletype)]):
-                            subnode = self.gui.tree.add_to_parent(name, newnode)
+                            self.gui.tree.add_to_parent(name, newnode)
 
             test = len(newitemlist)
             if test < maxlen:
@@ -519,7 +515,7 @@ class Editor():
                 else:
                     modified = True
                     newnode = self.gui.tree.add_to_parent(item[0], self.item)
-                    newsubnode = self.gui.tree.add_to_parent(item[1], newnode)
+                    self.gui.tree.add_to_parent(item[1], newnode)
             test = len(newitemlist)
             if test < maxlen:
                 modified = True
@@ -592,7 +588,7 @@ class Editor():
         if not self.is_rule_parent(parent):
             return
         if under:
-            _paste(self.cut_item, parent)
+            self._paste(self.cut_item, parent)
         else:
             # indx = parent.indexOfChild(self.item)
             _, indx = self.gui.tree.getitemparentpos(self.item)
@@ -602,8 +598,12 @@ class Editor():
             ## else:
                 ## ## indx -= 1
                 ## text = 'before'
-            _paste(self.cut_item, parent, indx)
+            self._paste(self.cut_item, parent, indx)
         self.mark_dirty(True)
+
+    def _paste(self, item, parent, indx=0):
+        "TODO moet dit een variant van add_rule worden?"
+        raise NotImplementedError
 
     def expand_item(self):
         """callback for menu option
@@ -664,14 +664,13 @@ class Editor():
     # temporary methods
     def no_op(self):
         "placeholder for menu option"
-        pass
 
     def show_level(self):
         """test method for determine_level"""
         if not self.checkselection():
             return
         level = self.determine_level(self.item)
-        self.gui.show_message(self, self.app_title, 'This element is at level {}'.format(level))
+        self.gui.show_message(self, self.app_title, f'This element is at level {level}')
 
     def add_subitems(self, parent, item):
         """recursively add items to/under a parent
@@ -679,14 +678,14 @@ class Editor():
         for child in self.gui.tree.get_subitems(item):
             subitem = self.gui.tree.new_treeitem(self.gui.get_itemtext(child))
             self.gui.tree.add_subitem(parent, subitem)
-            add_subitems(subitem, child)
+            self.add_subitems(subitem, child)
 
     def paste_item(self, item, parent, ix=-1):
         """copy item to/under a new parent
         """
         new = self.gui.tree.new_treeitem(self.gui.tree.get_itemtext(item))
         self.gui.tree.add_subitem(parent, new, ix)
-        add_subitems(new, item)
+        self.add_subitems(new, item)
 
     def read_rules(self, data):
         """recursive routine to read rules
@@ -709,10 +708,8 @@ class Editor():
                         self.gui.tree.add_subitem(ruletopitem, rulekeyitem)
                     continue
                 for it in value:  # sorted(value): waarom sorteren?
-                    try:
+                    with contextlib.suppress(IndexError):
                         test = it[0]
-                    except IndexError:
-                        pass
                     if test in RTYPES:  # kijk of hier een onderliggende rule binnenkomt
                         data = []
                         data.append(it)
@@ -727,6 +724,7 @@ class Editor():
                         self.gui.tree.add_subitem(rulekeyitem, rulevalueitem)
                     else:
                         try:
+                        # with contextlib.suppress(TypeError):
                             rulevalueitem = self.gui.tree.new_treeitem(str(value[it]))
                             self.gui.tree.add_subitem(rulekeyitem, rulevalueitem)
                         except TypeError:

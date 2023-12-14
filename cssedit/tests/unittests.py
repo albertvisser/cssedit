@@ -2,6 +2,7 @@
 """
 import os
 import sys
+import contextlib
 import unittest
 import cssutils
 
@@ -9,7 +10,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 here = os.path.join(os.path.dirname(HERE), 'editor')
 sys.path.append(here)
 # import cssedit
-import cssedit.editor.cssedit as cssedit
+from cssedit.editor import cssedit
 # import cssedit.editor.csseditor_qt as gui  -- dit is de oude versie
 
 import cssedit.tests.expected_results as results
@@ -165,14 +166,10 @@ class TestSaveFunction(unittest.TestCase):
 
     def _delete_files(self):
         ""
-        try:
+        with contextlib.suppress(FileNotFoundError):
             os.remove(self.fname)
-        except FileNotFoundError:
-            pass
-        try:
+        with contextlib.suppress(FileNotFoundError):
             os.remove(self.backup)
-        except FileNotFoundError:
-            pass
 
     def test_save_simple(self):
         ""
@@ -236,13 +233,13 @@ class TestEditorCreate(TestEditor):
         #     ed = cssedit.Editor()
         # Positional arg only: 1
         with self.assertRaises(TypeError):
-            ed = cssedit.Editor('snork')
+            cssedit.Editor('snork')
         # Positional arg only: 2
         with self.assertRaises(TypeError):
-            ed = cssedit.Editor('snork', 'bork')
+            cssedit.Editor('snork', 'bork')
         # Positional arg only: 3
         with self.assertRaises(TypeError):
-            ed = cssedit.Editor('snork', 'bork', 'hork')
+            cssedit.Editor('snork', 'bork', 'hork')
         # Positional arg with correct one
         with self.assertRaises(TypeError):
             cssedit.Editor('snork', filename=testfiles[0][1])

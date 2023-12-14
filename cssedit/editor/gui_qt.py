@@ -5,7 +5,8 @@ import os
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as gui
 import PyQt5.QtCore as core
-from .cssedit import parse_log_line, get_definition_from_file
+from .cssedit import RTYPES, parse_log_line, get_definition_from_file
+HERE = os.path.dirname(__file__)
 
 
 class MainGui(qtw.QMainWindow):
@@ -14,7 +15,7 @@ class MainGui(qtw.QMainWindow):
     def __init__(self, master, app, title='', pos=(0, 0), size=(800, 500)):
         self.master = master
         if not app:
-            selfcontained = True
+            # selfcontained = True
             self.app = qtw.QApplication(sys.argv)
         else:
             self.app = app
@@ -50,8 +51,7 @@ class MainGui(qtw.QMainWindow):
                         pass
                     continue
                 if icon:
-                    action = qtw.QAction(gui.QIcon(os.path.join(HERE, icon)), label,
-                                         self)
+                    action = qtw.QAction(gui.QIcon(os.path.join(HERE, icon)), label, self)
                     ## if not toolbar_added:
                         ## toolbar = self.addToolBar(item)
                         ## toolbar.setIconSize(core.QSize(16, 16))
@@ -327,10 +327,7 @@ class TreePanel(qtw.QTreeWidget):
     def getitemparentpos(self, item):
         "return parent of current item and sequential position under it"
         root = item.parent()
-        if root:
-            pos = root.indexOfChild(item)
-        else:
-            pos = -1
+        pos = root.indexOfChild(item) if root else -1
         return root, pos
 
     @classmethod
@@ -642,12 +639,11 @@ class ListDialog(qtw.QDialog):
     def on_add(self):
         "item toevoegen"
         if self.is_rules_node:
-            ruletypes = sorted([(x, y[0]) for x, y in ed.RTYPES.items()],
-                               key=lambda item: item[1])
+            ruletypes = sorted([(x, y[0]) for x, y in RTYPES.items()], key=lambda item: item[1])
             options = [x[1] for x in ruletypes]
-            text, ok = qtw.QInputDialog.getItem(
-                self, self._parent.app_title, "Choose type for this rule", options,
-                editable=False)
+            text, ok = qtw.QInputDialog.getItem(self, self._parent.app_title,
+                                                "Choose type for this rule", options,
+                                                editable=False)
         else:
             text, ok = qtw.QInputDialog.getText(
                 self, 'Add item to list', 'Enter text for this item')
@@ -658,13 +654,12 @@ class ListDialog(qtw.QDialog):
         current = self.list.currentItem()
         oldtext = current.text()
         if self.is_rules_node:
-            ruletypes = sorted([(x, y[0]) for x, y in ed.RTYPES.items()],
-                               key=lambda item: item[1])
+            ruletypes = sorted([(x, y[0]) for x, y in RTYPES.items()], key=lambda item: item[1])
             options = [x[1] for x in ruletypes]
             current_index = options.index(oldtext) if oldtext else 0
-            text, ok = qtw.QInputDialog.getItem(
-                self, self._parent.app_title, "Choose type for this rule", options,
-                current_index, editable=False)
+            text, ok = qtw.QInputDialog.getItem(self, self._parent.app_title,
+                                                "Choose type for this rule", options,
+                                                current_index, editable=False)
         else:
             text, ok = qtw.QInputDialog.getText(
                 self, 'Edit list item', 'Enter text for this item:', text=oldtext)

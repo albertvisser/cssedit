@@ -3,4 +3,4 @@ from .toolkit import toolkit
 if toolkit == 'qt':
     from .gui_qt import MainGui, TextDialog, ListDialog, GridDialog, LogDialog
 else:
-    raise Importerror('Incorrect GUI toolkit specified')
+    raise ImportError('Incorrect GUI toolkit specified')

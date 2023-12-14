@@ -328,12 +328,11 @@ class Editor:
         if self.filename:
             if any((self.tag, text)):
                 raise ValueError('Ambiguous arguments')
-        else:
-            if text is None:
-                raise ValueError("Not enough arguments")
+        elif text is None:
+            raise ValueError("Not enough arguments")
 
         hlp = '' if not self.filename else '_' + os.path.basename(self.filename)
-        logfile = '/tmp/cssedit{}.log'.format(hlp)
+        logfile = f'/tmp/cssedit{hlp}.log'
         hdlr = set_logger(logfile)
         if self.filename:
             self.data = load(self.filename)
@@ -393,6 +392,7 @@ class Editor:
                 # rule.styles = cssutils.css.RuleList()
                 rule.cssRules = cssutils.css.CSSRuleList()
                 for name, value in ruledata['rules']:
+                # for value in [x[1] for x in ruledata['rules']]:
                     srule = cssutils.css.CSSStyleRule()
                     ssellist = cssutils.css.SelectorList()
                     for selector in value['selectors']:
@@ -421,8 +421,7 @@ class Editor:
         if savemode not in format_types:
             info = "`, `".join(format_types[:-1])
             info = "` or `".join((info, format_types[-1]))
-            raise AttributeError("wrong format type for save, should be either of "
-                                 "`{}`".format(info))
+            raise AttributeError(f"wrong format type for save, should be either of `{info}`")
         ## ## data = compile(self.data)
         set_format(savemode)
         if self.filename:

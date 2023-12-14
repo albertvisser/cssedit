@@ -2,6 +2,7 @@
 """
 import sys
 import os
+import contextlib
 from cssedit import Editor, comment_tag
 
 
@@ -27,10 +28,8 @@ def read_rules(data, indent):
             else:
                 for it in value:
                     retval.append(formatted(it, indent + 8))
-                    try:
+                    with contextlib.suppress(TypeError):
                         retval.append(formatted(value[it], indent + 12))
-                    except TypeError:
-                        pass
     return retval
 
 
@@ -63,7 +62,7 @@ class DemoEditor:
         """convert the visual data into an internal structure
         """
         data = []
-        propdict = {}
+        selector, propdict = '', {}
         in_comment = False
         for item in self.visual_data:
             if not item.startswith('    '):
