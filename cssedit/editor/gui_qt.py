@@ -46,7 +46,7 @@ class MainGui(qtw.QMainWindow):
                 label, handler, shortcut, icon, info = menudef
                 if isinstance(handler, tuple):  # TODO: find a nicer way
                     submenu = menu.addMenu(label)
-                    for item in handler:
+                    for subitem in handler:
                         # define submenu options
                         pass
                     continue
