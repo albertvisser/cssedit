@@ -32,7 +32,7 @@ from cssedit.editor import cssedit as testee
 #     float: left
 # }"""
 
-class Logger:
+class MockLogger:
     """stub
     """
     def __init__(self, *args):
@@ -50,7 +50,7 @@ class Logger:
         """
         print(f'called logger.setLevel() with arg `{args[0]}`')
 
-class LogHandler:
+class MockLogHandler:
     """stub
     """
     def __init__(self, *args, **kwargs):
@@ -64,7 +64,7 @@ class LogHandler:
         """
         print('called loghandler.setFormatter()')
 
-class LogFormatter:
+class MockLogFormatter:
     """stub
     """
     def __init__(self, *args):
@@ -93,13 +93,13 @@ def _test_setlogger(monkeypatch, capsys):  # lijkt niet jofel te gaan vanwege ge
         """
         if args:
             print(args[0])
-            return Logger(args[0])
+            return MockLogger(args[0])
     def mock_setlog(*args):
         """stub
         """
         print(f'called csslog.setlog with arg `{args[0]}`')
-    monkeypatch.setattr(testee.logging, 'FileHandler', LogHandler)
-    monkeypatch.setattr(testee.logging, 'Formatter', LogFormatter)
+    monkeypatch.setattr(testee.logging, 'FileHandler', MockLogHandler)
+    monkeypatch.setattr(testee.logging, 'Formatter', MockLogFormatter)
     monkeypatch.setattr(testee.logging, 'getLogger', mock_getlogger)
     monkeypatch.setattr(testee.cssutils.log, 'setLog', mock_setlog)
     assert str(testee.set_logger('logfile')) == 'mock handler'
