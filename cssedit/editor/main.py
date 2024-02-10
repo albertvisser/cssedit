@@ -24,6 +24,19 @@ for components in ed.RTYPES.values():
     CTYPES.update([x for x in components[1]])
 
 
+def get_ruletype_for_name(name):
+    """return ruletype code by ruletype name
+    """
+    ruletype = None
+    for rtype, rname in [(x, y[0]) for x, y in ed.RTYPES.items()]:
+        if rname == name:
+            ruletype = rtype
+            break
+    # if ruletype is None:
+    #     continue
+    return ruletype
+
+
 class Editor:
     """Hoofdscherm van de applicatie
     """
@@ -39,7 +52,23 @@ class Editor:
         self.gui.show_statusmessage('Ready')
         self.mode = ''
         self.actiondict = {}
-        self.gui.create_menu((
+        self.gui.create_menu(self.get_menu_data())
+        ## self.undo_stack = UndoRedoStack(self)
+        self.css = None
+        self.cut_item, self.cutlevel = None, 0
+        self.newfile()
+
+    def show_gui(self):
+        "start gui in standalone mode"
+        self.gui.just_show()
+
+    def show_from_external(self, modal=True):
+        """blokkerend gedrag instellen als aangestuurd vanuit bv. Htmledit
+        """
+        self.gui.set_modality_and_show(modal)
+
+    def get_menu_data(self):
+        return (
             ('&Application', (
                 ('Set output &Format',
                  (('&Compressed (no linefeeds)',),  # TODO: these options
@@ -60,9 +89,9 @@ class Editor:
                 ('Show &Log', self.show_log, 'Ctrl+Shift+L', '',
                  'Show messages from parsing this file'),),),
             ('&View', (
-                ## ('&Show level', self.show_level, '', '',  'Show number of levels under root'),
-                ## ('Expand', self.expand_item, 'Alt+Plus', '', 'Expand tree item'),
-                ## ('Collapse', self.collapse_item, 'Alt+Minus', '', 'Collapse tree item'),
+                # ('&Show level', self.show_level, '', '',  'Show number of levels under root'),
+                # ('Expand', self.expand_item, 'Alt+Plus', '', 'Expand tree item'),
+                # ('Collapse', self.collapse_item, 'Alt+Minus', '', 'Collapse tree item'),
                 ('&Expand all', self.expand_all, 'Ctrl++', '', 'Expand all subitems'),
                 ('&Collapse all', self.collapse_all, 'Ctrl+-', '',
                  'Collapse all subitems'),),),
@@ -85,21 +114,7 @@ class Editor:
                 ('Paste under "rules" node', self.paste_under, 'Ctrl+Alt+V', '',
                  'Insert the copied rule beneath the current node ("rules" only)'),),),
             ('Rule &Component', (
-                ('Edit', self.edit, 'F2,Ctrl+E', '', 'Edit a rule component'),),),))
-        ## self.undo_stack = UndoRedoStack(self)
-        self.css = None
-        self.cut_item, self.cutlevel = None, 0
-        self.newfile()
-
-    def show_gui(self):
-        "start gui in standalone mode"
-        self.gui.just_show()
-
-    def show_from_external(self, modal=True):
-        """blokkerend gedrag instellen als aangestuurd vanuit bv. Htmledit
-        """
-        print('in csseditor.show_from_external')
-        self.gui.set_modality_and_show(modal)
+                ('Edit', self.edit, 'F2,Ctrl+E', '', 'Edit a rule component'),),),)
 
     def getfilename(self, title='', start='', save=False):
         "pop up a dialog to get a filename"
@@ -202,6 +217,7 @@ class Editor:
             rule_data = {}
             for key_item in self.gui.tree.get_subitems(rule_item):
                 key_text = self.gui.tree.get_itemtext(key_item)
+                key_data = None
                 if key_text in ('text', 'data'):
                     key_data = self.gui.tree.get_itemtext(self.gui.tree.get_subitems(key_item)[0])
                 elif key_text in ('selectors', 'media', 'rules'):
@@ -297,14 +313,24 @@ class Editor:
         yield
         self.gui.set_waitcursor(False)
 
-    def determine_level(self, item):
+    def determine_level_orig(self, item):
         """determine the level of a node in the tree
         """
         level = 0
         test = self.gui.tree.getitemparentpos(item)[0]
         if test == self.gui.tree.root:
-            level = self.determine_level(test)
+            level = self.determine_level_orig(test)
         return level + 1
+
+    def determine_level(self, item):
+        """determine the level of a node in the tree
+        """
+        level = 0
+        test = self.gui.tree.getitemparentpos(item)[0]
+        while test != self.gui.tree.root:
+            level += 1
+            test = self.gui.tree.getitemparentpos(test)[0]
+        return level
 
     def checkselection(self):
         """controleer of er wel iets geselecteerd is (behalve de filenaam)
@@ -392,27 +418,30 @@ class Editor:
                                             [x[1] for x in ruletypes])
         # after selection, create the rule node and the component nodes
         # use ed.init_ruledata(ruletype) for this
-        if ok:
-            if self.mode == 'tag' and typename != 'STYLE_RULE':
-                self.gui.show_message('Only style rule allowed when editing tag style')
-                return
-            ruletype = None
-            for rtype, name in ruletypes:
-                if name == typename:
-                    ruletype = rtype
-                    break
-            if ruletype is None:
-                return
-            if after is None:
-                # parent = parent
-                pos = -1
-            else:
-                pos = self.gui.tree.getitemparentpos(self.item)[1]
-                if after:
-                    pos += 1
-            newitem = self.gui.tree.add_to_parent(typename, parent, pos)
-            for name in sorted([x for x in ed.init_ruledata(ruletype)]):
-                self.gui.tree.add_to_parent(name, newitem)
+        if not ok:
+            return
+        if self.mode == 'tag' and typename != 'STYLE_RULE':
+            self.gui.show_message('Only style rule allowed when editing tag style')
+            return
+        # ruletype = None
+        ruletype = get_ruletype_for_name(typename)
+        # for rtype, name in ruletypes:
+        #     if name == typename:
+        #         ruletype = rtype
+        #         break
+        if ruletype is None:
+            self.gui.show_message('Can you even choose an option that is not in the option list?')
+            return
+        if after is None:
+            # parent = parent
+            pos = -1
+        else:
+            pos = self.gui.tree.getitemparentpos(self.item)[1]
+            if after:
+                pos += 1
+        newitem = self.gui.tree.add_to_parent(typename, parent, pos)
+        for name in sorted([x for x in ed.init_ruledata(ruletype)]):
+            self.gui.tree.add_to_parent(name, newitem)
         self.mark_dirty(True)
         self.gui.tree.expand_item(newitem)
         self.gui.tree.setcurrent(newitem)
@@ -468,20 +497,18 @@ class Editor:
         if edt:
             for ix, item in enumerate(newitemlist):
                 if ix < maxlen:
-                    if item != itemlist[ix]:
+                    # volgens mij klopt dit niet. je vergelijkt op de items en dan ga je de tekst
+                    #  ervan instellen?
+                    # if item != itemlist[ix]:
+                    # maar is dit dan wel goed (afgezien van in het testscenario)?
+                    if self.gui.tree.get_itemtext(item) != self.gui.tree.get_itemtext(itemlist[ix]):
                         modified = True
                         self.gui.tree.set_itemtext(itemlist[ix], item)
                 else:
                     modified = True
                     newnode = self.gui.tree.add_to_parent(item, self.item)
                     if self.item.text(0) == 'rules':
-                        ruletype = None
-                        for rtype, name in [(x, y[0]) for x, y in ed.RTYPES.items()]:
-                            if name == item:
-                                ruletype = rtype
-                                break
-                        if ruletype is None:
-                            continue
+                        ruletype = get_ruletype_for_name(item)
                         for name in sorted([x for x in ed.init_ruledata(ruletype)]):
                             self.gui.tree.add_to_parent(name, newnode)
 
@@ -591,7 +618,8 @@ class Editor:
             self._paste(self.cut_item, parent)
         else:
             # indx = parent.indexOfChild(self.item)
-            _, indx = self.gui.tree.getitemparentpos(self.item)
+            # _, indx = self.gui.tree.getitemparentpos(self.item)
+            indx = self.gui.tree.getitemparentpos(self.item)[1]
             if after:
                 indx += 1
                 ## text = 'after'
@@ -627,7 +655,7 @@ class Editor:
                 self.gui.tree.expand_item(sub)
                 _expand_all(sub)
         # item = self.tree.currentItem()
-        item = self.tree.getcurrent()
+        item = self.gui.tree.getcurrent()
         # self.tree.expandItem(item)
         self.gui.tree.expand_item(item)
         if recursive:
@@ -655,7 +683,7 @@ class Editor:
                 # sub.setExpanded(False)
                 self.gui.tree.collapse_item(sub)
         # item = self.tree.currentItem()
-        item = self.tree.getcurrent()
+        item = self.gui.tree.getcurrent()
         if recursive:
             _collapse_all(item)
         # self.tree.collapseItem(item)
@@ -670,7 +698,9 @@ class Editor:
         if not self.checkselection():
             return
         level = self.determine_level(self.item)
-        self.gui.show_message(self, self.app_title, f'This element is at level {level}')
+        self.gui.show_message(f'This element is at level {level}')
+        level = self.determine_level_orig(self.item)
+        self.gui.show_message(f'Or is this element at level {level}?')
 
     def add_subitems(self, parent, item):
         """recursively add items to/under a parent
