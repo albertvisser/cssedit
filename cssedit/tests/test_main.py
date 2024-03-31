@@ -257,6 +257,8 @@ class TestEditor:
         """unittest for Editor.open
         """
         class MockWaitCursor:
+            """stub
+            """
             def __enter__(self):
                 print('called WaitCursor.__enter__')
             def __exit__(self, *args):
@@ -268,7 +270,7 @@ class TestEditor:
         def mock_texttotree():
             print('called Editor.texttotree')
         def mock_build_loaded_message():
-            print(f"called Editor.build_loaded_message")
+            print("called Editor.build_loaded_message")
             return 'loaded'
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.newfile = mock_newfile
@@ -384,7 +386,7 @@ class TestEditor:
         """
         def mock_read_rules(*args):
             print('called Editor.read_rules with args', args)
-            return ['rule' 'another rule']
+            return ['rule', 'another rule']
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.read_rules = mock_read_rules
         testobj.gui.tree.root = 'this'
@@ -416,11 +418,11 @@ class TestEditor:
             return f'y{tcounter}'
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.gui.tree.root = 'here'
-        testobj.gui.tree.get_subitems= mock_get_subitems
+        testobj.gui.tree.get_subitems = mock_get_subitems
         testobj.gui.tree.get_itemtext = mock_get_itemtext
         assert testobj.treetotext() == [
                 ('y1', {'text': 'y3', 'data': 'y5', 'selectors': ['y7'], 'media': ['y9'],
-                         'rules': ['y11'], 'styles': {'y13': 'y14'}, 'y15': None})]
+                        'rules': ['y11'], 'styles': {'y13': 'y14'}, 'y15': None})]
         assert capsys.readouterr().out == ("called TreePanel.get_subitems with arg here\n"
                                            "called TreePanel.get_itemtext with arg x1\n"
                                            "called TreePanel.get_subitems with arg x1\n"
@@ -495,6 +497,8 @@ class TestEditor:
         """unittest for Editor.save
         """
         class MockWaitCursor:
+            """stub
+            """
             def __enter__(self):
                 print('called WaitCursor.__enter__')
             def __exit__(self, *args):
@@ -522,15 +526,12 @@ class TestEditor:
         """
         def mock_log(*args):
             print('called LogDialog with args', args)
-        def mock_statusmessage(*args):
-            print('called Editor.show_statusmessage with args', args)
         monkeypatch.setattr(testee.gui, 'LogDialog', mock_log)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.show_statusmessage = mock_statusmessage
         testobj.css = None  # types.SimpleNamespace()  # ''
         testobj.show_log()
         assert capsys.readouterr().out == (
-                "called Editor.show_statusmessage with args ('Load a css file first',)\n")
+                "called MainGui.show_statusmessage with arg 'Load a css file first'\n")
         testobj.css = types.SimpleNamespace(log='xyz')
         testobj.show_log()
         assert capsys.readouterr().out == f"called LogDialog with args ({testobj.gui}, 'xyz')\n"
@@ -538,8 +539,6 @@ class TestEditor:
     def test_exit(self, monkeypatch, capsys):
         """unittest for Editor.exit
         """
-        def mock_close():
-            print('called Editor.close')
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.exit()
         assert capsys.readouterr().out == "called MainGui.close\n"
@@ -569,8 +568,7 @@ class TestEditor:
                 "called CSSUtilsWrapper.return_to_source with args () {'savemode': 'compressed'}\n"
                 "trying to decode data.cssText\n"
                 "taking data as-is\n"
-                "'sometimes it's not bytes but already a string\n"
-                )
+                "'sometimes it's not bytes but already a string\n")
         testobj.css.data = types.SimpleNamespace(cssText='text')
         testobj.close()
         assert testobj.parent.styledata == 'text'
@@ -591,9 +589,7 @@ class TestEditor:
                 "called CSSUtilsWrapper.texttodata\n"
                 "called CSSUtilsWrapper.return_to_source with args () {'savemode': 'compressed'}\n"
                 "trying to decode data.cssText\n"
-                "taking data as-is\n"
-                # "'sometimes it's not bytes but already a string\n"
-                )
+                "taking data as-is\n")
 
     def test_wait_cursor(self, monkeypatch, capsys):
         """unittest for Editor.wait_cursor
@@ -628,7 +624,7 @@ class TestEditor:
         assert testobj.determine_level('root') == 0
         assert capsys.readouterr().out == "called Tree.getitemparentpos with arg root\n"
         testobj.gui.tree.getitemparentpos = mock_getitemparentpos
-        assert testobj.determine_level('testitem') ==  expected_level
+        assert testobj.determine_level('testitem') == expected_level
         assert capsys.readouterr().out == ("called Tree.getitemparentpos with arg testitem\n"
                                            "called Tree.getitemparentpos with arg item-1\n"
                                            "called Tree.getitemparentpos with arg item-2\n"
@@ -1093,6 +1089,8 @@ class TestEditor:
         def mock_get_subitems(arg):
             print(f'called TreePanel.get_subitems with arg {arg}')
             return ['node', 'node2']
+        def mock_remove_subitem(*args):
+            print('called TreePanel.remove_subitem with args', args)
         def mock_get_itemtext(arg):
             print(f'called TreePanel.get_itemtext with arg {arg}')
             return 'nodetext'
@@ -1119,6 +1117,7 @@ class TestEditor:
         monkeypatch.setattr(testee.gui, 'ListDialog', MockListDialog)
         testobj.gui.show_dialog = mock_show
         testobj.gui.tree.get_subitems = mock_get_subitems
+        testobj.gui.tree.remove_subitem = mock_remove_subitem
         assert not testobj.edit_list_node('Edit')
         assert capsys.readouterr().out == (
                 "called TreePanel.get_subitems with arg testitem\n"
@@ -1162,14 +1161,63 @@ class TestEditor:
                 " <class 'cssedit.tests.test_main.MockListDialog'> ('Edit', ['node', 'node2']) {}\n"
                 "called TreePanel.get_itemtext with arg node2\n"
                 "called TreePanel.get_itemtext with arg node\n"
-                )  # hier wordt blijkbaar niks weggehaald?
+                f"called TreePanel.remove_subitem with args ({testobj.item}, 1)\n")
+                # hier wordt blijkbaar niks weggehaald?
 
     def _test_edit_grid_node(self, monkeypatch, capsys):
         """unittest for Editor.edit_grid_node
         """
+        # counter = 0
+        def mock_get_subitems(arg):
+            # nonlocal counter
+            print(f'called TreePanel.get_subitems with arg {arg}')
+            # counter += 1
+            # if counter > 1:
+            return [f'{arg}-1', f'{arg}-2']
+            # return ['node1', 'node2']
+        def mock_remove_subitem(*args):
+            print('called TreePanel.remove_subitem with args', args)
+        def mock_get_itemtext(arg):
+            print(f'called TreePanel.get_itemtext with arg {arg}')
+            return arg
+        def mock_show(cls, *args, **kwargs):
+            print(f'called MainGui.show_dialog with args {cls}', args, kwargs)
+            return False, ''
+        def mock_show_2(cls, *args, **kwargs):
+            print(f'called MainGui.show_dialog with args {cls}', args, kwargs)
+            return True, [['node-1'], ['node-2', 'node-2-2'], ['node-3', 'node-3-1']]
         testobj = self.setup_testobj(monkeypatch, capsys)
-        assert testobj.edit_grid_node(title)
-        assert capsys.readouterr().out == ("")
+        testobj.item = 'node'
+        testobj.gui.tree.get_itemtext = mock_get_itemtext
+        monkeypatch.setattr(testee.gui, 'GridDialog', MockGridDialog)
+        testobj.gui.show_dialog = mock_show
+        testobj.gui.tree.get_subitems = mock_get_subitems
+        testobj.gui.tree.remove_subitem = mock_remove_subitem
+        assert not testobj.edit_grid_node('title')
+        assert capsys.readouterr().out == (
+                "called TreePanel.get_subitems with arg node\n"
+                "called TreePanel.get_itemtext with arg node-1\n"
+                "called TreePanel.get_subitems with arg node-1\n"
+                "called TreePanel.get_itemtext with arg node-1-1\n"
+                "called TreePanel.get_itemtext with arg node-2\n"
+                "called TreePanel.get_subitems with arg node-2\n"
+                "called TreePanel.get_itemtext with arg node-2-1\n"
+                "called MainGui.show_dialog with args"
+                " <class 'cssedit.tests.test_main.MockGridDialog'>"
+                " ('title', [('node-1', 'node-1-1'), ('node-2', 'node-2-1')]) {}\n")
+        testobj.gui.show_dialog = mock_show_2
+        assert testobj.edit_grid_node('title')
+        assert capsys.readouterr().out == (
+                "called TreePanel.get_subitems with arg node\n"
+                "called TreePanel.get_itemtext with arg node-1\n"
+                "called TreePanel.get_subitems with arg node-1\n"
+                "called TreePanel.get_itemtext with arg node-1-1\n"
+                "called TreePanel.get_itemtext with arg node-2\n"
+                "called TreePanel.get_subitems with arg node-2\n"
+                "called TreePanel.get_itemtext with arg node-2-1\n"
+                "called MainGui.show_dialog with args"
+                " <class 'cssedit.tests.test_main.MockGridDialog'>"
+                " ('title', [('node-1', 'node-1-1'), ('node-2', 'node-2-1')]) {}\n")
 
     def test_delete(self, monkeypatch, capsys):
         """unittest for Editor.delete
@@ -1294,7 +1342,7 @@ class TestEditor:
             print(f'called Tree.getitemparentpos with arg `{arg}`')
             return 'parent', 1
         def mock_paste(*args):
-            print(f'called Editor._paste with args', args)
+            print('called Editor._paste with args', args)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.item = types.SimpleNamespace(__str__=lambda *x: 'testitem',
                                              parent=lambda *x: 'testparent')
@@ -1302,7 +1350,7 @@ class TestEditor:
         testobj._paste = mock_paste
         testobj.mark_dirty = self.mock_mark_dirty
         testobj.checkselection = self.mock_check_false
-        testobj.is_rule_parent =  mock_is_not_rule_parent
+        testobj.is_rule_parent = mock_is_not_rule_parent
         testobj.gui.tree.getitemparentpos = mock_parentpos
         testobj._paste_rule()
         assert capsys.readouterr().out == ("called Editor.checkselection\n")
@@ -1311,7 +1359,7 @@ class TestEditor:
         assert capsys.readouterr().out == ("called Editor.checkselection\n"
                                            "called Editor.is_rule_parent with arg `testparent`\n")
         testobj.checkselection = self.mock_check
-        testobj.is_rule_parent =  mock_is_rule_parent
+        testobj.is_rule_parent = mock_is_rule_parent
         testobj._paste_rule()
         assert capsys.readouterr().out == (
                 "called Editor.checkselection\n"
@@ -1520,9 +1568,91 @@ class TestEditor:
                 "called TreePanel.add_subitem with args ('parent', None, 1)\n"
                 "called Editor.add_subitems with args (None, 'item')\n")
 
-    def _test_read_rules(self, monkeypatch, capsys):
+    def test_read_rules(self, monkeypatch, capsys):
         """unittest for Editor.read_rules
         """
+        def mock_newitem(arg):
+            print('called TreePanel.new_treeitem with arg', arg)
+            return f'{arg}_item'
+        counter = 0
+        def mock_newitem_2(arg):
+            nonlocal counter
+            print('called TreePanel.new_treeitem with arg', arg)
+            counter += 1
+            if counter == 3:
+                print("-- call failed with TypeError --")
+                raise TypeError
+            return f'{arg}_item'
+        monkeypatch.setattr(testee, 'RTYPES', ['rtype'])
+
         testobj = self.setup_testobj(monkeypatch, capsys)
-        assert testobj.read_rules(data) == "expected_result"
+        testobj.gui.tree.new_treeitem = mock_newitem
+        assert testobj.read_rules([]) == []
         assert capsys.readouterr().out == ("")
+        data = [('ruletype-1', {'seqnum': 1})]
+        assert testobj.read_rules(data) == ['ruletype-1_item']
+        assert capsys.readouterr().out == ("called TreePanel.new_treeitem with arg ruletype-1\n")
+        data = [('rule1', {'text': 'xxx', 'data': 'yyy'}), ('rule2', {'name': 'aaa', 'uri': 'bbb'}),
+                ('rule3', {'selector': 'p, q'})]
+        assert testobj.read_rules(data) == ['rule1_item', 'rule2_item', 'rule3_item']
+        assert capsys.readouterr().out == (
+                "called TreePanel.new_treeitem with arg rule1\n"
+                "called TreePanel.new_treeitem with arg data\n"
+                "called TreePanel.add_subitem with args ('rule1_item', 'data_item')\n"
+                "called TreePanel.new_treeitem with arg yyy\n"
+                "called TreePanel.add_subitem with args ('data_item', 'yyy_item')\n"
+                "called TreePanel.new_treeitem with arg text\n"
+                "called TreePanel.add_subitem with args ('rule1_item', 'text_item')\n"
+                "called TreePanel.new_treeitem with arg xxx\n"
+                "called TreePanel.add_subitem with args ('text_item', 'xxx_item')\n"
+                "called TreePanel.new_treeitem with arg rule2\n"
+                "called TreePanel.new_treeitem with arg name\n"
+                "called TreePanel.add_subitem with args ('rule2_item', 'name_item')\n"
+                "called TreePanel.new_treeitem with arg aaa\n"
+                "called TreePanel.add_subitem with args ('name_item', 'aaa_item')\n"
+                "called TreePanel.new_treeitem with arg uri\n"
+                "called TreePanel.add_subitem with args ('rule2_item', 'uri_item')\n"
+                "called TreePanel.new_treeitem with arg bbb\n"
+                "called TreePanel.add_subitem with args ('uri_item', 'bbb_item')\n"
+                "called TreePanel.new_treeitem with arg rule3\n"
+                "called TreePanel.new_treeitem with arg selector\n"
+                "called TreePanel.add_subitem with args ('rule3_item', 'selector_item')\n"
+                "called TreePanel.new_treeitem with arg p, q\n"
+                "called TreePanel.add_subitem with args ('selector_item', 'p, q_item')\n")
+        data = [('ruletype-1', {'key': ['a', 'value']})]
+        assert testobj.read_rules(data) == ['ruletype-1_item']
+        assert capsys.readouterr().out == (
+                "called TreePanel.new_treeitem with arg ruletype-1\n"
+                "called TreePanel.new_treeitem with arg key\n"
+                "called TreePanel.add_subitem with args ('ruletype-1_item', 'key_item')\n"
+                "called TreePanel.new_treeitem with arg a\n"
+                "called TreePanel.add_subitem with args ('key_item', 'a_item')\n"
+                "called TreePanel.new_treeitem with arg value\n"
+                "called TreePanel.add_subitem with args ('key_item', 'value_item')\n")
+        data = [('ruletype-1', {'key': {'xx': 'xxxxx', 'yy': 'yyyyy'}})]
+        assert testobj.read_rules(data) == ['ruletype-1_item']
+        assert capsys.readouterr().out == (
+                "called TreePanel.new_treeitem with arg ruletype-1\n"
+                "called TreePanel.new_treeitem with arg key\n"
+                "called TreePanel.add_subitem with args ('ruletype-1_item', 'key_item')\n"
+                "called TreePanel.new_treeitem with arg xx\n"
+                "called TreePanel.new_treeitem with arg xxxxx\n"
+                "called TreePanel.add_subitem with args ('xx_item', 'xxxxx_item')\n"
+                "called TreePanel.add_subitem with args ('key_item', 'xx_item')\n"
+                "called TreePanel.new_treeitem with arg yy\n"
+                "called TreePanel.new_treeitem with arg yyyyy\n"
+                "called TreePanel.add_subitem with args ('yy_item', 'yyyyy_item')\n"
+                "called TreePanel.add_subitem with args ('key_item', 'yy_item')\n")
+        testobj.gui.tree.new_treeitem = mock_newitem_2
+        data = [('ruletype-1', {'key': [['list', 'value']]})]
+        assert testobj.read_rules(data) == ['ruletype-1_item']
+        assert capsys.readouterr().out == (
+                "called TreePanel.new_treeitem with arg ruletype-1\n"
+                "called TreePanel.new_treeitem with arg key\n"
+                "called TreePanel.add_subitem with args ('ruletype-1_item', 'key_item')\n"
+                "called TreePanel.new_treeitem with arg ['list', 'value']\n"
+                "-- call failed with TypeError --\n"
+                "called TreePanel.new_treeitem with arg list\n"
+                "called TreePanel.new_treeitem with arg value\n"
+                "called TreePanel.add_subitem with args ('list_item', 'value_item')\n"
+                "called TreePanel.add_subitem with args ('key_item', 'list_item')\n")

@@ -7,11 +7,11 @@ import contextlib
 try:
     import cssedit.editor.cssedit as ed  # helper class for css specific stuff
     from cssedit.editor import gui       # helper class for visualisation (a.k.a. GUI)
-except ImportError:  #  as e:
+except ImportError:  # as e:
 #     try:
-        # deze imports werken als ik cssedit standalone opstart
-        import editor.cssedit as ed  # helper class for css specific stuff
-        from editor import gui       # helper class for visualisation (a.k.a. GUI)
+#         # deze imports werken als ik cssedit standalone opstart
+    import editor.cssedit as ed  # helper class for css specific stuff
+    from editor import gui       # helper class for visualisation (a.k.a. GUI)
 #     except ImportError  # as e:
 #         import cssedit as ed   # helper class for css specific stuff
 #         import gui             # helper class for visualisation (a.k.a. GUI)
@@ -21,7 +21,7 @@ HERE = os.path.dirname(__file__)
 RTYPES, CTYPES = [], set()
 for components in ed.RTYPES.values():
     RTYPES.append(components[0])
-    CTYPES.update([x for x in components[1]])
+    CTYPES.update(list(components[1]))
 
 
 def get_ruletype_for_name(name):
@@ -42,7 +42,6 @@ class Editor:
     """
     # TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan)
     # - ook in properties voor bekijken gelijksoortige stijlen
-
 
     def __init__(self, parent=None, parentpos=(0, 0), app=None):
         self.parent = parent
@@ -68,6 +67,7 @@ class Editor:
         self.gui.set_modality_and_show(modal)
 
     def get_menu_data(self):
+        "return data to build menu"
         return (
             ('&Application', (
                 ('Set output &Format',
@@ -232,7 +232,7 @@ class Editor:
                     for dict_item in self.gui.tree.get_subitems(key_item):
                         item_key = self.gui.tree.get_itemtext(dict_item)
                         item_value = self.gui.tree.get_itemtext(
-                                self.gui.tree.get_subitems(dict_item)[0])
+                            self.gui.tree.get_subitems(dict_item)[0])
                         key_data[item_key] = item_value
                 rule_data[key_text] = key_data
             data.append((rule_type, rule_data))
@@ -272,7 +272,7 @@ class Editor:
         if self.css:
             gui.LogDialog(self.gui, self.css.log)
         else:
-            self.show_statusmessage('Load a css file first')
+            self.gui.show_statusmessage('Load a css file first')
 
     def exit(self):
         """quit the application
@@ -415,7 +415,7 @@ class Editor:
         # collect all ruletypes, build and display choicedialog
         ruletypes = sorted([(x, y[0]) for x, y in ed.RTYPES.items()], key=lambda x: x[1])
         typename, ok = self.gui.get_input_choice("Choose type for new rule",
-                                            [x[1] for x in ruletypes])
+                                                 [x[1] for x in ruletypes])
         # after selection, create the rule node and the component nodes
         # use ed.init_ruledata(ruletype) for this
         if not ok:
@@ -440,7 +440,7 @@ class Editor:
             if after:
                 pos += 1
         newitem = self.gui.tree.add_to_parent(typename, parent, pos)
-        for name in sorted([x for x in ed.init_ruledata(ruletype)]):
+        for name in sorted(list(ed.init_ruledata(ruletype))):
             self.gui.tree.add_to_parent(name, newitem)
         self.mark_dirty(True)
         self.gui.tree.expand_item(newitem)
@@ -482,7 +482,7 @@ class Editor:
         if edt and newdata != data:
             modified = True
             if not textnode:
-                self.gui.tree.add_to_parent(newdata,self.item)
+                self.gui.tree.add_to_parent(newdata, self.item)
             else:
                 self.gui.tree.set_itemtext(textnode, newdata)
         return modified
@@ -509,13 +509,14 @@ class Editor:
                     newnode = self.gui.tree.add_to_parent(item, self.item)
                     if self.item.text(0) == 'rules':
                         ruletype = get_ruletype_for_name(item)
-                        for name in sorted([x for x in ed.init_ruledata(ruletype)]):
+                        for name in sorted(list(ed.init_ruledata(ruletype))):
                             self.gui.tree.add_to_parent(name, newnode)
 
             test = len(newitemlist)
             if test < maxlen:
                 modified = True
-                for ix in range(maxlen - 1, test, -1):
+                # for ix in range(maxlen - 1, test, -1):
+                for ix in range(maxlen - 1, test - 1, -1):
                     self.gui.tree.remove_subitem(self.item, ix)
         return modified
 
@@ -718,7 +719,7 @@ class Editor:
         self.add_subitems(new, item)
 
     def read_rules(self, data):
-        """recursive routine to read rules
+        """recursive routine to read rules - is rulestotreeitems een betere naam?
         """
         rules = []
         for rltype, rldata in data:

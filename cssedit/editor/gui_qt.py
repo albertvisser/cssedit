@@ -19,9 +19,9 @@ class MainGui(qtw.QMainWindow):
             self.app = qtw.QApplication(sys.argv)
         else:
             self.app = app
-        print('in csseditor.maingui, app=', self.app)
+        # print('in csseditor.maingui, app=', self.app)
         super().__init__()
-        self.set_window_title()
+        self.set_window_title(title)
         if self.master.app_iconame:
             self.setWindowIcon(gui.QIcon(self.master.app_iconame))
         offset = 40 if os.name != 'posix' else 10
@@ -65,7 +65,7 @@ class MainGui(qtw.QMainWindow):
                     ## elif label == '&Redo':
                         ## self.redo_item = action
                 if shortcut:
-                    action.setShortcuts([x for x in shortcut.split(",")])
+                    action.setShortcuts(shortcut.split(","))
                 ## if info.startswith("Check"):
                     ## action.setCheckable(True)
                 if info:
@@ -85,7 +85,7 @@ class MainGui(qtw.QMainWindow):
     def set_modality_and_show(self, modal):
         """blokkerend gedrag instellen als aangestuurd vanuit bv. Htmledit
         """
-        print('in csseditorgui.set_modality_and_show, modal is', modal)
+        # print('in csseditorgui.set_modality_and_show, modal is', modal)
         modality = core.Qt.ApplicationModal if modal else core.Qt.NonModal
         self.setWindowModality(modality)
         self.show()
@@ -138,8 +138,7 @@ class MainGui(qtw.QMainWindow):
         edt = cls(self, *args).exec_()
         if edt == qtw.QDialog.Accepted:
             return True, self.dialog_data
-        else:
-            return False, None
+        return False, None
 
 
 class TreePanel(qtw.QTreeWidget):
@@ -286,7 +285,7 @@ class TreePanel(qtw.QTreeWidget):
         return self.currentItem()
 
     @classmethod
-    def new_treeitem(self, itemtext):
+    def new_treeitem(cls, itemtext):
         """build new item for tree
         """
         item = qtw.QTreeWidgetItem()
@@ -295,7 +294,7 @@ class TreePanel(qtw.QTreeWidget):
         return item
 
     @classmethod
-    def add_subitem(self, parent, child, ix=-1):
+    def add_subitem(cls, parent, child, ix=-1):
         "add a subnode to a node. If ix is provided, it should indicate a position"
         if ix == -1:
             parent.addChild(child)
@@ -303,40 +302,40 @@ class TreePanel(qtw.QTreeWidget):
             parent.insertChild(ix, child)
 
     @classmethod
-    def remove_subitem(self, parent, ix):
-        "remove a subnode from a node. If ix is provided, it should indicate a position"
+    def remove_subitem(cls, parent, ix):
+        "remove a subnode from a node. Ix indicates the position beneath the parent"
         parent.takeChild(ix)
 
     @classmethod
-    def get_subitems(self, item):
+    def get_subitems(cls, item):
         "returns a list of a tree item's children"
         return [item.child(i) for i in range(item.childCount())]
 
     @classmethod
-    def set_itemtext(self, item, itemtext):
+    def set_itemtext(cls, item, itemtext):
         "sets the text of a tree item"
         item.setText(0, itemtext)
         item.setToolTip(0, itemtext)
 
     @classmethod
-    def get_itemtext(self, item):
+    def get_itemtext(cls, item):
         "returns the text of a tree item"
         return item.text(0)
 
     @classmethod
-    def getitemparentpos(self, item):
+    def getitemparentpos(cls, item):
         "return parent of current item and sequential position under it"
         root = item.parent()
         pos = root.indexOfChild(item) if root else -1
         return root, pos
 
     @classmethod
-    def expand_item(self, item):
+    def expand_item(cls, item):
         "show the item's subitems"
         item.setExpanded(True)
 
     @classmethod
-    def collapse_item(self, item):
+    def collapse_item(cls, item):
         "hide the item's subitems"
         item.setExpanded(False)
 
@@ -647,7 +646,8 @@ class ListDialog(qtw.QDialog):
         else:
             text, ok = qtw.QInputDialog.getText(
                 self, 'Add item to list', 'Enter text for this item')
-        self.list.addItem(text)
+        if ok:
+            self.list.addItem(text)
 
     def on_edit(self):
         "item wijzigen"
