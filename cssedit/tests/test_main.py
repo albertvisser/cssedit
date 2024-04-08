@@ -395,7 +395,8 @@ class TestEditor:
         testobj.texttotree()
         assert capsys.readouterr().out == (
                 "called Editor.read_rules with args (['stuff', 'more stuff'],)\n"
-                "called TreePanel.add_subitem with args ('this', 'ruleanother rule')\n")
+                "called TreePanel.add_subitem with args ('this', 'rule')\n"
+                "called TreePanel.add_subitem with args ('this', 'another rule')\n")
 
     def test_treetotext(self, monkeypatch, capsys):
         """unittest for Editor.treetotext
