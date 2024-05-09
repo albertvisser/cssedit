@@ -7,6 +7,12 @@ Inspired by two things: the wish to have a tool that I can view "compressed" CSS
 And, last but not least, a fresh case of Not Invented Here syndrom.
 
 
+The heavy lifting (i.e. the parsing of the css) was originally done by a library called `cssutils`.
+I had to install it separately so I wanted to switch to a library already present on my system.
+Apparently a package called `css_parser` could be used as a drop-in replacement, that made it 
+very easy to switch.
+
+
 Usage
 =====
 
@@ -27,10 +33,14 @@ For the embedded version, the output will be returned the way it was provided; a
 
 In the standalone version, the same options will be available when saving to a file.
 
+I used to install this with `pip install -e /home/<username>/projects/cssedit --no-deps --user`
+but I discovered that a symlink in */home/<username>/.local/python3.11/user-packages* also works
+so I haven't updated the packaging info anymore.
+
 
 Dependencies
 ============
 
 - Python
 - PyQt(5)
-- cssutils
+- css_parser (https://github.com/ebook-utils/css-parser)
