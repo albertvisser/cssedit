@@ -74,8 +74,7 @@ class Editor:
                  (('&Compressed (no linefeeds)',),  # TODO: these options
                   ('&Short',),        # should be checkable and remembered;
                   ('&Medium',),       # or would an options dialog be a better idea?
-                  ('&Long',)),        # see Trac wiki
-                 '', '', 'Indicate how output should be saved'),
+                  ('&Long',)), '', '', 'Indicate how output should be saved'),
                 ('E&xit', self.exit, 'Ctrl+Q', '', 'Quit the application'),),),
             ('&File', (
                 ('&New', self.newfile, 'Ctrl+Insert', '', 'Start a new css file'),
@@ -89,7 +88,7 @@ class Editor:
                 ('Show &Log', self.show_log, 'Ctrl+Shift+L', '',
                  'Show messages from parsing this file'),),),
             ('&View', (
-                # ('&Show level', self.show_level, '', '',  'Show number of levels under root'),
+                ('&Show level', self.show_level, '', '', 'Show number of levels under root'),
                 # ('Expand', self.expand_item, 'Alt+Plus', '', 'Expand tree item'),
                 # ('Collapse', self.collapse_item, 'Alt+Minus', '', 'Collapse tree item'),
                 ('&Expand all', self.expand_all, 'Ctrl++', '', 'Expand all subitems'),
@@ -313,24 +312,14 @@ class Editor:
         yield
         self.gui.set_waitcursor(False)
 
-    def determine_level_orig(self, item):
-        """determine the level of a node in the tree
-        """
-        level = 0
-        test = self.gui.tree.getitemparentpos(item)[0]
-        if test == self.gui.tree.root:
-            level = self.determine_level_orig(test)
-        return level + 1
-
     def determine_level(self, item):
         """determine the level of a node in the tree
         """
         level = 0
         test = self.gui.tree.getitemparentpos(item)[0]
-        while test != self.gui.tree.root:
-            level += 1
-            test = self.gui.tree.getitemparentpos(test)[0]
-        return level
+        if test != self.gui.tree.root:
+            level = self.determine_level(test)
+        return level + 1
 
     def checkselection(self):
         """controleer of er wel iets geselecteerd is (behalve de filenaam)
@@ -724,10 +713,10 @@ class Editor:
         rules = []
         for rltype, rldata in data:
             ruletypeitem = self.gui.tree.new_treeitem(rltype)
-            for key in sorted(rldata):
+            for key, value in sorted(rldata.items()):
                 if key == 'seqnum':
                     continue
-                value = rldata[key]
+                # value = rldata[key]
                 ruletopitem = self.gui.tree.new_treeitem(key)
                 self.gui.tree.add_subitem(ruletypeitem, ruletopitem)
                 if key in ('text', 'data', 'name', 'uri', 'selector'):
@@ -738,13 +727,11 @@ class Editor:
                     for rulekeyitem in self.read_rules(value):
                         self.gui.tree.add_subitem(ruletopitem, rulekeyitem)
                     continue
-                for it in value:  # sorted(value): waarom sorteren?
+                for it in value:
                     with contextlib.suppress(IndexError):
                         test = it[0]
                     if test in RTYPES:  # kijk of hier een onderliggende rule binnenkomt
-                        data = []
-                        data.append(it)
-                        for rulekeyitem in self.read_rules(data):
+                        for rulekeyitem in self.read_rules([it]):
                             self.gui.tree.add_subitem(ruletopitem, rulekeyitem)
                         continue
                     try:

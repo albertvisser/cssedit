@@ -2,9 +2,11 @@
 """
 import os
 import shutil
-## import pathlib - don't think this is suitable if cssutls only works with Python 2
+# import pathlib
 import collections
 import logging
+import tempfile
+import linecache
 # import cssutils
 import css_parser as cssutils  # komt met distro mee, geen aparte install meer nodig
 # import tinycss2 as cssutils  # komt ook met distro mee, maar is geen drop-in replacement
@@ -154,8 +156,7 @@ def return_for_single_tag(cssdata):
     """
     if list(cssdata):
         return list(cssdata)[0].style.getCssText()
-    else:
-        return ""
+    return ""
 
 
 def parse(text):
@@ -204,7 +205,6 @@ def save(data, filename, backup=True):
 def get_definition_from_file(file, line, pos):
     """snip inline css definition from an HTML file (or a definition from a css file)
     """
-    import linecache
     data = []
     if line == -1:
         return 'unknown - position in css file could not be determined'
@@ -224,7 +224,7 @@ def get_definition_from_file(file, line, pos):
         data.append(line_read)
         lineno += 1
     lineno = line - 1
-    while True and lineno > 0:
+    while lineno > 0:
         line_read = linecache.getline(file, lineno)
         # restant van de voorgaande definitie verwijderen
         if '}' in line_read and (line_read.index('}') < pos or lineno < line):
@@ -259,10 +259,9 @@ def parse_log_line(line):
     ERROR	Unexpected token (NUMBER, 2, 1, 735)
     ERROR	MediaList: Invalid MediaQuery:  (-webkit-min-device-pixel-ratio:2)
     """
-    data = []
     test = line.split("\t", 1)
     if len(test) == 1:
-        return  # this line can not be parsed
+        return None  # this line can not be parsed
     severity, rest = test
     test = rest.split(": ", 1)
     if len(test) == 1:  # unexpected token
@@ -282,7 +281,7 @@ def parse_log_line(line):
             try:
                 message, data = rest.split(": ")
             except ValueError:
-                message = rest
+                message, data = rest, ''
             line = pos = "-1"
         else:
             message, rest = test
@@ -296,29 +295,17 @@ class Editor:
     """
     def __init__(self, **kwargs):  # filename="", tag="", text=""):
         """get css from a source and turn it into a structure
+
+        new: create new style or stylesheet
+        filename: name of stylesheet file, if any
+        tag: name of html tag the style is an attribute of (or contents of in case of 'style')
+        text: style text - must be allowed to be empty in case of creating a new inline style
+                           so empty style/string should be pased in explicitely
         """
         self.data = []
-        # try:
-        #     if kwargs.pop('new'):  # newfile = bool(kwargs.pop('new'))
-        #         newfile = True  # newfile = kwargs.get('new', None) is not None
-        # except KeyError:
-        #     newfile = False
         newfile = kwargs.pop('new') if 'new' in kwargs else False
-        # try:
-        #     self.filename = kwargs.pop('filename')
-        # except KeyError:
-        #     self.filename = ''  # self.filename = kwargs.get('filename', '')
-        self.filename = kwargs.pop('filename') if 'filename' in kwargs else ''
-        # try:
-        #     self.tag = kwargs.pop('tag')
-        # except KeyError:
-        #     self.tag = ""  # self.rag = kwargs.get('tag', '')
-        self.tag = kwargs.pop('tag') if 'tag' in kwargs else ''
-        # try:
-        #     text = kwargs.pop('text')  # text =
-        # except KeyError:
-        #     text = None      # must be allowed to be empty (to create new inline style)
-        #     # text = ''      # so empty string should be passed in explicitely
+        self.filename = kwargs.pop('filename') if 'filename' in kwargs else None
+        self.tag = kwargs.pop('tag') if 'tag' in kwargs else None
         text = kwargs.pop('text') if 'text' in kwargs else None
         if newfile:
             return
@@ -331,31 +318,37 @@ class Editor:
         elif text is None:
             raise ValueError("Not enough arguments")
 
-        hlp = '' if not self.filename else '_' + os.path.basename(self.filename)
-        logfile = f'/tmp/cssedit{hlp}.log'
+        # hlp = '' if not self.filename else '_' + os.path.basename(self.filename)
+        # logfile = f'/tmp/cssedit{hlp}.log'
+        logfile = tempfile.mkstemp()[1]
         hdlr = set_logger(logfile)
-        if self.filename:
-            self.data = load(self.filename)
-        elif self.tag:
-            style = get_for_single_tag(text)
-            self.data = cssutils.css.CSSStyleSheet()
-            rule = cssutils.css.CSSStyleRule(selectorText=self.tag, style=style)
-            self.data.add(rule)
-        else:
-            self.data = parse(text)
-            text = str(self.data.cssText)
-            if not text:
-                self.data = None
-            # TODO: raise error when this doesn't parse into a CSSStylesheet
-            # maar zie hierboven: text mag lege string zijn
-
+        self.data = self.csstodata(text)
         hdlr.close()
-        self.log = ['unable to get log info']
+        # if not self.data:
+        if self.data is None:
+            raise ValueError('Invalid style data')
+        # try:
         with open(logfile) as _log:
             self.log = [line.strip() for line in _log]
+        # except OSError:   # FileNotFoundError e.a. - kan dit wel als wat hiervoor zit goed gaat?
+        #     self.log = ['unable to get log info']
 
-        if not self.data:
-            raise ValueError("Incorrect css data")
+    def csstodata(self, text):
+        "transform cssData to internal data structure"
+        if self.filename:
+            result = load(self.filename)
+        elif self.tag:
+            style = get_for_single_tag(text)
+            result = cssutils.css.CSSStyleSheet()
+            rule = cssutils.css.CSSStyleRule(selectorText=self.tag, style=style)
+            result.add(rule)
+        else:
+            result = parse(text)
+            if not isinstance(result, cssutils.css.CSSStyleSheet):
+                result = None
+            # else:
+            #     result = str(self.data.cssText)
+        return result
 
     def datatotext(self):
         """turn the cssutils structure into a more generic one
@@ -406,8 +399,7 @@ class Editor:
 
             elif 'text' in ruledata:
                 if ruletype == cssutils.css.CSSComment().typeString:
-                    rule = cssutils.css.CSSComment(cssText='/* {} */'.format(
-                        ruledata['text']))
+                    rule = cssutils.css.CSSComment(cssText=f"/* {ruledata['text']} */")
                 else:
                     ## rule = cssutils.css.CSSRule()
                     ## rule.cssText=ruledata['text']

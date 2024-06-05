@@ -85,15 +85,16 @@ class MockStyle:
         return 'style text'
 
 
-def _test_setlogger(monkeypatch, capsys):  # lijkt niet jofel te gaan vanwege gebruik logging?
+def _test_setlogger(monkeypatch, capsys):
     """unittest for cssedit.setlogger
     """
-    def mock_getlogger(*args):            # dit gaat mis omdat pytest het ook wil gebruiken?
+    def mock_getlogger(*args):
         """stub
         """
         if args:
             print(args[0])
             return MockLogger(args[0])
+        return None
     def mock_setlog(*args):
         """stub
         """
@@ -200,6 +201,8 @@ def test_get_definition_from_file():
     dirname = '/tmp/cssedit'
     with contextlib.suppress(FileExistsError):
         os.mkdir(dirname)
+    assert testee.get_definition_from_file(os.path.join(dirname, 'test'), -1, 'pos') == (
+            'unknown - position in css file could not be determined')
     for fname, line, pos, contents, result in (('testcss1', 1, 7, ['test { stuff }', ''],
                                                 'test { stuff }'),
                                                ('testcss2', 3, 0, ['}', 'test {', 'stuff', '}', ''],
@@ -242,6 +245,9 @@ def test_parse_log_line():
     text = 'xxx\tsubject: message: data'
     assert testee.parse_log_line(text) == testee.LogLine('xxx', 'subject', 'message', -1, -1,
                                                          'data')
+    text = 'xxx\tsubject: message'
+    assert testee.parse_log_line(text) == testee.LogLine('xxx', 'subject', 'message', -1, -1,
+                                                         '')
     text = 'yyy\tzzz: test [2:3:result   ]'
     assert testee.parse_log_line(text) == testee.LogLine('yyy', 'zzz', 'test', 2, 3, 'result')
 
@@ -256,6 +262,10 @@ class MockStyleSheet:
         """stub
         """
         print('called stylesheet.add()')
+    def cssText(self, *args):
+        """stub
+        """
+        print('called stylesheet.cssText()')
 
 
 class MockStyleDeclaration(dict):
@@ -318,13 +328,66 @@ class TestEditor:
         def mock_set_logger(filename):
             """stub
             """
+            print('called set_logger')  # with arg {filename}')
             f = open(filename, 'w')
-            f.write('log created when parsing data')
+            f.write('xxx')
             return f
+        def mock_todata(self, text):
+            print(f"called Editor.csstodata with arg '{text}'")
+            return MockStyleSheet()
+        def mock_todata_2(self, text):
+            print(f"called Editor.csstodata with arg '{text}'")
+            return None
+        with pytest.raises(ValueError) as exc:
+            testee.Editor()
+        assert str(exc.value) == 'Not enough arguments'
+        with pytest.raises(TypeError) as exc:
+            testobj = testee.Editor('snork')
+        assert str(exc.value) == 'Editor.__init__() takes 1 positional argument but 2 were given'
+        testobj = testee.Editor(new=True)
+        assert testobj.data == []
+        assert not hasattr(testobj, 'log')
+        with pytest.raises(ValueError) as exc:
+            testee.Editor(fake=True)
+        assert str(exc.value) == 'Wrong arguments'
+        with pytest.raises(ValueError) as exc:
+            testee.Editor(filename='text.css', tag='style')
+        assert str(exc.value) == 'Ambiguous arguments'
+        with pytest.raises(ValueError) as exc:
+            testee.Editor(filename='text.css', text='style')
+        assert str(exc.value) == 'Ambiguous arguments'
+        with pytest.raises(ValueError) as exc:
+            testee.Editor(tag='style')
+        assert str(exc.value) == 'Not enough arguments'
+        with pytest.raises(ValueError) as exc:
+            testee.Editor(filename='')
+        assert str(exc.value) == 'Not enough arguments'
+
+        monkeypatch.setattr(testee, 'set_logger', mock_set_logger)
+        monkeypatch.setattr(testee.Editor, 'csstodata', mock_todata)
+        testobj = testee.Editor(text='x')
+        assert testobj.data is not None
+        assert testobj.log == ['xxx']
+        assert capsys.readouterr().out == ("called set_logger\n"
+                                           "called Editor.csstodata with arg 'x'\n"
+                                           "called stylesheet.__init__()\n")
+
+        monkeypatch.setattr(testee.Editor, 'csstodata', mock_todata_2)
+        with pytest.raises(ValueError) as exc:
+            testobj = testee.Editor(text='x')
+        assert str(exc.value) == 'Invalid style data'
+
+    def test_csstodata(self, monkeypatch, capsys):
+        """unittest for Editor.csstodata
+        """
+        def mock_init(self, *args):
+            """stub
+            """
+            print('called editor.__init__()')
         def mock_load(*args):
             """stub
             """
-            print('called cssedit.load()')
+            print('called cssedit.load with args', args)
             return MockStyleSheet()
         def mock_get(*args):
             """stub
@@ -336,45 +399,58 @@ class TestEditor:
             """
             print('called cssedit.parse()')
             return MockStyleSheet()
-        with pytest.raises(ValueError):
-            testee.Editor()  # Not enough arguments
-        with pytest.raises(TypeError):
-            testobj = testee.Editor('snork')  # positional argument(s) only
-        testobj = testee.Editor(new=True)
-        assert testobj.data == []
-        assert not hasattr(testobj, 'log')
-        with pytest.raises(ValueError):
-            testee.Editor(fake=True)  # Wrong arguments
-        with pytest.raises(ValueError):
-            testee.Editor(filename='text.css', tag='style')  # Ambiguous arguments
-        with pytest.raises(ValueError):
-            testee.Editor(filename='text.css', text='style')  # Ambiguous arguments
-        with pytest.raises(ValueError):
-            testee.Editor(tag='style')  # Not enough arguments
-        with pytest.raises(ValueError):
-            testee.Editor(filename='')  # empty filename
-        monkeypatch.setattr(testee, 'set_logger', mock_set_logger)
-        monkeypatch.setattr(testee, 'load', mock_load)
-        testobj = testee.Editor(filename='text.css')
-        assert isinstance(testobj.data, MockStyleSheet)
-        assert capsys.readouterr().out == ('called cssedit.load()\n'
-                                           'called stylesheet.__init__()\n')
-        assert testobj.log == ['log created when parsing data']
-        monkeypatch.setattr(testee, 'get_for_single_tag', mock_get)
+        def mock_parse_2(*args):
+            """stub
+            """
+            print('called cssedit.parse()')
+            return None
+        def mock_text(*args):
+            """stub
+            """
+            print('called stylesheet.cssText()')
+            return ''
+
         monkeypatch.setattr(testee.cssutils.css, 'CSSStyleSheet', MockStyleSheet)
         monkeypatch.setattr(testee.cssutils.css, 'CSSStyleRule', MockStyleRule)
-        testobj = testee.Editor(tag='style', text='x')
+        monkeypatch.setattr(testee, 'load', mock_load)
+        monkeypatch.setattr(testee, 'get_for_single_tag', mock_get)
+        monkeypatch.setattr(testee.Editor, '__init__', mock_init)
+        monkeypatch.setattr(testee, 'parse', mock_parse)
+        testobj = testee.Editor()
+        assert capsys.readouterr().out == 'called editor.__init__()\n'
+
+        testobj.filename = 'xx'
+        testobj.tag = 'yyy'
+        result = testobj.csstodata('zzz')
+        assert isinstance(result, MockStyleSheet)
+        assert capsys.readouterr().out == ("called cssedit.load with args ('xx',)\n"
+                                           'called stylesheet.__init__()\n')
+
+        testobj.filename = ''
+        testobj.tag = 'yyy'
+        result = testobj.csstodata('zzz')
+        assert isinstance(result, MockStyleSheet)
         assert capsys.readouterr().out == ('called cssedit.get_for_single_tag()\n'
                                            'called styledeclaration.__init__()\n'
                                            'called stylesheet.__init__()\n'
                                            'called stylerule.__init__()\n'
                                            'called stylesheet.add()\n')
-        assert isinstance(testobj.data, MockStyleSheet)
-        monkeypatch.setattr(testee, 'parse', mock_parse)
-        testobj = testee.Editor(text='x')
+
+        # monkeypatch.setattr(MockStyleSheet, 'cssText', mock_text)
+        # monkeypatch.setattr(testee.cssutils.css, 'CSSStyleSheet', MockStyleSheet)
+        testobj.filename = ''
+        testobj.tag = ''
+        result = testobj.csstodata('zzz')
+        assert isinstance(result, MockStyleSheet)
         assert capsys.readouterr().out == ('called cssedit.parse()\n'
                                            'called stylesheet.__init__()\n')
-        assert isinstance(testobj.data, MockStyleSheet)
+
+        monkeypatch.setattr(testee, 'parse', mock_parse_2)
+        testobj.filename = ''
+        testobj.tag = ''
+        result = testobj.csstodata('zzz')
+        assert result is None
+        assert capsys.readouterr().out == 'called cssedit.parse()\n'
 
     def test_datatotext(self, monkeypatch, capsys):
         """unittest for Editor.datatotext
