@@ -377,9 +377,10 @@ class TestMainGui:
         testobj.set_waitcursor(False)
         assert capsys.readouterr().out == ("called Application.restoreOverrideCursor\n")
         testobj.set_waitcursor(True)
-        assert capsys.readouterr().out == (f"called Cursor with arg {testee.core.Qt.WaitCursor}\n"
-                                           "called Application.setOverrideCursor with arg of type"
-                                           " <class 'mockgui.mockqtwidgets.MockCursor'>\n")
+        assert capsys.readouterr().out == (
+                f"called Cursor.__init__ with arg {testee.core.Qt.WaitCursor}\n"
+                "called Application.setOverrideCursor with arg of type"
+                " <class 'mockgui.mockqtwidgets.MockCursor'>\n")
 
     def test_show_save_dialog(self, monkeypatch, capsys):
         """unittest for MainGui.show_save_dialog
@@ -678,7 +679,7 @@ class TestTreePanel:
         testobj.add_subitem(parent, 'child')
         assert capsys.readouterr().out == "called TreeItem.addChild\n"
         testobj.add_subitem(parent, 'child', 2)
-        assert capsys.readouterr().out == "called TreeItem.insertChild\n"
+        assert capsys.readouterr().out == "called TreeItem.insertChild at pos 2\n"
 
     def test_remove_subitem(self, monkeypatch, capsys):
         """unittest for TreePanel.remove_subitem
@@ -700,7 +701,8 @@ class TestTreePanel:
                                            "called TreeItem.addChild\n")
         testobj = self.setup_testobj(monkeypatch, capsys)
         assert testobj.get_subitems(item) == ['item0', 'item1']
-        assert capsys.readouterr().out == ("")
+        assert capsys.readouterr().out == ("called TreeItem.child with arg 0\n"
+                                           "called TreeItem.child with arg 1\n")
 
     def test_set_itemtext(self, monkeypatch, capsys):
         """unittest for TreePanel.set_itemtext
