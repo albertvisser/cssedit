@@ -28,7 +28,7 @@ class MainGui(qtw.QMainWindow):
         self.move(pos[0] + offset, pos[1] + offset)
         self.resize(size[0], size[1])
         self.statusbar = self.statusBar()
-
+        self.output_options = []
         self.tree = TreePanel(self)
         self.setCentralWidget(self.tree)
 
@@ -40,41 +40,39 @@ class MainGui(qtw.QMainWindow):
             menu = menubar.addMenu(item)
             self.menus[item] = menu
             for menudef in data:
-                if not menudef:
+                if not menudef or not menudef[0]:
                     menu.addSeparator()
                     continue
-                label, handler, shortcut, icon, info = menudef
-                if isinstance(handler, tuple):  # TODO: find a nicer way
-                    submenu = menu.addMenu(label)
-                    for subitem in handler:
-                        # define submenu options
-                        pass
+                if menudef[0] == self.master.format_option:
+                    self.define_format_submenu(menu, menudef)
                     continue
-                if icon:
-                    action = qtw.QAction(gui.QIcon(os.path.join(HERE, icon)), label, self)
-                    ## if not toolbar_added:
-                        ## toolbar = self.addToolBar(item)
-                        ## toolbar.setIconSize(core.QSize(16, 16))
-                        ## toolbar_added = True
-                    ## toolbar.addAction(action)
-                else:
-                    action = qtw.QAction(label, self)
-                ## if item == menudata[3][0]:
-                    ## if label == '&Undo':
-                        ## self.undo_item = action
-                    ## elif label == '&Redo':
-                        ## self.redo_item = action
+                label, handler, shortcut, info = menudef
+                action = qtw.QAction(label, self)
                 if shortcut:
                     action.setShortcuts(shortcut.split(","))
-                ## if info.startswith("Check"):
-                    ## action.setCheckable(True)
                 if info:
                     action.setStatusTip(info)
                 action.triggered.connect(handler)
                 # action.triggered.connect(handler) werkt hier niet
-                if label:
-                    menu.addAction(action)
-                    self.master.actiondict[label] = action
+                menu.addAction(action)
+                self.master.actiondict[label] = action
+
+    def define_format_submenu(self, menu, menudef):
+        "add format options to the application menu"
+        submenu = menu.addMenu(menudef[0])
+        for subitem in menudef[1]:
+            action = submenu.addAction(subitem[0], subitem[1])
+            action.setCheckable(True)
+            # action.triggered.connect(subitem[1])
+            self.output_options.append(action)
+        self.output_options[0].setChecked(True)
+        submenu.setStatusTip(menudef[-1])
+
+    def check_format_option(self, value):
+        "make the chosen output format visible in the menu"
+        for seq in range(4):
+            self.output_options[seq].setChecked(False)
+        self.output_options[value].setChecked(True)
 
     def just_show(self):
         """standalone aansturen
@@ -248,26 +246,33 @@ class TreePanel(qtw.QTreeWidget):
         #         action.setEnabled(True)
 
     def remove_root(self):
+        "clear the tree"
         self.takeTopLevelItem(0)
 
     def init_root(self):
+        "start a new tree"
         self.root = qtw.QTreeWidgetItem()
         self.root.setText(0, "(untitled)")
         self.addTopLevelItem(self.root)
 
     def set_root_text(self, text):
+        "text for root element"
         self.root.setText(0, text)
 
     def get_root(self):
+        "return root element"
         return self.root
 
     def activate_rootitem(self):
+        "start working with root element"
         self.setCurrentItem(self.root)
 
     def set_activeitem(self, item):
+        "start working with an element"
         self.activeitem = item
 
     def set_focus(self):
+        "bring focus to the tree"
         self.setFocus()
 
     def add_to_parent(self, titel, parent, pos=-1):
@@ -279,9 +284,11 @@ class TreePanel(qtw.QTreeWidget):
         return new
 
     def setcurrent(self, item):
+        "start working with an element"
         self.setCurrentItem(item)
 
     def getcurrent(self):
+        "return the selected element"
         return self.currentItem()
 
     @classmethod

@@ -212,14 +212,73 @@ class TestEditor:
                                             'Rule &Component']
         options = [x[1] for x in menudata]
         assert [x[0] for x in options[0]] == ['Set output &Format', 'E&xit']
+        assert [x[0] for x in options[0][0][1]] == ['&Compressed (no linefeeds)', '&Short', '&Medium',
+                                                 '&Long']
         assert [x[0] for x in options[1][:5]] == ['&New', '&Open', '&Reload', '&Save', 'Save &As']
         assert options[1][6][0] == 'Show &Log'
         assert [x[0] for x in options[2]] == ['&Show level', '&Expand all', '&Collapse all']
-        assert [x[0] for x in options[3]] == ['Add under root', 'Insert after', 'Insert before',
-                                              'Add under "rules" node', 'Delete', 'Cut', 'Copy',
-                                              'Paste after', 'Paste before',
-                                              'Paste under "rules" node']
+        assert [x[0] for x in options[3][:4]] == ['Add under root', 'Insert after', 'Insert before',
+                                                  'Add under "rules" node']
+        assert [x[0] for x in options[3][5:8]] == ['Delete', 'Cut', 'Copy']
+        assert [x[0] for x in options[3][9:]] == ['Paste after', 'Paste before',
+                                                 'Paste under "rules" node']
         assert [x[0] for x in options[4]] == ['Edit']
+
+    def test_set_format_c(self, monkeypatch, capsys):
+        """unittest for Editor.set_format_c
+        """
+        def mock_set(value):
+            print(f"called cssedit.set_format with arg '{value}'")
+        def mock_check(value):
+            print(f"called EdiorGui.check_format_option with arg {value}")
+        monkeypatch.setattr(testee.ed, 'set_format', mock_set)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.gui.check_format_option = mock_check
+        testobj.set_format_c()
+        assert capsys.readouterr().out == ("called cssedit.set_format with arg 'compressed'\n"
+                                           "called EdiorGui.check_format_option with arg 0\n")
+
+    def test_set_format_s(self, monkeypatch, capsys):
+        """unittest for Editor.set_format_s
+        """
+        def mock_set(value):
+            print(f"called cssedit.set_format with arg '{value}'")
+        def mock_check(value):
+            print(f"called EdiorGui.check_format_option with arg {value}")
+        monkeypatch.setattr(testee.ed, 'set_format', mock_set)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.gui.check_format_option = mock_check
+        testobj.set_format_s()
+        assert capsys.readouterr().out == ("called cssedit.set_format with arg 'short'\n"
+                                           "called EdiorGui.check_format_option with arg 1\n")
+
+    def test_set_format_m(self, monkeypatch, capsys):
+        """unittest for Editor.set_format_m
+        """
+        def mock_set(value):
+            print(f"called cssedit.set_format with arg '{value}'")
+        def mock_check(value):
+            print(f"called EdiorGui.check_format_option with arg {value}")
+        monkeypatch.setattr(testee.ed, 'set_format', mock_set)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.gui.check_format_option = mock_check
+        testobj.set_format_m()
+        assert capsys.readouterr().out == ("called cssedit.set_format with arg 'medium'\n"
+                                           "called EdiorGui.check_format_option with arg 2\n")
+
+    def test_set_format_l(self, monkeypatch, capsys):
+        """unittest for Editor.set_format_l
+        """
+        def mock_set(value):
+            print(f"called cssedit.set_format with arg '{value}'")
+        def mock_check(value):
+            print(f"called EdiorGui.check_format_option with arg {value}")
+        monkeypatch.setattr(testee.ed, 'set_format', mock_set)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.gui.check_format_option = mock_check
+        testobj.set_format_l()
+        assert capsys.readouterr().out == ("called cssedit.set_format with arg 'long'\n"
+                                           "called EdiorGui.check_format_option with arg 3\n")
 
     def test_show_gui(self, monkeypatch, capsys):
         """unittest for Editor.show_gui

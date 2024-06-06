@@ -40,6 +40,7 @@ def get_ruletype_for_name(name):
 class Editor:
     """Hoofdscherm van de applicatie
     """
+    format_option = 'Set output &Format'
     # TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan)
     # - ook in properties voor bekijken gelijksoortige stijlen
 
@@ -70,50 +71,72 @@ class Editor:
         "return data to build menu"
         return (
             ('&Application', (
-                ('Set output &Format',
-                 (('&Compressed (no linefeeds)',),  # TODO: these options
-                  ('&Short',),        # should be checkable and remembered;
-                  ('&Medium',),       # or would an options dialog be a better idea?
-                  ('&Long',)), '', '', 'Indicate how output should be saved'),
-                ('E&xit', self.exit, 'Ctrl+Q', '', 'Quit the application'),),),
+                (self.format_option,
+                 (('&Compressed (no linefeeds)', self.set_format_c),
+                  ('&Short', self.set_format_s),
+                  ('&Medium', self.set_format_m),
+                  ('&Long', self.set_format_l)), '', 'Indicate how the output should be saved'),
+                ('E&xit', self.exit, 'Ctrl+Q', 'Quit the application'),),),
             ('&File', (
-                ('&New', self.newfile, 'Ctrl+Insert', '', 'Start a new css file'),
-                ('&Open', self.openfile, 'Ctrl+O', '', 'Open a css file'),
-                ('&Reload', self.reopenfile, 'Ctrl+R', '',
+                ('&New', self.newfile, 'Ctrl+Insert', 'Start a new css file'),
+                ('&Open', self.openfile, 'Ctrl+O', 'Open a css file'),
+                ('&Reload', self.reopenfile, 'Ctrl+R',
                  'Discard all changes and reopen the current css file'),
-                ('&Save', self.savefile, 'Ctrl+S', '', 'Save the current css file'),
-                ('Save &As', self.savefileas, 'Ctrl+Shift+S', '',
+                ('&Save', self.savefile, 'Ctrl+S', 'Save the current css file'),
+                ('Save &As', self.savefileas, 'Ctrl+Shift+S',
                  'Save the current css file under a different name'),
                 (),
-                ('Show &Log', self.show_log, 'Ctrl+Shift+L', '',
+                ('Show &Log', self.show_log, 'Ctrl+Shift+L',
                  'Show messages from parsing this file'),),),
             ('&View', (
-                ('&Show level', self.show_level, '', '', 'Show number of levels under root'),
-                # ('Expand', self.expand_item, 'Alt+Plus', '', 'Expand tree item'),
-                # ('Collapse', self.collapse_item, 'Alt+Minus', '', 'Collapse tree item'),
-                ('&Expand all', self.expand_all, 'Ctrl++', '', 'Expand all subitems'),
-                ('&Collapse all', self.collapse_all, 'Ctrl+-', '',
+                ('&Show level', self.show_level, '', 'Show number of levels under root'),
+                # ('Expand', self.expand_item, 'Alt+Plus', 'Expand tree item'),
+                # ('Collapse', self.collapse_item, 'Alt+Minus', 'Collapse tree item'),
+                ('&Expand all', self.expand_all, 'Ctrl++', 'Expand all subitems'),
+                ('&Collapse all', self.collapse_all, 'Ctrl+-',
                  'Collapse all subitems'),),),
             ('&Rule', (
-                ('Add under root', self.add, 'Ctrl+N', '',
+                ('Add under root', self.add, 'Ctrl+N',
                  'Add a new top level CSS rule at the end'),
-                ('Insert after', self.add_after, 'Ctrl+Shift+N', '',
+                ('Insert after', self.add_after, 'Ctrl+Shift+N',
                  'Add a new rule after the current one'),
-                ('Insert before', self.add_before, 'Ctrl+Alt+N', '',
+                ('Insert before', self.add_before, 'Ctrl+Alt+N',
                  'Add a new rule before the current one'),
-                ('Add under "rules" node', self.add_under, 'Alt+Shift+N', '',
+                ('Add under "rules" node', self.add_under, 'Alt+Shift+N',
                  'Add a new CSS rule at the end ("rules" node only)'),
-                ('Delete', self.delete, 'Del,Ctrl+D', '', 'Delete the current rule'),
-                ('Cut', self.cut, 'Ctrl+X', '', 'Cut (copy and delete) the current rule'),
-                ('Copy', self.copy, 'Ctrl+C', '', 'Copy the current rule'),
-                ('Paste after', self.paste_after, 'Ctrl+V', '',
+                (),
+                ('Delete', self.delete, 'Del,Ctrl+D', 'Delete the current rule'),
+                ('Cut', self.cut, 'Ctrl+X', 'Cut (copy and delete) the current rule'),
+                ('Copy', self.copy, 'Ctrl+C', 'Copy the current rule'),
+                (),
+                ('Paste after', self.paste_after, 'Ctrl+V',
                  'Insert the copied rule after the current one'),
-                ('Paste before', self.paste_before, 'Shift+Ctrl+V', '',
+                ('Paste before', self.paste_before, 'Shift+Ctrl+V',
                  'Insert the copied rule before the current one'),
-                ('Paste under "rules" node', self.paste_under, 'Ctrl+Alt+V', '',
+                ('Paste under "rules" node', self.paste_under, 'Ctrl+Alt+V',
                  'Insert the copied rule beneath the current node ("rules" only)'),),),
             ('Rule &Component', (
-                ('Edit', self.edit, 'F2,Ctrl+E', '', 'Edit a rule component'),),),)
+                ('Edit', self.edit, 'F2,Ctrl+E', 'Edit a rule component'),),),)
+
+    def set_format_c(self):
+        "don't use newline characters, indentations or extra spaces in output"
+        ed.set_format('compressed')
+        self.gui.check_format_option(0)
+
+    def set_format_s(self):
+        "newlines between elements, elements and attributes on same line"
+        ed.set_format('short')
+        self.gui.check_format_option(1)
+
+    def set_format_m(self):
+        "newlines between elements and attribute lists, attribute lists are indented"
+        ed.set_format('medium')
+        self.gui.check_format_option(2)
+
+    def set_format_l(self):
+        "newlines between elements and attributes, each attribute indented and on separate line"
+        ed.set_format('long')
+        self.gui.check_format_option(3)
 
     def getfilename(self, title='', start='', save=False):
         "pop up a dialog to get a filename"

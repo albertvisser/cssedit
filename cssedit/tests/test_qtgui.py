@@ -194,6 +194,8 @@ called Dialog.setLayout
 
 @pytest.fixture
 def expected_output():
+    """generic fixture for ouput expectations
+    """
     return {'maingui': exp_maingui,
             'logdialog': exp_logdialog,
             'textdialog': exp_textdialog,
@@ -274,6 +276,7 @@ class TestMainGui:
         assert testobj.master == master
         assert isinstance(testobj.statusbar, mockqtw.MockStatusBar)
         assert isinstance(testobj.tree, testee.TreePanel)
+        assert testobj.output_options == []
         assert capsys.readouterr().out == ("called Application.__init__\n"
                                            "called QMainWindow.__init__ with args () {}\n"
                                            "called MainGui.set_window_title with arg ''\n"
@@ -291,10 +294,103 @@ class TestMainGui:
     def test_create_menu(self, monkeypatch, capsys):
         """unittest for MainGui.create_menu
         """
+        def mock_callback():
+            "stub"
+        def mock_define(*args):
+            print(f'called Editor.define_format_submenu with args (menu, {args[1]})')
+        callback1 = mock_callback
+        callback2 = mock_callback
+        callback3 = mock_callback
         monkeypatch.setattr(testee.MainGui, 'menuBar', mockqtw.MockMainWindow.menuBar)
+        monkeypatch.setattr(testee.qtw, 'QAction', mockqtw.MockAction)
+        monkeypatch.setattr(testee.gui, 'QIcon', mockqtw.MockIcon)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.create_menu([])
+        testobj.define_format_submenu = mock_define
+        testobj.master.format_option = 'xxx'
+        testobj.master.actiondict = {}
+        menudata = ()
+        testobj.create_menu(menudata)
+        assert testobj.menus == {}
+        assert testobj.master.actiondict == {}
         assert capsys.readouterr().out == "called MainWindow.menuBar\ncalled MenuBar.__init__\n"
+        menudata = (('menutitle',
+                     (('label-1', callback1, 'x, y', 'infotekst-1'),
+                      (),
+                      ('xxx', ('submenu', 'data')),
+                      ('label-2', callback2, '', 'infotekst-2'),
+                      ('', callback3, 'z', 'infotekst-2'),
+                      ('label-3', callback3, 'z', ''))),)
+        # breakpoint()
+        testobj.create_menu(menudata)
+        assert list(testobj.menus.keys()) == ['menutitle']
+        assert isinstance(testobj.menus['menutitle'], mockqtw.MockMenu)
+        assert list(testobj.master.actiondict.keys()) == ['label-1', 'label-2', 'label-3']
+        for x in testobj.master.actiondict.values():
+            assert isinstance(x, mockqtw.MockAction)
+        assert capsys.readouterr().out == (
+            "called MainWindow.menuBar\n"
+            "called MenuBar.__init__\n"
+            "called MenuBar.addMenu with arg  menutitle\n"
+            "called Menu.__init__ with args ('menutitle',)\n"
+            f"called Action.__init__ with args ('label-1', {testobj})\n"
+            "called Action.setShortcuts with arg `['x', ' y']`\n"
+            f"called Signal.connect with args ({callback1},)\n"
+            "called Menu.addAction\n"
+            "called Menu.addSeparator\n"
+            "called Action.__init__ with args ('-----', None)\n"
+            "called Editor.define_format_submenu with args (menu, ('xxx', ('submenu', 'data')))\n"
+            f"called Action.__init__ with args ('label-2', {testobj})\n"
+            f"called Signal.connect with args ({callback2},)\n"
+            "called Menu.addAction\n"
+            "called Menu.addSeparator\n"
+            "called Action.__init__ with args ('-----', None)\n"
+            f"called Action.__init__ with args ('label-3', {testobj})\n"
+            "called Action.setShortcuts with arg `['z']`\n"
+            f"called Signal.connect with args ({callback3},)\n"
+            "called Menu.addAction\n")
+
+    def test_define_format_submenu(self, monkeypatch, capsys):
+        """unittest for MainGui.define_format_submenu
+        """
+        def mock_callback():
+            "stub"
+        menu = mockqtw.MockMenu()
+        assert capsys.readouterr().out == "called Menu.__init__ with args ()\n"
+        callback1 = mock_callback
+        callback2 = mock_callback
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.output_options = []
+        testobj.define_format_submenu(menu, ['title', (('item-1', callback1), ('item-2', callback2)),
+                                             '', '', 'statustip'])
+        assert len(testobj.output_options) == len([callback1, callback2])
+        assert isinstance(testobj.output_options[0], mockqtw.MockAction)
+        assert isinstance(testobj.output_options[1], mockqtw.MockAction)
+        assert capsys.readouterr().out == (
+                "called Menu.addMenu with args ('title',)\n"
+                "called Menu.__init__ with args ()\n"
+                f"called Menu.addAction with args `item-1` {callback1}\n"
+                f"called Action.__init__ with args ('item-1', {callback1})\n"
+                f"called Menu.addAction with args `item-2` {callback2}\n"
+                f"called Action.__init__ with args ('item-2', {callback2})\n"
+                "called Action.setChecked with arg `True`\n"
+                "called Menu.setStatusTip with arg 'statustip'\n")
+
+    def test_check_format_option(self, monkeypatch, capsys):
+        """unittest for MainGui.check_format_option
+        """
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.output_options = [mockqtw.MockAction(), mockqtw.MockAction(), mockqtw.MockAction(),
+                                  mockqtw.MockAction()]
+        assert capsys.readouterr().out == ("called Action.__init__ with args ()\n"
+                                           "called Action.__init__ with args ()\n"
+                                           "called Action.__init__ with args ()\n"
+                                           "called Action.__init__ with args ()\n")
+        testobj.check_format_option(2)
+        assert capsys.readouterr().out == ("called Action.setChecked with arg `False`\n"
+                                           "called Action.setChecked with arg `False`\n"
+                                           "called Action.setChecked with arg `False`\n"
+                                           "called Action.setChecked with arg `False`\n"
+                                           "called Action.setChecked with arg `True`\n")
 
     def test_just_show(self, monkeypatch, capsys):
         """unittest for MainGui.just_show
