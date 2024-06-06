@@ -413,7 +413,7 @@ class Editor:
         if savemode not in format_types:
             info = "`, `".join(format_types[:-1])
             info = "` or `".join((info, format_types[-1]))
-            raise AttributeError(f"wrong format type for save, should be either of `{info}`")
+            raise AttributeError(f"wrong format type for save, should be one of `{info}`")
         ## ## data = compile(self.data)
         set_format(savemode)
         if self.filename:
