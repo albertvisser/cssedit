@@ -76,7 +76,7 @@ called Dialog.__init__ with args namespace(master=namespace(app_title='apptitle'
 called Dialog.setWindowTitle with args ('{title}',)
 called VBox.__init__
 called Frame.__init__
-called Frame.setFrameStyle with arg `[]`
+called Frame.setFrameStyle with arg `{testee.qtw.QFrame.Box}`
 called VBox.__init__
 called HBox.__init__
 called HBox.addStretch
@@ -85,7 +85,7 @@ called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockLabel'>
 called HBox.addStretch
 called VBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockHBoxLayout'>
 called HBox.__init__
-called Table.__init__ with arg {testobj}
+called Table.__init__ with args ({testobj},)
 called Header.__init__
 called Header.__init__
 called Table.setColumnCount with arg '2'
@@ -101,12 +101,12 @@ called Table.setTabKeyNavigation with arg False
 exp_grid_middle = """\
 called Table.rowCount
 called Table.insertRow with arg '0'
-called Table.setItem with args (0, 0, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>
-called Table.setItem with args (0, 1, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>
+called Table.setItem with args (0, 0, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>)
+called Table.setItem with args (0, 1, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>)
 called Table.rowCount
-called Table.insertRow with arg '0'
-called Table.setItem with args (0, 0, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>
-called Table.setItem with args (0, 1, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>
+called Table.insertRow with arg '1'
+called Table.setItem with args (1, 0, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>)
+called Table.setItem with args (1, 1, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>)
 """
 exp_grid_end = """\
 called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockTable'>
@@ -141,7 +141,7 @@ called Dialog.__init__ with args {parent} () {{}}
 called Dialog.setWindowTitle with args ({title!r},)
 called VBox.__init__
 called Frame.__init__
-called Frame.setFrameStyle with arg `[]`
+called Frame.setFrameStyle with arg `{testee.qtw.QFrame.Box}`
 called VBox.__init__
 called HBox.__init__
 called HBox.addStretch
@@ -1063,7 +1063,7 @@ class TestGridDialog:
                                            'called MainGui.__init__ with args ()\n'
                                            'called Editor.__init__\n')
         testobj.attr_table = mockqtw.MockTable(testobj)
-        assert capsys.readouterr().out == (f"called Table.__init__ with arg {testobj}\n"
+        assert capsys.readouterr().out == (f"called Table.__init__ with args ({testobj},)\n"
                                            "called Header.__init__\n"
                                            "called Header.__init__\n")
         return testobj
@@ -1084,15 +1084,17 @@ class TestGridDialog:
         testobj = testee.GridDialog(parent)
         assert testobj.parent == parent
         assert isinstance(testobj.attr_table, testee.qtw.QTableWidget)
-        assert capsys.readouterr().out == expected_output['griddialog'].format(testobj=testobj,
+        assert capsys.readouterr().out == expected_output['griddialog'].format(testee=testee,
+                                                                               testobj=testobj,
                                                                                title='',
                                                                                text='yyyy')
         testobj = testee.GridDialog(parent, title='xxx', itemlist=['yy', 'zz'])
         assert testobj.parent == parent
         assert isinstance(testobj.attr_table, testee.qtw.QTableWidget)
-        assert capsys.readouterr().out == expected_output['griddialog2'].format(testobj=testobj,
-                                                                               title='xxx',
-                                                                               text='yyyy')
+        assert capsys.readouterr().out == expected_output['griddialog2'].format(testee=testee,
+                                                                                testobj=testobj,
+                                                                                title='xxx',
+                                                                                text='yyyy')
 
     def test_on_add(self, monkeypatch, capsys):
         """unittest for GridDialog.on_add
@@ -1159,7 +1161,7 @@ class TestGridDialog:
         testobj.attr_table = mockqtw.MockTable(testobj)
         testobj.attr_table.setRowCount(2)
         testobj.attr_table.item = get_item
-        assert capsys.readouterr().out == (f"called Table.__init__ with arg {testobj}\n"
+        assert capsys.readouterr().out == (f"called Table.__init__ with args ({testobj},)\n"
                                            "called Header.__init__\n"
                                            "called Header.__init__\n"
                                            "called Table.setRowCount with arg '2'\n")
@@ -1233,7 +1235,8 @@ class TestListDialog:
         assert not testobj.is_rules_node
         assert isinstance(testobj.list, testee.qtw.QListWidget)
         title = ''
-        assert capsys.readouterr().out == expected_output['listdialog'].format(parent=parent,
+        assert capsys.readouterr().out == expected_output['listdialog'].format(testee=testee,
+                                                                               parent=parent,
                                                                                title=title,
                                                                                testobj=testobj)
         title = "xxx'rules'xx"
@@ -1241,7 +1244,8 @@ class TestListDialog:
         assert testobj.parent == parent
         assert testobj.is_rules_node
         assert isinstance(testobj.list, testee.qtw.QListWidget)
-        assert capsys.readouterr().out == expected_output['listdialog2'].format(parent=parent,
+        assert capsys.readouterr().out == expected_output['listdialog2'].format(testee=testee,
+                                                                                parent=parent,
                                                                                 title=title,
                                                                                 testobj=testobj)
 
