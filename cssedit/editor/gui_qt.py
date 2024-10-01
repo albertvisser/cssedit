@@ -2,9 +2,9 @@
 """
 import sys
 import os
-import PyQt5.QtWidgets as qtw
-import PyQt5.QtGui as gui
-import PyQt5.QtCore as core
+import PyQt6.QtWidgets as qtw
+import PyQt6.QtGui as gui
+import PyQt6.QtCore as core
 from .cssedit import RTYPES, parse_log_line, get_definition_from_file
 HERE = os.path.dirname(__file__)
 
@@ -47,7 +47,7 @@ class MainGui(qtw.QMainWindow):
                     self.define_format_submenu(menu, menudef)
                     continue
                 label, handler, shortcut, info = menudef
-                action = qtw.QAction(label, self)
+                action = gui.QAction(label, self)
                 if shortcut:
                     action.setShortcuts(shortcut.split(","))
                 if info:
@@ -78,13 +78,14 @@ class MainGui(qtw.QMainWindow):
         """standalone aansturen
         """
         self.show()
-        sys.exit(self.app.exec_())
+        sys.exit(self.app.exec())
 
     def set_modality_and_show(self, modal):
         """blokkerend gedrag instellen als aangestuurd vanuit bv. Htmledit
         """
         # print('in csseditorgui.set_modality_and_show, modal is', modal)
-        modality = core.Qt.ApplicationModal if modal else core.Qt.NonModal
+        modality = (core.Qt.WindowModality.ApplicationModal if modal
+                    else core.Qt.WindowModality.NonModal)
         self.setWindowModality(modality)
         self.show()
 
@@ -111,7 +112,7 @@ class MainGui(qtw.QMainWindow):
     def set_waitcursor(self, on):
         "set cursor to clock or back to default"
         if on:
-            self.app.setOverrideCursor(gui.QCursor(core.Qt.WaitCursor))
+            self.app.setOverrideCursor(gui.QCursor(core.Qt.CursorShape.WaitCursor))
         else:
             self.app.restoreOverrideCursor()
 
@@ -133,8 +134,8 @@ class MainGui(qtw.QMainWindow):
 
     def show_dialog(self, cls, *args):
         "show and return the results of a dialog"
-        edt = cls(self, *args).exec_()
-        if edt == qtw.QDialog.Accepted:
+        edt = cls(self, *args).exec()
+        if edt == qtw.QDialog.DialogCode.Accepted:
             return True, self.dialog_data
         return False, None
 
@@ -149,7 +150,7 @@ class TreePanel(qtw.QTreeWidget):
         self.headerItem().setHidden(True)
         ## self.setAcceptDrops(True)
         ## self.setDragEnabled(True)
-        self.setSelectionMode(self.SingleSelection)
+        self.setSelectionMode(self.SelectionMode.SingleSelection)
         ## self.setDragDropMode(self.InternalMove)
         ## self.setDropIndicatorShown(True)
         self.setUniformRowHeights(True)
@@ -236,7 +237,7 @@ class TreePanel(qtw.QTreeWidget):
         #     menu.addAction(action)
         #     if item == self.parent.root:
         #         action.setEnabled(False)
-        # menu.exec_(self.mapToGlobal(self.visualItemRect(item).center()))
+        # menu.exec(self.mapToGlobal(self.visualItemRect(item).center()))
         # if item == self.parent.root:
         #     for action in self.parent.notemenu.actions():
         #         if item == self.parent.root and action.text() in ('&Add', '&Delete',
@@ -386,7 +387,7 @@ class LogDialog(qtw.QDialog):
 
         self.setLayout(vbox)
         self.resize(600, 480)
-        self.exec_()
+        self.exec()
 
     def itemDoubleClicked(self, item):
         """handler for doubleclicking over a line
@@ -471,7 +472,7 @@ class GridDialog(qtw.QDialog):
         vbox = qtw.QVBoxLayout()
 
         sbox = qtw.QFrame()
-        sbox.setFrameStyle(qtw.QFrame.Box)
+        sbox.setFrameStyle(qtw.QFrame.Shape.Box)
         box = qtw.QVBoxLayout()
 
         hbox = qtw.QHBoxLayout()
@@ -554,9 +555,10 @@ class GridDialog(qtw.QDialog):
         """attribuut verwijderen
         """
         ok = qtw.QMessageBox.question(self, 'Delete row from table', 'Are you sure?',
-                                      qtw.QMessageBox.Ok | qtw.QMessageBox.Cancel,
-                                      qtw.QMessageBox.Ok)
-        if ok == qtw.QMessageBox.Ok:
+                                      qtw.QMessageBox.StandardButton.Ok
+                                      | qtw.QMessageBox.StandardButton.Cancel,
+                                      qtw.QMessageBox.StandardButton.Ok)
+        if ok == qtw.QMessageBox.StandardButton.Ok:
             self.attr_table.removeRow(self.attr_table.currentRow())
 
     def on_cancel(self):
@@ -593,7 +595,7 @@ class ListDialog(qtw.QDialog):
         vbox = qtw.QVBoxLayout()
 
         sbox = qtw.QFrame()
-        sbox.setFrameStyle(qtw.QFrame.Box)
+        sbox.setFrameStyle(qtw.QFrame.Shape.Box)
         box = qtw.QVBoxLayout()
 
         hbox = qtw.QHBoxLayout()
@@ -676,9 +678,10 @@ class ListDialog(qtw.QDialog):
     def on_del(self):
         "item verwijderen"
         ok = qtw.QMessageBox.question(self, 'Delete item from list', 'Are you sure?',
-                                      qtw.QMessageBox.Ok | qtw.QMessageBox.Cancel,
-                                      qtw.QMessageBox.Ok)
-        if ok == qtw.QMessageBox.Ok:
+                                      qtw.QMessageBox.StandardButton.Ok
+                                      | qtw.QMessageBox.StandardButton.Cancel,
+                                      qtw.QMessageBox.StandardButton.Ok)
+        if ok == qtw.QMessageBox.StandardButton.Ok:
             self.list.takeItem(self.list.currentRow())
 
     def on_cancel(self):

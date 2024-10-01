@@ -43,7 +43,7 @@ called HBox.addStretch
 called VBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockHBoxLayout'>
 called Dialog.setLayout
 called Widget.resize with args (600, 480)
-called Dialog.exec_
+called Dialog.exec
 """
 exp_textdialog = """\
 called Dialog.__init__ with args namespace(master=namespace(app_title='apptitle')) () {{}}
@@ -101,12 +101,12 @@ called Table.setTabKeyNavigation with arg False
 exp_grid_middle = """\
 called Table.rowCount
 called Table.insertRow with arg '0'
-called Table.setItem with args (0, 0, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>)
-called Table.setItem with args (0, 1, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>)
+called Table.setItem with args (0, 0, item of <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
+called Table.setItem with args (0, 1, item of <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
 called Table.rowCount
 called Table.insertRow with arg '1'
-called Table.setItem with args (1, 0, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>)
-called Table.setItem with args (1, 1, item of <class 'PyQt5.QtWidgets.QTableWidgetItem'>)
+called Table.setItem with args (1, 0, item of <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
+called Table.setItem with args (1, 1, item of <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
 """
 exp_grid_end = """\
 called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockTable'>
@@ -302,7 +302,7 @@ class TestMainGui:
         callback2 = mock_callback
         callback3 = mock_callback
         monkeypatch.setattr(testee.MainGui, 'menuBar', mockqtw.MockMainWindow.menuBar)
-        monkeypatch.setattr(testee.qtw, 'QAction', mockqtw.MockAction)
+        monkeypatch.setattr(testee.gui, 'QAction', mockqtw.MockAction)
         monkeypatch.setattr(testee.gui, 'QIcon', mockqtw.MockIcon)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.define_format_submenu = mock_define
@@ -401,7 +401,7 @@ class TestMainGui:
         testobj.show = mock_show
         with pytest.raises(SystemExit):
             testobj.just_show()
-        assert capsys.readouterr().out == ("called MainGui.show\ncalled Application.exec_\n")
+        assert capsys.readouterr().out == ("called MainGui.show\ncalled Application.exec\n")
 
     def test_set_modality_and_show(self, monkeypatch, capsys):
         """unittest for MainGui.set_modality_and_show
@@ -414,11 +414,13 @@ class TestMainGui:
         testobj.show = mock_show
         testobj.set_modality_and_show('')
         assert capsys.readouterr().out == (
-                f"called MainWindow.setWindowModality with arg '{testee.core.Qt.NonModal}'\n"
+                "called MainWindow.setWindowModality with arg"
+                f" '{testee.core.Qt.WindowModality.NonModal}'\n"
                 "called MainGui.show\n")
         testobj.set_modality_and_show('x')
         assert capsys.readouterr().out == (
-                f"called MainWindow.setWindowModality with arg '{testee.core.Qt.ApplicationModal}'\n"
+                "called MainWindow.setWindowModality with arg"
+                f" '{testee.core.Qt.WindowModality.ApplicationModal}'\n"
                 "called MainGui.show\n")
 
     def test_show_message(self, monkeypatch, capsys):
@@ -474,7 +476,7 @@ class TestMainGui:
         assert capsys.readouterr().out == ("called Application.restoreOverrideCursor\n")
         testobj.set_waitcursor(True)
         assert capsys.readouterr().out == (
-                f"called Cursor.__init__ with arg {testee.core.Qt.WaitCursor}\n"
+                f"called Cursor.__init__ with arg {testee.core.Qt.CursorShape.WaitCursor}\n"
                 "called Application.setOverrideCursor with arg of type"
                 " <class 'mockgui.mockqtwidgets.MockCursor'>\n")
 
@@ -536,20 +538,20 @@ class TestMainGui:
         """unittest for MainGui.show_dialog
         """
         def mock_exec(self):
-            print('called Dialog.exec_')
-            return testee.qtw.QDialog.Accepted
+            print('called Dialog.exec')
+            return testee.qtw.QDialog.DialogCode.Accepted
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.dialog_data = {'x': 'y'}
         cls = mockqtw.MockDialog
         assert testobj.show_dialog(cls, 'args') == (False, None)
         assert capsys.readouterr().out == (
                 f"called Dialog.__init__ with args {testobj} ('args',) {{}}\n"
-                "called Dialog.exec_\n")
-        cls.exec_ = mock_exec
+                "called Dialog.exec\n")
+        cls.exec = mock_exec
         assert testobj.show_dialog(cls, 'args') == (True, {'x': 'y'})
         assert capsys.readouterr().out == (
                 f"called Dialog.__init__ with args {testobj} ('args',) {{}}\n"
-                "called Dialog.exec_\n")
+                "called Dialog.exec\n")
 
 
 class TestTreePanel:
@@ -900,7 +902,7 @@ class TestLogDialog:
         monkeypatch.setattr(testee.qtw.QDialog, 'setWindowTitle', mockqtw.MockDialog.setWindowTitle)
         monkeypatch.setattr(testee.qtw.QDialog, 'setLayout', mockqtw.MockDialog.setLayout)
         monkeypatch.setattr(testee.qtw.QDialog, 'resize', mockqtw.MockWidget.resize)
-        monkeypatch.setattr(testee.qtw.QDialog, 'exec_', mockqtw.MockDialog.exec_)
+        monkeypatch.setattr(testee.qtw.QDialog, 'exec', mockqtw.MockDialog.exec)
         monkeypatch.setattr(testee.qtw, 'QLabel', mockqtw.MockLabel)
         monkeypatch.setattr(testee.qtw, 'QListWidget', mockqtw.MockListBox)
         monkeypatch.setattr(testee.qtw, 'QPushButton', mockqtw.MockPushButton)
@@ -1110,11 +1112,11 @@ class TestGridDialog:
         def mock_question(parent, caption, message, buttons, default):
             print('called MessageBox.question with args'
                   f' `{caption}` `{message}` `{buttons}` `{default}`')
-            return testee.qtw.QMessageBox.Cancel
+            return testee.qtw.QMessageBox.StandardButton.Cancel
         def mock_question_2(parent, caption, message, buttons, default):
             print('called MessageBox.question with args'
                   f' `{caption}` `{message}` `{buttons}` `{default}`')
-            return testee.qtw.QMessageBox.Ok
+            return testee.qtw.QMessageBox.StandardButton.Ok
         testobj = self.setup_testobj(monkeypatch, capsys)
         monkeypatch.setattr(mockqtw.MockMessageBox, 'question', mock_question)
         monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
