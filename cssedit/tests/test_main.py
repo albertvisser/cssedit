@@ -404,6 +404,8 @@ class TestEditor:
         """
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.css = types.SimpleNamespace()
+        testobj.css.log = []
+        assert testobj.build_loaded_message() == "file loaded"
         testobj.css.log = ['WARNING: xxx', 'WARNING: xxx']
         assert testobj.build_loaded_message() == "file loaded with 2 warnings"
         testobj.css.log = ['ERROR: xxx', 'ERROR: xxx']
@@ -933,7 +935,7 @@ class TestEditor:
             "called TreePanel.expand_item with arg new item\n"
             "called TreePanel.setcurrent with arg new item\n")
 
-        testobj.add_rule(after='after')
+        testobj.add_rule(after=True)
         assert capsys.readouterr().out == (
             "called TreePanel.get_parentpos with item\n"
             "called Editor.is_rule_parent with arg item\n"
@@ -945,12 +947,35 @@ class TestEditor:
             "called TreePanel.expand_item with arg new item\n"
             "called TreePanel.setcurrent with arg new item\n")
 
-        testobj.add_rule('parent', 'after')
+        testobj.add_rule(after=False)
+        assert capsys.readouterr().out == (
+            "called TreePanel.get_parentpos with item\n"
+            "called Editor.is_rule_parent with arg item\n"
+            "called MainGui.get_input_choice with args ('Choose type for new rule', ['A', 'B'])\n"
+            "called TreePanel.get_parentpos with item\n"
+            "called TreePanel.add_to_parent with args ('B', 'item', 0)\n"
+            "called TreePanel.add_to_parent with args ('y', 'new item')\n"
+            "called Editor.mark_dirty with arg True\n"
+            "called TreePanel.expand_item with arg new item\n"
+            "called TreePanel.setcurrent with arg new item\n")
+
+        testobj.add_rule('parent', True)
         assert capsys.readouterr().out == (
             "called Editor.is_rule_parent with arg parent\n"
             "called MainGui.get_input_choice with args ('Choose type for new rule', ['A', 'B'])\n"
             "called TreePanel.get_parentpos with item\n"
             "called TreePanel.add_to_parent with args ('B', 'parent', 1)\n"
+            "called TreePanel.add_to_parent with args ('y', 'new item')\n"
+            "called Editor.mark_dirty with arg True\n"
+            "called TreePanel.expand_item with arg new item\n"
+            "called TreePanel.setcurrent with arg new item\n")
+
+        testobj.add_rule('parent', False)
+        assert capsys.readouterr().out == (
+            "called Editor.is_rule_parent with arg parent\n"
+            "called MainGui.get_input_choice with args ('Choose type for new rule', ['A', 'B'])\n"
+            "called TreePanel.get_parentpos with item\n"
+            "called TreePanel.add_to_parent with args ('B', 'parent', 0)\n"
             "called TreePanel.add_to_parent with args ('y', 'new item')\n"
             "called Editor.mark_dirty with arg True\n"
             "called TreePanel.expand_item with arg new item\n"
@@ -1259,6 +1284,9 @@ class TestEditor:
         def mock_show_3(cls, *args, **kwargs):
             print(f'called MainGui.show_dialog with args {cls}', args, kwargs)
             return True, [['node-1', 'node-1-0']]
+        def mock_show_4(cls, *args, **kwargs):
+            print(f'called MainGui.show_dialog with args {cls}', args, kwargs)
+            return True, [['node-1', 'node-1-1'], ['node-2', 'node-2-1']]
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.item = 'node'
         testobj.gui.tree.get_itemtext = mock_get_itemtext
@@ -1280,6 +1308,13 @@ class TestEditor:
                 " ('title', [('node-1', 'node-1-1'), ('node-2', 'node-2-1')]) {}\n")
 
         testobj.gui.show_dialog = mock_show_2
+        # breakpoint()
+        # (Pdb++) p subitems
+        # ['node-1', 'node-2']
+        # (Pdb++) itemlist
+        # [('node-1', 'node-1-1'), ('node-2', 'node-2-1')]
+        # (Pdb++) p newitemlist
+        # [['node-1', 'node-1-0'], ['node-02', 'node-2-2'], ['node-3', 'node-3-1']]
         assert testobj.edit_grid_node('title')
         assert capsys.readouterr().out == (
                 "called TreePanel.get_subitems with arg node\n"
@@ -1301,6 +1336,13 @@ class TestEditor:
                 "called TreePanel.add_to_parent with args ('node-3-1', 'new item')\n")
 
         testobj.gui.show_dialog = mock_show_3
+        # breakpoint()
+        # (Pdb++) p subitems
+        # ['node-1', 'node-2']
+        # Pdb++) p itemlist
+        # [('node-1', 'node-1-1'), ('node-2', 'node-2-1')]
+        # (Pdb++) p newitemlist
+        # [['node-1', 'node-1-0']]
         assert testobj.edit_grid_node('title')
         assert capsys.readouterr().out == (
                 "called TreePanel.get_subitems with arg node\n"
@@ -1316,6 +1358,20 @@ class TestEditor:
                 "called TreePanel.get_subitems with arg node-1\n"
                 "called TreePanel.set_itemtext with args ('node-1-1', 'node-1-0')\n"
                 "called TreePanel.remove_subitem with args ('node', 1)\n")
+
+        testobj.gui.show_dialog = mock_show_4
+        assert not testobj.edit_grid_node('title')
+        assert capsys.readouterr().out == (
+                "called TreePanel.get_subitems with arg node\n"
+                "called TreePanel.get_itemtext with arg node-1\n"
+                "called TreePanel.get_subitems with arg node-1\n"
+                "called TreePanel.get_itemtext with arg node-1-1\n"
+                "called TreePanel.get_itemtext with arg node-2\n"
+                "called TreePanel.get_subitems with arg node-2\n"
+                "called TreePanel.get_itemtext with arg node-2-1\n"
+                "called MainGui.show_dialog with args"
+                " <class 'cssedit.tests.test_main.MockGridDialog'>"
+                " ('title', [('node-1', 'node-1-1'), ('node-2', 'node-2-1')]) {}\n")
 
     def test_delete(self, monkeypatch, capsys):
         """unittest for Editor.delete
@@ -1356,6 +1412,12 @@ class TestEditor:
         def mock_parentpos(arg):
             print(f'called Tree.getitemparentpos with arg `{arg}`')
             return 'parent', 1
+        def mock_parentpos_2(arg):
+            print(f'called Tree.getitemparentpos with arg `{arg}`')
+            return 'parent', 0
+        def mock_parentpos_3(arg):
+            print(f'called Tree.getitemparentpos with arg `{arg}`')
+            return 'parent', 2
         def mock_remove(*args):
             print('called Tree.remove_subitem with args', args)
         testobj = self.setup_testobj(monkeypatch, capsys)
@@ -1399,6 +1461,26 @@ class TestEditor:
         assert (testobj.cut_item, testobj.cutlevel) == (None, 0)
         assert capsys.readouterr().out == ("called Editor.checkselection\n"
                                            "called Editor.is_rule_item with arg `testitem`\n")
+        testobj.gui.tree.getitemparentpos = mock_parentpos_2
+        testobj.is_rule_item = mock_is_ruleitem
+        testobj.cut_item, testobj.cutlevel = None, 0
+        testobj._copy_rule()
+        assert (testobj.cut_item, testobj.cutlevel) == ('testitem', 1)
+        assert capsys.readouterr().out == ("called Editor.checkselection\n"
+                                           "called Editor.is_rule_item with arg `testitem`\n"
+                                           "called Tree.getitemparentpos with arg `testitem`\n"
+                                           "called Tree.remove_subitem with args ('parent', 0)\n"
+                                           "called Editor.mark_dirty with arg True\n")
+        testobj.gui.tree.getitemparentpos = mock_parentpos_3
+        testobj.is_rule_item = mock_is_ruleitem
+        testobj.cut_item, testobj.cutlevel = None, 0
+        testobj._copy_rule()
+        assert (testobj.cut_item, testobj.cutlevel) == ('testitem', 1)
+        assert capsys.readouterr().out == ("called Editor.checkselection\n"
+                                           "called Editor.is_rule_item with arg `testitem`\n"
+                                           "called Tree.getitemparentpos with arg `testitem`\n"
+                                           "called Tree.remove_subitem with args ('parent', 1)\n"
+                                           "called Editor.mark_dirty with arg True\n")
 
     def test_paste_under(self, monkeypatch, capsys):
         """unittest for Editor.paste_under

@@ -32,6 +32,7 @@ from cssedit.editor import cssedit as testee
 #     float: left
 # }"""
 
+
 class MockLogger:
     """stub
     """
@@ -50,6 +51,7 @@ class MockLogger:
         """
         print(f'called logger.setLevel() with arg `{args[0]}`')
 
+
 class MockLogHandler:
     """stub
     """
@@ -64,6 +66,7 @@ class MockLogHandler:
         """
         print('called loghandler.setFormatter()')
 
+
 class MockLogFormatter:
     """stub
     """
@@ -73,6 +76,7 @@ class MockLogFormatter:
         """stub
         """
         return 'formatter'
+
 
 class MockStyle:
     """stub
@@ -262,10 +266,10 @@ class MockStyleSheet:
         """stub
         """
         print('called stylesheet.add()')
-    def cssText(self, *args):
-        """stub
-        """
-        print('called stylesheet.cssText()')
+    # def cssText(self, *args):
+    #     """stub
+    #     """
+    #     print('called stylesheet.cssText()')
 
 
 class MockStyleDeclaration(dict):
@@ -365,6 +369,20 @@ class TestEditor:
 
         monkeypatch.setattr(testee, 'set_logger', mock_set_logger)
         monkeypatch.setattr(testee.Editor, 'csstodata', mock_todata)
+        testobj = testee.Editor(filename='text.css')
+        assert testobj.data is not None
+        assert testobj.log == ['xxx']
+        assert capsys.readouterr().out == ("called set_logger\n"
+                                           "called Editor.csstodata with arg 'None'\n"
+                                           "called stylesheet.__init__()\n")
+
+        testobj = testee.Editor(tag='xxx', text='yyy')
+        assert testobj.data is not None
+        assert testobj.log == ['xxx']
+        assert capsys.readouterr().out == ("called set_logger\n"
+                                           "called Editor.csstodata with arg 'yyy'\n"
+                                           "called stylesheet.__init__()\n")
+
         testobj = testee.Editor(text='x')
         assert testobj.data is not None
         assert testobj.log == ['xxx']
@@ -404,11 +422,11 @@ class TestEditor:
             """
             print('called cssedit.parse()')
             return None
-        def mock_text(*args):
-            """stub
-            """
-            print('called stylesheet.cssText()')
-            return ''
+        # def mock_text(*args):
+        #     """stub
+        #     """
+        #     print('called stylesheet.cssText()')
+        #     return ''
 
         monkeypatch.setattr(testee.cssutils.css, 'CSSStyleSheet', MockStyleSheet)
         monkeypatch.setattr(testee.cssutils.css, 'CSSStyleRule', MockStyleRule)
@@ -514,7 +532,8 @@ class TestEditor:
                                            'rules': [('stylerule', {'selectors': ['x'],
                                                                     'styles': {'xx': 'yy'}})]}),
                             (testee.cssutils.css.CSSComment().typeString, {'text': 'z'}),
-                            ('textrule_2', {'text': '/* z */'})]
+                            ('textrule_2', {'text': '/* z */'}),
+                            ('other_rule', {})]
         testobj.texttodata()
         assert isinstance(testobj.data, testee.cssutils.css.CSSStyleSheet)
         assert capsys.readouterr().out == ('called editor.__init__()\n'

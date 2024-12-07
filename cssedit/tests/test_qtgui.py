@@ -463,9 +463,9 @@ class TestMainGui:
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.master.app_title = 'xxx'
         testobj.set_window_title()
-        assert capsys.readouterr().out == ("called MainWindow.setWindowTitle to `xxx`\n")
+        assert capsys.readouterr().out == ("called MainWindow.setWindowTitle with arg `xxx`\n")
         testobj.set_window_title('yyy')
-        assert capsys.readouterr().out == ("called MainWindow.setWindowTitle to `yyy`\n")
+        assert capsys.readouterr().out == ("called MainWindow.setWindowTitle with arg `yyy`\n")
 
     def test_set_waitcursor(self, monkeypatch, capsys):
         """unittest for MainGui.set_waitcursor
@@ -799,7 +799,8 @@ class TestTreePanel:
                                            "called TreeItem.addChild\n")
         testobj = self.setup_testobj(monkeypatch, capsys)
         assert testobj.get_subitems(item) == ['item0', 'item1']
-        assert capsys.readouterr().out == ("called TreeItem.child with arg 0\n"
+        assert capsys.readouterr().out == ("called TreeItem.childCount\n"
+                                           "called TreeItem.child with arg 0\n"
                                            "called TreeItem.child with arg 1\n")
 
     def test_set_itemtext(self, monkeypatch, capsys):
@@ -845,7 +846,8 @@ class TestTreePanel:
         assert len(result) == 2
         assert isinstance(result[0], mockqtw.MockTreeItem)
         assert result[1] == 1
-        assert capsys.readouterr().out == f"called QTreeWidgetItem.parent with arg '{item}'\n"
+        assert capsys.readouterr().out == (f"called QTreeWidgetItem.parent with arg '{item}'\n"
+                                           "called TreeItem.indexOfChild\n")
         monkeypatch.setattr(mockqtw.MockTreeItem, 'parent', mock_parent_2)
         item = mockqtw.MockTreeItem()
         assert capsys.readouterr().out == "called TreeItem.__init__ with args ()\n"

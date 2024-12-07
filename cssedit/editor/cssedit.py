@@ -27,12 +27,12 @@ RTYPES = {
              table_type,
              lambda rule: {x.name: x.propertyValue.cssText
                            for x in rule.style.getProperties()})]),
-             # dit werkt niet als ik in een grid wil kunnen editen
-             # list_type,
-             # lambda rule: [(item.name, item.propertyValue.cssText)      # ofwel een style
-             #                if item in rule.style.getProperties() else  # ofwel een andere rule
-             #                (item.typeString, complete_ruledata(init_ruledata(item.type), item))
-             #               for item in rule.style.children()])]),
+        # dit werkt niet als ik in een grid wil kunnen editen
+        #    list_type,
+        #    lambda rule: [(item.name, item.propertyValue.cssText)      # ofwel een style
+        #                   if item in rule.style.getProperties() else  # ofwel een andere rule
+        #                   (item.typeString, complete_ruledata(init_ruledata(item.type), item))
+        #                  for item in rule.style.children()])]),
     cssutils.css.CSSRule.CHARSET_RULE: (
         'CHARSET_RULE', [
             ("name",
@@ -83,25 +83,25 @@ RTYPES = {
             ("text",
              text_type,
              lambda rule: rule.cssText[2:-2].strip())]),
-    ## cssutils.css.CSSRule.MARGIN_RULE: ('MARGIN_RULE',
-        ## []), # experimental rule not in the offical spec
-    ## cssutils.css.CSSRule.VARIABLES_RULE: ('VARIABLES_RULE',
-        ## []), # experimental rule not in the offical spec
-    ## # volgens MozDEv zijn er nog een aantal ruletypes (experimental) :
-    ## @supports
-    ## - text subnode (feature test)
-    ## - list subnode (rules)
-    ## @document
-    ## - text subnode (url/url-prefix/domain/regexp)
-    ## - table subnode (styles)
-    ## @keyframes
-    ## @viewport
-    ## - table subnode (styles)
-    ## @counter-style
-    ## - text subnode (name of counter-style)
-    ## - table subnode (declarations/styles)
-    ## @font-feature-values
-    ## - subrules: @swash @annotation @ornaments @stylistic @styleset @character-variant
+    # cssutils.css.CSSRule.MARGIN_RULE: ('MARGIN_RULE',
+    #     []), # experimental rule not in the offical spec
+    # cssutils.css.CSSRule.VARIABLES_RULE: ('VARIABLES_RULE',
+    #     []), # experimental rule not in the offical spec
+    # # volgens MozDEv zijn er nog een aantal ruletypes (experimental) :
+    # @supports
+    # - text subnode (feature test)
+    # - list subnode (rules)
+    # @document
+    # - text subnode (url/url-prefix/domain/regexp)
+    # - table subnode (styles)
+    # @keyframes
+    # @viewport
+    # - table subnode (styles)
+    # @counter-style
+    # - text subnode (name of counter-style)
+    # - table subnode (declarations/styles)
+    # @font-feature-values
+    # - subrules: @swash @annotation @ornaments @stylistic @styleset @character-variant
     cssutils.css.CSSRule.UNKNOWN_RULE: (
         'UNKNOWN_RULE', [
             ("data",
@@ -405,6 +405,8 @@ class Editor:
                     ## rule.cssText=ruledata['text']
                     # for want of something better
                     rule = cssutils.css.CSSComment(cssText=ruledata['text'])
+            else:
+                continue  # don't build rule, don't add rule
             self.data.add(rule)
 
     def return_to_source(self, backup=True, savemode="compressed"):
