@@ -91,8 +91,8 @@ called Header.__init__
 called Table.setColumnCount with arg '2'
 called Table.setHorizontalHeaderLabels with arg '['property', 'value']'
 called Table.horizontalHeader
-called Header.resizeSection for col 0 width 102
-called Header.resizeSection for col 1 width 152
+called Header.resizeSection with args (0, 102)
+called Header.resizeSection with args (1, 152)
 called Header.setStretchLastSection with arg True
 called Table.verticalHeader
 called Header.setVisible with args 'False'
@@ -101,12 +101,12 @@ called Table.setTabKeyNavigation with arg False
 exp_grid_middle = """\
 called Table.rowCount
 called Table.insertRow with arg '0'
-called Table.setItem with args (0, 0, item of <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
-called Table.setItem with args (0, 1, item of <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
+called Table.setItem with args (0, 0, item of type <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
+called Table.setItem with args (0, 1, item of type <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
 called Table.rowCount
 called Table.insertRow with arg '1'
-called Table.setItem with args (1, 0, item of <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
-called Table.setItem with args (1, 1, item of <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
+called Table.setItem with args (1, 0, item of type <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
+called Table.setItem with args (1, 1, item of type <class 'PyQt6.QtWidgets.QTableWidgetItem'>)
 """
 exp_grid_end = """\
 called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockTable'>
@@ -334,12 +334,14 @@ class TestMainGui:
             "called Menu.__init__ with args ('menutitle',)\n"
             f"called Action.__init__ with args ('label-1', {testobj})\n"
             "called Action.setShortcuts with arg `['x', ' y']`\n"
+            "called Action.setStatusTip with arg 'infotekst-1'\n"
             f"called Signal.connect with args ({callback1},)\n"
             "called Menu.addAction\n"
             "called Menu.addSeparator\n"
             "called Action.__init__ with args ('-----', None)\n"
             "called Editor.define_format_submenu with args (menu, ('xxx', ('submenu', 'data')))\n"
             f"called Action.__init__ with args ('label-2', {testobj})\n"
+            "called Action.setStatusTip with arg 'infotekst-2'\n"
             f"called Signal.connect with args ({callback2},)\n"
             "called Menu.addAction\n"
             "called Menu.addSeparator\n"
@@ -370,8 +372,10 @@ class TestMainGui:
                 "called Menu.__init__ with args ()\n"
                 f"called Menu.addAction with args `item-1` {callback1}\n"
                 f"called Action.__init__ with args ('item-1', {callback1})\n"
+                "called Action.setCheckable with arg `True`\n"
                 f"called Menu.addAction with args `item-2` {callback2}\n"
                 f"called Action.__init__ with args ('item-2', {callback2})\n"
+                "called Action.setCheckable with arg `True`\n"
                 "called Action.setChecked with arg `True`\n"
                 "called Menu.setStatusTip with arg 'statustip'\n")
 
@@ -596,6 +600,7 @@ class TestTreePanel:
         assert capsys.readouterr().out == ("called Tree.__init__\n"
                                            "called Tree.setColumnCount with arg `2`\n"
                                            "called Tree.hideColumn\n"
+                                           "called Tree.headerItem\n"
                                            "called TreeItem.__init__ with args ()\n"
                                            "called TreeItem.setHidden with arg `True`\n"
                                            "called Tree.setSelectionMode\n"
@@ -674,7 +679,7 @@ class TestTreePanel:
         testobj.init_root()
         assert isinstance(testobj.root, testee.qtw.QTreeWidgetItem)
         assert capsys.readouterr().out == ("called TreeItem.__init__ with args ()\n"
-                                           "called TreeItem.setText with arg `(untitled)` for col 0\n"
+                                           "called TreeItem.setText with args (0, '(untitled)')\n"
                                            "called Tree.addTopLevelItem\n")
 
     def test_set_root_text(self, monkeypatch, capsys):
@@ -684,7 +689,7 @@ class TestTreePanel:
         testobj.root = mockqtw.MockTreeItem()
         assert capsys.readouterr().out == "called TreeItem.__init__ with args ()\n"
         testobj.set_root_text('text')
-        assert capsys.readouterr().out == "called TreeItem.setText with arg `text` for col 0\n"
+        assert capsys.readouterr().out == "called TreeItem.setText with args (0, 'text')\n"
 
     def test_get_root(self, monkeypatch, capsys):
         """unittest for TreePanel.get_root
@@ -765,7 +770,7 @@ class TestTreePanel:
         result = testobj.new_treeitem('item text')
         assert isinstance(result, testee.qtw.QTreeWidgetItem)
         assert capsys.readouterr().out == ("called TreeItem.__init__ with args ()\n"
-                                           "called TreeItem.setText with arg `item text` for col 0\n"
+                                           "called TreeItem.setText with args (0, 'item text')\n"
                                            "called TreeItem.setTooltip with args (0, 'item text')\n")
 
     def test_add_subitem(self, monkeypatch, capsys):
@@ -810,7 +815,7 @@ class TestTreePanel:
         assert capsys.readouterr().out == "called TreeItem.__init__ with args ()\n"
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.set_itemtext(item, 'item text')
-        assert capsys.readouterr().out == ("called TreeItem.setText with arg `item text` for col 0\n"
+        assert capsys.readouterr().out == ("called TreeItem.setText with args (0, 'item text')\n"
                                            "called TreeItem.setTooltip with args (0, 'item text')\n")
 
     def test_get_itemtext(self, monkeypatch, capsys):
@@ -820,7 +825,7 @@ class TestTreePanel:
         assert capsys.readouterr().out == "called TreeItem.__init__ with args ('item text',)\n"
         testobj = self.setup_testobj(monkeypatch, capsys)
         assert testobj.get_itemtext(item) == "item text"
-        assert capsys.readouterr().out == ("called TreeItem.text for col 0\n")
+        assert capsys.readouterr().out == ("called TreeItem.text with arg 0\n")
 
     def test_getitemparentpos(self, monkeypatch, capsys):
         """unittest for TreePanel.getitemparentpos
@@ -948,7 +953,8 @@ class TestLogDialog:
         testobj.show_context()
         assert capsys.readouterr().out == (
                 "called List.currentItem\n"
-                "called ListItem.__init__\n"
+                "called ListItem.__init__ with args ('xxx',)\n"
+                "called ListItem.text\n"
                 "called parse_log_line with arg xxx\n"
                 "called get_definition_from_file with args ('pfile', 1, 2)\n"
                 f"called MessageBox.information with args `{testobj}`"
@@ -957,7 +963,8 @@ class TestLogDialog:
         item = mockqtw.MockListItem('yyy')
         testobj.show_context(item)
         assert capsys.readouterr().out == (
-                "called ListItem.__init__\n"
+                "called ListItem.__init__ with args ('yyy',)\n"
+                "called ListItem.text\n"
                 "called parse_log_line with arg yyy\n"
                 "called get_definition_from_file with args ('pfile', 1, 2)\n"
                 f"called MessageBox.information with args `{testobj}`"
@@ -1173,7 +1180,7 @@ class TestGridDialog:
         assert testobj._parent.dialog_data == ''
         assert capsys.readouterr().out == (
                 "called Table.rowCount\n"
-                "called TableItem.__init__ with arg xy\n"
+                "called TableItem.__init__ with arg ''\n"
                 f"called MessageBox.information with args `{testobj}`"
                 " `Can't continue` `Not all values are entered and confirmed`\n")
         testobj.attr_table.item = get_item_2
@@ -1181,17 +1188,21 @@ class TestGridDialog:
         assert testobj._parent.dialog_data == ''
         assert capsys.readouterr().out == (
                 "called Table.rowCount\n"
-                "called TableItem.__init__ with arg xy\n"
+                "called TableItem.__init__ with arg ''\n"
                 f"called MessageBox.information with args `{testobj}`"
                 " `Can't continue` `Not all values are entered and confirmed`\n")
         testobj.attr_table.item = get_item_3
         testobj.on_ok()
         assert testobj._parent.dialog_data == [('item00', 'item01'), ('item10', 'item11')]
         assert capsys.readouterr().out == ("called Table.rowCount\n"
-                                           "called TableItem.__init__ with arg item00\n"
-                                           "called TableItem.__init__ with arg item01\n"
-                                           "called TableItem.__init__ with arg item10\n"
-                                           "called TableItem.__init__ with arg item11\n"
+                                           "called TableItem.__init__ with arg 'item00'\n"
+                                           "called TableItem.__init__ with arg 'item01'\n"
+                                           "called TableItem.text\n"
+                                           "called TableItem.text\n"
+                                           "called TableItem.__init__ with arg 'item10'\n"
+                                           "called TableItem.__init__ with arg 'item11'\n"
+                                           "called TableItem.text\n"
+                                           "called TableItem.text\n"
                                            "called Dialog.accept\n")
 
 
@@ -1308,7 +1319,7 @@ class TestListDialog:
             return '', True
         def mock_current():
             result = mockqtw.MockListItem('yy')
-            assert capsys.readouterr().out == ("called ListItem.__init__\n")
+            assert capsys.readouterr().out == ("called ListItem.__init__ with args ('yy',)\n")
             print('called List.currentItem')
             return result
         monkeypatch.setattr(testee.qtw, 'QInputDialog', mockqtw.MockInputDialog)
@@ -1320,12 +1331,14 @@ class TestListDialog:
         testobj.on_edit()
         assert capsys.readouterr().out == (
                 "called List.currentItem\n"
+                "called ListItem.text\n"
                 f"called InputDialog.getItem with args {testobj}"
                 " ('app title', 'Choose type for this rule', ['xx', 'yy'], 1) {'editable': False}\n")
         testobj.is_rules_node = False
         testobj.on_edit()
         assert capsys.readouterr().out == (
                 "called List.currentItem\n"
+                "called ListItem.text\n"
                 f"called InputDialog.getText with args {testobj}"
                 " ('Edit list item', 'Enter text for this item:') {'text': 'yy'}\n")
         testobj.is_rules_node = True
@@ -1333,6 +1346,7 @@ class TestListDialog:
         testobj.on_edit()
         assert capsys.readouterr().out == (
                 "called List.currentItem\n"
+                "called ListItem.text\n"
                 f"called InputDialog.getItem with args ({testobj},"
                 " 'app title', 'Choose type for this rule', ['xx', 'yy'], 1) {'editable': False}\n")
         testobj.is_rules_node = False
@@ -1340,6 +1354,7 @@ class TestListDialog:
         testobj.on_edit()
         assert capsys.readouterr().out == (
                 "called List.currentItem\n"
+                "called ListItem.text\n"
                 f"called InputDialog.getText with args ({testobj},"
                 " 'Edit list item', 'Enter text for this item:') {'text': 'yy'}\n")
         testobj.is_rules_node = True
@@ -1347,6 +1362,7 @@ class TestListDialog:
         testobj.on_edit()
         assert capsys.readouterr().out == (
                 "called List.currentItem\n"
+                "called ListItem.text\n"
                 f"called InputDialog.getItem with args ({testobj},"
                 " 'app title', 'Choose type for this rule', ['xx', 'yy'], 1) {'editable': False}\n"
                 "called ListItem.setText with arg ''\n")
@@ -1355,6 +1371,7 @@ class TestListDialog:
         testobj.on_edit()
         assert capsys.readouterr().out == (
                 "called List.currentItem\n"
+                "called ListItem.text\n"
                 f"called InputDialog.getText with args ({testobj},"
                 " 'Edit list item', 'Enter text for this item:') {'text': 'yy'}\n"
                 "called ListItem.setText with arg ''\n")
@@ -1406,11 +1423,14 @@ class TestListDialog:
         testobj.list.addItem(x)
         y = mockqtw.MockListItem('yyy')
         testobj.list.addItem(y)
-        assert capsys.readouterr().out == ("called ListItem.__init__\n"
+        assert capsys.readouterr().out == ("called ListItem.__init__ with args ('xxx',)\n"
                                            f"called List.addItem with arg `{x}`\n"
-                                           "called ListItem.__init__\n"
+                                           "called ListItem.__init__ with args ('yyy',)\n"
                                            f"called List.addItem with arg `{y}`\n")
         testobj._parent.dialog_data = []
         testobj.on_ok()
         assert testobj._parent.dialog_data == ['xxx', 'yyy']
-        assert capsys.readouterr().out == ("called Dialog.accept\n")
+        assert capsys.readouterr().out == ("called List.count\n"
+                                           "called ListItem.text\n"
+                                           "called ListItem.text\n"
+                                           "called Dialog.accept\n")

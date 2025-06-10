@@ -502,29 +502,30 @@ class Editor:
     def edit_list_node(self, title):
         """start editing a list type attribute
         """
-        itemlist = self.gui.tree.get_subitems(self.item)
-        maxlen = len(itemlist)
+        itemtexts = self.gui.tree.get_subitems(self.item)
+        maxlen = len(itemtexts)
         modified = False
-        edt, newitemlist = self.gui.show_dialog(gui.ListDialog, title, itemlist)
+        edt, newitemtexts = self.gui.show_dialog(gui.ListDialog, title, itemtexts)
         if edt:
-            for ix, item in enumerate(newitemlist):
+            for ix, itemtext in enumerate(newitemtexts):
                 if ix < maxlen:
                     # volgens mij klopt dit niet. je vergelijkt op de items en dan ga je de tekst
                     #  ervan instellen?
                     # if item != itemlist[ix]:
                     # maar is dit dan wel goed (afgezien van in het testscenario)?
-                    if self.gui.tree.get_itemtext(item) != self.gui.tree.get_itemtext(itemlist[ix]):
+                    # if self.gui.tree.get_itemtext(item) != self.gui.tree.get_itemtext(itemtexts[ix]):
+                    if itemtext != self.gui.tree.get_itemtext(itemtexts[ix]):
                         modified = True
-                        self.gui.tree.set_itemtext(itemlist[ix], item)
+                        self.gui.tree.set_itemtext(itemtexts[ix], item)
                 else:
                     modified = True
-                    newnode = self.gui.tree.add_to_parent(item, self.item)
-                    if self.item.text(0) == 'rules':
-                        ruletype = get_ruletype_for_name(item)
+                    newnode = self.gui.tree.add_to_parent(itemtext, self.item)
+                    if itemtext == 'rules':
+                        ruletype = get_ruletype_for_name(itemtext)
                         for name in sorted(list(ed.init_ruledata(ruletype))):
                             self.gui.tree.add_to_parent(name, newnode)
 
-            test = len(newitemlist)
+            test = len(newitemtexts)
             if test < maxlen:
                 modified = True
                 # for ix in range(maxlen - 1, test, -1):
