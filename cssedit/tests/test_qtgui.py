@@ -16,7 +16,7 @@ called MainWindow.resize with args (1800, 1500)
 called MainWindow.statusBar
 called StatusBar.__init__ with args ()
 called Tree.__init__
-called MainWidget.setCentralWindow with arg `TreePanel`
+called MainWidget.setCentralWidget with arg `TreePanel`
 """
 exp_logdialog = """\
 called Dialog.__init__ with args namespace(master=namespace(app_title='apptitle')) () {{}}
@@ -41,7 +41,7 @@ called HBox.addWidget with arg MockPushButton
 called HBox.insertStretch
 called HBox.addStretch
 called VBox.addLayout with arg MockHBoxLayout
-called Dialog.setLayout
+called Dialog.setLayout with arg MockVBoxLayout
 called Widget.resize with args (600, 480)
 called Dialog.exec
 """
@@ -68,7 +68,7 @@ called Signal.connect with args ({testobj.on_cancel},)
 called HBox.addWidget with arg MockPushButton
 called HBox.addStretch
 called VBox.addLayout with arg MockHBoxLayout
-called Dialog.setLayout
+called Dialog.setLayout with arg MockVBoxLayout
 called Editor.setFocus
 """
 exp_grid_start = """\
@@ -134,7 +134,7 @@ called Signal.connect with args ({testobj.on_cancel},)
 called HBox.addWidget with arg MockPushButton
 called VBox.addLayout with arg MockHBoxLayout
 called HBox.addStretch
-called Dialog.setLayout
+called Dialog.setLayout with arg MockVBoxLayout
 """
 exp_list_start = """\
 called Dialog.__init__ with args {parent} () {{}}
@@ -188,7 +188,7 @@ called Signal.connect with args ({testobj.on_cancel},)
 called HBox.addWidget with arg MockPushButton
 called VBox.addLayout with arg MockHBoxLayout
 called HBox.addStretch
-called Dialog.setLayout
+called Dialog.setLayout with arg MockVBoxLayout
 """
 
 
@@ -286,7 +286,7 @@ class TestMainGui:
                 "called MainWindow.statusBar\n"
                 "called StatusBar.__init__ with args ()\n"
                 "called Tree.__init__\n"
-                "called MainWidget.setCentralWindow with arg `TreePanel`\n")
+                "called MainWidget.setCentralWidget with arg `TreePanel`\n")
         master.app_iconame = 'yyy'
         testobj = testee.MainGui(master, 'app', title='xxx', pos=(10, 10), size=(1800, 1500))
         assert capsys.readouterr().out == expected_output['maingui']
@@ -1381,11 +1381,11 @@ class TestListDialog:
         def mock_question(parent, caption, message, buttons, default):
             print('called MessageBox.question with args'
                   f' `{caption}` `{message}` `{buttons}` `{default}`')
-            return testee.qtw.QMessageBox.Cancel
+            return testee.qtw.QMessageBox.StandardButton.Cancel
         def mock_question_2(parent, caption, message, buttons, default):
             print('called MessageBox.question with args'
                   f' `{caption}` `{message}` `{buttons}` `{default}`')
-            return testee.qtw.QMessageBox.Ok
+            return testee.qtw.QMessageBox.StandardButton.Ok
         monkeypatch.setattr(mockqtw.MockMessageBox, 'question', mock_question)
         monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
         testobj = self.setup_testobj(monkeypatch, capsys)
