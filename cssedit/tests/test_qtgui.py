@@ -95,7 +95,7 @@ called Header.resizeSection with args (0, 102)
 called Header.resizeSection with args (1, 152)
 called Header.setStretchLastSection with arg True
 called Table.verticalHeader
-called Header.setVisible with args 'False'
+called Header.setVisible with arg False
 called Table.setTabKeyNavigation with arg False
 """
 exp_grid_middle = """\
