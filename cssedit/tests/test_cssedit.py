@@ -37,7 +37,8 @@ class MockLogger:
     """stub
     """
     def __init__(self, *args):
-        print(f'called logger.__init__() with arg `{args[0]}`')
+        if args:
+            print(f'called logger.__init__() with arg `{args[0]}`')
     def __str__(self):
         """stub
         """
@@ -46,6 +47,10 @@ class MockLogger:
         """stub
         """
         print(f'called logger.addHandler() with arg `{args[0]}`')
+    def removeHandler(self, *args):
+        """stub
+        """
+        # print(f'called logger.removeHandler() with arg `{args[0]}`')
     def setLevel(self, *args):
         """stub
         """
@@ -56,7 +61,7 @@ class MockLogHandler:
     """stub
     """
     def __init__(self, *args, **kwargs):
-        print("called loghandler.__init__() for file `{args[0]}` mode `{kwargs['mode']}")
+        print(f"called loghandler.__init__() for file `{args[0]}` mode `{kwargs['mode']}`")
     def __str__(self):
         """stub
         """
@@ -89,16 +94,15 @@ class MockStyle:
         return 'style text'
 
 
-def _test_setlogger(monkeypatch, capsys):
+def test_setlogger(monkeypatch, capsys):
     """unittest for cssedit.setlogger
     """
     def mock_getlogger(*args):
         """stub
         """
         if args:
-            print(args[0])
             return MockLogger(args[0])
-        return None
+        return MockLogger()
     def mock_setlog(*args):
         """stub
         """
@@ -108,7 +112,14 @@ def _test_setlogger(monkeypatch, capsys):
     monkeypatch.setattr(testee.logging, 'getLogger', mock_getlogger)
     monkeypatch.setattr(testee.cssutils.log, 'setLog', mock_setlog)
     assert str(testee.set_logger('logfile')) == 'mock handler'
-    assert capsys.readouterr().out == ('')
+    assert capsys.readouterr().out == (
+        "called logger.__init__() with arg `CSSEDIT`\n"
+        "called loghandler.__init__() for file `logfile` mode `w`\n"
+        "called formatter.__init__()\n"
+        "called loghandler.setFormatter()\n"
+        "called logger.addHandler() with arg `mock handler`\n"
+        "called logger.setLevel() with arg `20`\n"
+        "called csslog.setlog with arg `mock logger`\n")
 
 
 def test_load(monkeypatch):

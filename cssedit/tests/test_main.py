@@ -1201,6 +1201,9 @@ class TestEditor:
             return True, ['node1', 'node2', 'node3']
         def mock_show_3(cls, *args, **kwargs):
             print(f'called MainGui.show_dialog with args {cls}', args, kwargs)
+            return True, ['node1', 'node2', 'rules']
+        def mock_show_4(cls, *args, **kwargs):
+            print(f'called MainGui.show_dialog with args {cls}', args, kwargs)
             return True, ['node2']
         def mock_init_ruledata(rule):
             print(f'called CSSUtilsWrapper.init_ruledata with arg `{rule}`')
@@ -1227,27 +1230,29 @@ class TestEditor:
                 f"called TreePanel.get_subitems with arg {testobj.item}\n"
                 "called MainGui.show_dialog with args"
                 " <class 'cssedit.tests.test_main.MockListDialog'> ('Edit', ['node', 'node2']) {}\n"
-                "called TreePanel.get_itemtext with arg node1\n"
+                # "called TreePanel.get_itemtext with arg node1\n"
                 "called TreePanel.get_itemtext with arg node\n"
                 "called TreePanel.set_itemtext with args ('node', 'node1')\n"
                 "called TreePanel.get_itemtext with arg node2\n"
-                "called TreePanel.get_itemtext with arg node2\n"
-                f"called TreePanel.add_to_parent with args ('node3', {testobj.item})\n"
-                "called CSSUtilsWrapper.init_ruledata with arg `None`\n"
-                "called TreePanel.add_to_parent with args ('init_1', 'new item')\n"
-                "called TreePanel.add_to_parent with args ('init_2', 'new item')\n")
+                # "called TreePanel.get_itemtext with arg node2\n"
+                f"called TreePanel.add_to_parent with args ('node3', {testobj.item})\n")
+                # "called CSSUtilsWrapper.init_ruledata with arg `None`\n"
+                # "called TreePanel.add_to_parent with args ('init_1', 'new item')\n"
+                # "called TreePanel.add_to_parent with args ('init_2', 'new item')\n")
         testobj.gui.show_dialog = mock_show_2
-        testobj.item = types.SimpleNamespace(text=lambda x: 'rules' if 0 else 'other')
+        # testobj.item = types.SimpleNamespace(text=lambda x: 'rules' if 0 else 'other')
         testobj.gui.tree.get_itemtext = mock_get_itemtext
         assert testobj.edit_list_node('Edit')
         assert capsys.readouterr().out == (
                 f"called TreePanel.get_subitems with arg {testobj.item}\n"
                 "called MainGui.show_dialog with args"
                 " <class 'cssedit.tests.test_main.MockListDialog'> ('Edit', ['node', 'node2']) {}\n"
-                "called TreePanel.get_itemtext with arg node1\n"
+                # "called TreePanel.get_itemtext with arg node1\n"
                 "called TreePanel.get_itemtext with arg node\n"
+                "called TreePanel.set_itemtext with args ('node', 'node1')\n"
                 "called TreePanel.get_itemtext with arg node2\n"
-                "called TreePanel.get_itemtext with arg node2\n"
+                # "called TreePanel.get_itemtext with arg node2\n"
+                "called TreePanel.set_itemtext with args ('node2', 'node2')\n"
                 f"called TreePanel.add_to_parent with args ('node3', {testobj.item})\n")
         testobj.gui.show_dialog = mock_show_3
         assert testobj.edit_list_node('Edit')
@@ -1255,8 +1260,25 @@ class TestEditor:
                 f"called TreePanel.get_subitems with arg {testobj.item}\n"
                 "called MainGui.show_dialog with args"
                 " <class 'cssedit.tests.test_main.MockListDialog'> ('Edit', ['node', 'node2']) {}\n"
-                "called TreePanel.get_itemtext with arg node2\n"
+                # "called TreePanel.get_itemtext with arg node1\n"
                 "called TreePanel.get_itemtext with arg node\n"
+                "called TreePanel.set_itemtext with args ('node', 'node1')\n"
+                "called TreePanel.get_itemtext with arg node2\n"
+                # "called TreePanel.get_itemtext with arg node2\n"
+                "called TreePanel.set_itemtext with args ('node2', 'node2')\n"
+                f"called TreePanel.add_to_parent with args ('rules', {testobj.item})\n"
+                "called CSSUtilsWrapper.init_ruledata with arg `None`\n"
+                "called TreePanel.add_to_parent with args ('init_1', 'new item')\n"
+                "called TreePanel.add_to_parent with args ('init_2', 'new item')\n")
+        testobj.gui.show_dialog = mock_show_4
+        assert testobj.edit_list_node('Edit')
+        assert capsys.readouterr().out == (
+                f"called TreePanel.get_subitems with arg {testobj.item}\n"
+                "called MainGui.show_dialog with args"
+                " <class 'cssedit.tests.test_main.MockListDialog'> ('Edit', ['node', 'node2']) {}\n"
+                # "called TreePanel.get_itemtext with arg node2\n"
+                "called TreePanel.get_itemtext with arg node\n"
+                "called TreePanel.set_itemtext with args ('node', 'node2')\n"
                 f"called TreePanel.remove_subitem with args ({testobj.item}, 1)\n")
 
     def test_edit_grid_node(self, monkeypatch, capsys):

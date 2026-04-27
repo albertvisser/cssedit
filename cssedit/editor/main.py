@@ -516,7 +516,7 @@ class Editor:
                     # if self.gui.tree.get_itemtext(item) != self.gui.tree.get_itemtext(itemtexts[ix]):
                     if itemtext != self.gui.tree.get_itemtext(itemtexts[ix]):
                         modified = True
-                        self.gui.tree.set_itemtext(itemtexts[ix], item)
+                        self.gui.tree.set_itemtext(itemtexts[ix], itemtext)
                 else:
                     modified = True
                     newnode = self.gui.tree.add_to_parent(itemtext, self.item)
