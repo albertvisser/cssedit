@@ -191,7 +191,7 @@ class TestEditor:
         assert testobj.app_title == "CSSEdit"
         assert testobj.app_iconame == f'{testee.HERE}/csseditor.png'
         assert hasattr(testobj, 'gui')  # isinstance(testobj.gui, testee.gui.MainGui)
-        assert testobj.mode == ''
+        assert testobj.mode == 'file'
         assert testobj.actiondict == {}
         assert testobj.css is None
         assert (testobj.cut_item, testobj.cutlevel) == (None, 0)
@@ -230,13 +230,13 @@ class TestEditor:
         def mock_set(value):
             print(f"called cssedit.set_format with arg '{value}'")
         def mock_check(value):
-            print(f"called EdiorGui.check_format_option with arg {value}")
+            print(f"called EditorGui.check_format_option with arg {value}")
         monkeypatch.setattr(testee.ed, 'set_format', mock_set)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.gui.check_format_option = mock_check
         testobj.set_format_c()
-        assert capsys.readouterr().out == ("called cssedit.set_format with arg 'compressed'\n"
-                                           "called EdiorGui.check_format_option with arg 0\n")
+        assert testobj.savemode == 'compressed'
+        assert capsys.readouterr().out == "called EditorGui.check_format_option with arg 0\n"
 
     def test_set_format_s(self, monkeypatch, capsys):
         """unittest for Editor.set_format_s
@@ -244,13 +244,13 @@ class TestEditor:
         def mock_set(value):
             print(f"called cssedit.set_format with arg '{value}'")
         def mock_check(value):
-            print(f"called EdiorGui.check_format_option with arg {value}")
+            print(f"called EditorGui.check_format_option with arg {value}")
         monkeypatch.setattr(testee.ed, 'set_format', mock_set)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.gui.check_format_option = mock_check
         testobj.set_format_s()
-        assert capsys.readouterr().out == ("called cssedit.set_format with arg 'short'\n"
-                                           "called EdiorGui.check_format_option with arg 1\n")
+        assert testobj.savemode == 'short'
+        assert capsys.readouterr().out == "called EditorGui.check_format_option with arg 1\n"
 
     def test_set_format_m(self, monkeypatch, capsys):
         """unittest for Editor.set_format_m
@@ -258,13 +258,13 @@ class TestEditor:
         def mock_set(value):
             print(f"called cssedit.set_format with arg '{value}'")
         def mock_check(value):
-            print(f"called EdiorGui.check_format_option with arg {value}")
+            print(f"called EditorGui.check_format_option with arg {value}")
         monkeypatch.setattr(testee.ed, 'set_format', mock_set)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.gui.check_format_option = mock_check
         testobj.set_format_m()
-        assert capsys.readouterr().out == ("called cssedit.set_format with arg 'medium'\n"
-                                           "called EdiorGui.check_format_option with arg 2\n")
+        assert testobj.savemode == 'medium'
+        assert capsys.readouterr().out == "called EditorGui.check_format_option with arg 2\n"
 
     def test_set_format_l(self, monkeypatch, capsys):
         """unittest for Editor.set_format_l
@@ -272,13 +272,13 @@ class TestEditor:
         def mock_set(value):
             print(f"called cssedit.set_format with arg '{value}'")
         def mock_check(value):
-            print(f"called EdiorGui.check_format_option with arg {value}")
+            print(f"called EditorGui.check_format_option with arg {value}")
         monkeypatch.setattr(testee.ed, 'set_format', mock_set)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.gui.check_format_option = mock_check
         testobj.set_format_l()
-        assert capsys.readouterr().out == ("called cssedit.set_format with arg 'long'\n"
-                                           "called EdiorGui.check_format_option with arg 3\n")
+        assert testobj.savemode == 'long'
+        assert capsys.readouterr().out == "called EditorGui.check_format_option with arg 3\n"
 
     def test_show_gui(self, monkeypatch, capsys):
         """unittest for Editor.show_gui
@@ -590,16 +590,18 @@ class TestEditor:
         testobj.project_file = 'xxx'
         testobj.treetotext = mock_treetotext
         testobj.mark_dirty = self.mock_mark_dirty
+        testobj.savemode = 'xxx'
         testobj.css = MockEditor()
         assert capsys.readouterr().out == 'called CSSUtilsWrapper.__init__ with args () {}\n'
         testobj.wait_cursor = MockWaitCursor
         testobj.save()
-        assert capsys.readouterr().out == ("called WaitCursor.__enter__\n"
-                                           "called Editor.treetotext\n"
-                                           "called CSSUtilsWrapper.texttodata\n"
-                                           "called CSSUtilsWrapper.return_to_source with args () {}\n"
-                                           "called WaitCursor.__exit__\n"
-                                           "called Editor.mark_dirty with arg False\n")
+        assert capsys.readouterr().out == (
+                "called WaitCursor.__enter__\n"
+                "called Editor.treetotext\n"
+                "called CSSUtilsWrapper.texttodata\n"
+                "called CSSUtilsWrapper.return_to_source with args () {'savemode': 'xxx'}\n"
+                "called WaitCursor.__exit__\n"
+                "called Editor.mark_dirty with arg False\n")
 
     def test_show_log(self, monkeypatch, capsys):
         """unittest for Editor.show_log
@@ -632,6 +634,7 @@ class TestEditor:
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.project_file = 'xxx'
         testobj.treetotext = mock_treetotext
+        testobj.savemode = 'yyy'
         testobj.parent = None
         testobj.close()
         assert capsys.readouterr().out == ""
@@ -645,9 +648,9 @@ class TestEditor:
         assert capsys.readouterr().out == (
                 "called Editor.treetotext\n"
                 "called CSSUtilsWrapper.texttodata\n"
-                "called CSSUtilsWrapper.return_to_source with args () {'savemode': 'compressed'}\n"
-                "trying to decode data.cssText\n"
-                "taking data as-is\n"
+                "called CSSUtilsWrapper.return_to_source with args () {'savemode': 'yyy'}\n"
+                # "trying to decode data.cssText\n"
+                # "taking data as-is\n"
                 "'sometimes it's not bytes but already a string\n")
         testobj.css.data = types.SimpleNamespace(cssText='text')
         testobj.close()
@@ -656,8 +659,8 @@ class TestEditor:
         assert capsys.readouterr().out == (
                 "called Editor.treetotext\n"
                 "called CSSUtilsWrapper.texttodata\n"
-                "called CSSUtilsWrapper.return_to_source with args () {'savemode': 'compressed'}\n"
-                "trying to decode data.cssText\n"
+                "called CSSUtilsWrapper.return_to_source with args () {'savemode': 'yyy'}\n"
+                # "trying to decode data.cssText\n"
                 # "taking data as-is\n"
                 "'sometimes it's not bytes but already a string\n")
         testobj.css.data = b'styletext'
@@ -667,9 +670,9 @@ class TestEditor:
         assert capsys.readouterr().out == (
                 "called Editor.treetotext\n"
                 "called CSSUtilsWrapper.texttodata\n"
-                "called CSSUtilsWrapper.return_to_source with args () {'savemode': 'compressed'}\n"
-                "trying to decode data.cssText\n"
-                "taking data as-is\n")
+                "called CSSUtilsWrapper.return_to_source with args () {'savemode': 'yyy'}\n")
+                # "trying to decode data.cssText\n"
+                # "taking data as-is\n")
 
     def test_wait_cursor(self, monkeypatch, capsys):
         """unittest for Editor.wait_cursor

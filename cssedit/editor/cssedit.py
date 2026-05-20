@@ -182,6 +182,26 @@ def set_format(mode="compressed"):
     # lineSeparator = u’n’
     #     How to end a line. This may be set to e.g. u’’ for serializing of CSSStyleDeclarations
     #     usable in HTML style attribute.
+    # breakpoint()
+    cssutils.setSerializer(cssutils.serialize.CSSSerializer())
+    if mode == 'compressed':
+        cssutils.ser.prefs.useMinified()
+    else:
+        cssutils.ser.prefs.useDefaults()
+        # cssutils.ser.prefs.keepComments = True        # default
+        # cssutils.ser.prefs.lineSeparator = u'\n'		# default
+        # cssutils.ser.prefs.omitLastSemicolon = True  	# default
+        cssutils.ser.prefs.indentClosingBrace = False   # geen default
+        if mode == 'short':
+            cssutils.setSerializer(MyCSSSerializer())
+            # deze werkt nog niet helemaal want de delimiters blijven apart
+            # cssutils.ser.prefs.indent = ''	# geen default
+        # else:
+        #     cssutils.ser.prefs.indent = 4* ''	# wel default
+        if mode == 'long':
+            cssutils.ser.prefs.propertyNameSpacer = u'\n' + 4 * ''  # geen defaullt
+        # else:
+        #     cssutils.ser.prefs.propertyNameSpacer = u''  # wel defaullt
 
 
 def save(data, filename, backup=True):
@@ -288,6 +308,68 @@ def parse_log_line(line):
             line, pos, rest = rest.split(':', 2)
             data = rest[:-1].strip()
     return LogLine(severity, subject, message, int(line), int(pos), data)
+
+
+class MyCSSSerializer(cssutils.serialize.CSSSerializer):
+    """reimplementation to accomadate for output mode "short"
+    """
+    def do_CSSStyleRule(self, rule):
+        """
+        serializes CSSStyleRule
+
+        selectorList
+        style
+
+        + CSSComments
+        """
+        # TODO: use Out()
+
+        # prepare for element nested rules
+        # TODO: sort selectors!
+        if self.prefs.indentSpecificities:
+            # subselectorlist?
+            elements = set([s.element for s in rule.selectorList])
+            specitivities = [s.specificity for s in rule.selectorList]
+            for selector in self._selectors:
+                lastelements = set([s.element for s in selector])
+                if elements.issubset(lastelements):
+                    # higher specificity?
+                    lastspecitivities = [s.specificity for s in selector]
+                    if specitivities > lastspecitivities:
+                        self._selectorlevel += 1
+                        break
+                elif self._selectorlevel > 0:
+                    self._selectorlevel -= 1
+            else:
+                # save new reference
+                self._selectors.append(rule.selectorList)
+                self._selectorlevel = 0
+
+        # TODO ^ RESOLVE!!!!
+
+        selectorText = self.do_css_SelectorList(rule.selectorList)
+        if not selectorText or not rule.wellformed:
+            return ''
+        self._level += 1
+        styleText = ''
+        try:
+            styleText = self.do_css_CSSStyleDeclaration(rule.style)
+        finally:
+            self._level -= 1
+        if not styleText:
+            if self.prefs.keepEmptyRules:
+                return '%s%s{}' % (selectorText,
+                                   self.prefs.paranthesisSpacer)
+        else:
+            return self._indentblock(
+                '%s%s{%s%s%s%s}' % (
+                    selectorText,
+                    self.prefs.paranthesisSpacer,
+                    '',  # self.prefs.lineSeparator,
+                    self._indentblock(styleText, self._level),  # + 1),
+                    '',  # self.prefs.lineSeparator,
+                    ''),  # (self._level + int(self.prefs.indentClosingBrace)) * self.prefs.indent),
+                self._selectorlevel)
 
 
 class Editor:

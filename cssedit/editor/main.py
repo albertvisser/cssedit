@@ -50,7 +50,8 @@ class Editor:
         self.app_iconame = os.path.join(HERE, 'csseditor.png')
         self.gui = gui.MainGui(self, app, pos=parentpos)
         self.gui.show_statusmessage('Ready')
-        self.mode = ''
+        self.mode = 'file'
+        self.savemode = 'compressed'
         self.actiondict = {}
         self.gui.create_menu(self.get_menu_data())
         ## self.undo_stack = UndoRedoStack(self)
@@ -120,22 +121,26 @@ class Editor:
 
     def set_format_c(self):
         "don't use newline characters, indentations or extra spaces in output"
-        ed.set_format('compressed')
+        # ed.set_format('compressed')
+        self.savemode = 'compressed'
         self.gui.check_format_option(0)
 
     def set_format_s(self):
         "newlines between elements, elements and attributes on same line"
-        ed.set_format('short')
+        # ed.set_format('short')
+        self.savemode = 'short'
         self.gui.check_format_option(1)
 
     def set_format_m(self):
         "newlines between elements and attribute lists, attribute lists are indented"
-        ed.set_format('medium')
+        # ed.set_format('medium')
+        self.savemode = 'medium'
         self.gui.check_format_option(2)
 
     def set_format_l(self):
         "newlines between elements and attributes, each attribute indented and on separate line"
-        ed.set_format('long')
+        # ed.set_format('long')
+        self.savemode = 'long'
         self.gui.check_format_option(3)
 
     def getfilename(self, title='', start='', save=False):
@@ -285,7 +290,7 @@ class Editor:
         with self.wait_cursor():
             self.css.textdata = self.treetotext()
             self.css.texttodata()
-            self.css.return_to_source()
+            self.css.return_to_source(savemode=self.savemode)
         self.mark_dirty(False)
 
     def show_log(self):
@@ -308,15 +313,15 @@ class Editor:
         if self.parent:
             self.css.textdata = self.treetotext()
             self.css.texttodata()
-            self.css.return_to_source(savemode='compressed')
+            self.css.return_to_source(savemode=self.savemode)
             # if we've saved, the data is not bytes but a stylesheet. So we need to get the text
             try:
-                print('trying to decode data.cssText')
+                # print('trying to decode data.cssText')
                 # nog niet gezien dat-ie hier geen exception op kreeg
                 # kennelijk heb ik text2data zo aangepast dat dit niet meer hoeft
                 self.parent.styledata = self.css.data.cssText
             except AttributeError:
-                print('taking data as-is')
+                # print('taking data as-is')
                 self.parent.styledata = self.css.data
             try:
                 self.parent.styledata = self.parent.styledata.decode()
@@ -324,7 +329,7 @@ class Editor:
                 print("'sometimes it's not bytes but already a string")
                 # dat is blijkbaar als ik een inline style aan een element toevoeg
             # voor zolang als de output optie nog niet in te stellen is
-            self.parent.styledata = self.parent.styledata.replace('\n', '').replace(' ', '')
+            self.parent.styledata = self.parent.styledata.replace('\n', '').replace('    ', ' ')
             self.parent.cssfilename = self.project_file
 
     @contextlib.contextmanager

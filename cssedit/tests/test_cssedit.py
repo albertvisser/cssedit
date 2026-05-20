@@ -170,9 +170,51 @@ def test_parse(monkeypatch):
     assert testee.parse('text') == 'parsed text'
 
 
-def _test_set_format():
-    """unittest for cssedit.set_format - (nog) niet geïmplementeerd, dus ook (nog) geen unittest
+def test_set_format(monkeypatch, capsys):
+    """unittest for cssedit.set_format
     """
+    def mock_set(*args):
+        print('called cssutils.setSerializer with args', args)
+    def mock_repr(self):
+        return 'CSSSerializer'
+    def mock_myrepr(self):
+        return 'MyCSSSerializer'
+    def mock_use_m():
+        print('called cssutils.ser.prefs.useMinified')
+    def mock_use_d():
+        print('called cssutils.ser.prefs.useDefaults')
+    monkeypatch.setattr(testee.cssutils, 'setSerializer', mock_set)
+    monkeypatch.setattr(testee.cssutils.serialize.CSSSerializer, '__repr__', mock_repr)
+    monkeypatch.setattr(testee.MyCSSSerializer, '__repr__', mock_myrepr)
+    testee.cssutils.ser.prefs = types.SimpleNamespace(useMinified=mock_use_m,
+                                                      useDefaults=mock_use_d,
+                                                      indentClosingBrace=True,
+                                                      propertyNameSpacer='')
+    testee.set_format('compressed')
+    assert testee.cssutils.ser.prefs.indentClosingBrace
+    assert testee.cssutils.ser.prefs.propertyNameSpacer == ''
+    assert capsys.readouterr().out == (
+            "called cssutils.setSerializer with args (CSSSerializer,)\n"
+            "called cssutils.ser.prefs.useMinified\n")
+    testee.set_format('short')
+    assert not testee.cssutils.ser.prefs.indentClosingBrace
+    assert testee.cssutils.ser.prefs.propertyNameSpacer == ''
+    assert capsys.readouterr().out == (
+            "called cssutils.setSerializer with args (CSSSerializer,)\n"
+            "called cssutils.ser.prefs.useDefaults\n"
+            "called cssutils.setSerializer with args (MyCSSSerializer,)\n")
+    testee.set_format('medium')
+    assert not testee.cssutils.ser.prefs.indentClosingBrace
+    assert testee.cssutils.ser.prefs.propertyNameSpacer == ''
+    assert capsys.readouterr().out == (
+            "called cssutils.setSerializer with args (CSSSerializer,)\n"
+            "called cssutils.ser.prefs.useDefaults\n")
+    testee.set_format('long')
+    assert not testee.cssutils.ser.prefs.indentClosingBrace
+    assert testee.cssutils.ser.prefs.propertyNameSpacer == '\n'
+    assert capsys.readouterr().out == (
+            "called cssutils.setSerializer with args (CSSSerializer,)\n"
+            "called cssutils.ser.prefs.useDefaults\n")
 
 
 def test_save():
@@ -332,6 +374,107 @@ class MockComment(str):
     """
     def __init__(self, **kwargs):
         print(f"called comment.__init__(`{kwargs['cssText']}`)")
+
+
+class TestMyCSSSerializer:
+    """unittests for cssedit.MyCSSSerializer
+    """
+    def setup_testobj(self, monkeypatch, capsys):
+        def mock_init(self):
+            print('called MyCSSSerializer.__init__')
+        monkeypatch.setattr(testee.MyCSSSerializer, '__init__', mock_init)
+        testobj = testee.MyCSSSerializer()
+        assert capsys.readouterr().out == "called MyCSSSerializer.__init__\n"
+        return testobj
+
+    def test_do_CSSStyleRule(self, monkeypatch, capsys):
+        """unittest for MyCSSStyleRule.do_CSSStyleRule
+        """
+        class Selector:
+            def __init__(self, *args):
+                self.element, self.specificity = args
+        def mock_do_list(*args):
+            print('called serializer.do_css_SelectorList with args', args)
+            return ''
+        def mock_do_list_2(*args):
+            print('called serializer.do_css_SelectorList with args', args)
+            return 'selectortext'
+        def mock_do_dec(*args):
+            print('called serializer.do_css_CSSStyleDeclaration with args', args)
+            return 'styletext'
+        def mock_do_dec_2(*args):
+            print('called serializer.do_css_CSSStyleDeclaration with args', args)
+            return ''
+        def mock_indent(*args):
+            print('called serializer._indent with args', args)
+            return args[0]
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.prefs = types.SimpleNamespace(indentSpecificities=False,
+                                              keepEmptyRules=False,
+                                              paranthesisSpacer='x')
+        testobj._selectorlevel = 1
+        testobj._level = 0
+        testobj._selectors = []
+        testobj.do_css_SelectorList = mock_do_list
+        testobj.do_css_CSSStyleDeclaration = mock_do_dec
+        testobj._indentblock = mock_indent
+        rule = types.SimpleNamespace(style='rulestyle', wellformed=False,
+                                     selectorList=[Selector('xx', 1), Selector('yy', 2)])
+        testobj.do_CSSStyleRule(rule)
+        assert testobj._level == 0
+        assert testobj._selectorlevel == 1
+        assert testobj._selectors == []
+        assert capsys.readouterr().out == (
+                f"called serializer.do_css_SelectorList with args ({rule.selectorList},)\n")
+
+        testobj.do_css_SelectorList = mock_do_list_2
+        testobj.do_CSSStyleRule(rule)
+        assert testobj._level == 0
+        assert testobj._selectorlevel == 1
+        assert testobj._selectors == []
+        assert capsys.readouterr().out == (
+                f"called serializer.do_css_SelectorList with args ({rule.selectorList},)\n")
+
+        rule.wellformed = True
+        testobj.do_CSSStyleRule(rule)
+        assert testobj._level == 0
+        assert testobj._selectorlevel == 1
+        assert testobj._selectors == []
+        assert capsys.readouterr().out == (
+                f"called serializer.do_css_SelectorList with args ({rule.selectorList},)\n"
+                "called serializer.do_css_CSSStyleDeclaration with args ('rulestyle',)\n"
+                "called serializer._indent with args ('styletext', 0)\n"
+                "called serializer._indent with args ('selectortextx{styletext}', 1)\n")
+
+        testobj.prefs.keepEmptyRules = True
+        testobj.do_css_CSSStyleDeclaration = mock_do_dec_2
+        testobj.do_CSSStyleRule(rule)
+        assert testobj._level == 0
+        assert testobj._selectorlevel == 1
+        assert testobj._selectors == []
+        assert capsys.readouterr().out == (
+                f"called serializer.do_css_SelectorList with args ({rule.selectorList},)\n"
+                "called serializer.do_css_CSSStyleDeclaration with args ('rulestyle',)\n")
+
+        testobj.prefs.keepEmptyRules = False
+        testobj.do_CSSStyleRule(rule)
+        assert testobj._level == 0
+        assert testobj._selectorlevel == 1
+        assert testobj._selectors == []
+        assert capsys.readouterr().out == (
+                f"called serializer.do_css_SelectorList with args ({rule.selectorList},)\n"
+                "called serializer.do_css_CSSStyleDeclaration with args ('rulestyle',)\n")
+
+        testobj.do_css_CSSStyleDeclaration = mock_do_dec
+        testobj.do_CSSStyleRule(rule)
+        assert testobj._level == 0
+        assert testobj._selectorlevel == 1
+        assert testobj._selectors == []
+        assert capsys.readouterr().out == (
+                f"called serializer.do_css_SelectorList with args ({rule.selectorList},)\n"
+                "called serializer.do_css_CSSStyleDeclaration with args ('rulestyle',)\n"
+                "called serializer._indent with args ('styletext', 0)\n"
+                "called serializer._indent with args ('selectortextx{styletext}', 1)\n")
 
 
 class TestEditor:
