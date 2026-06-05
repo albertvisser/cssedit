@@ -267,7 +267,7 @@ def init_ruledata(ruletype):
 def complete_ruledata(ruledata, rule):
     """finish rule part of internal data structure
     """
-    for x, y, z in RTYPES[rule.type][1]:
+    for x, _y, z in RTYPES[rule.type][1]:
         ruledata[x] = z(rule)
     return ruledata
 
@@ -466,7 +466,7 @@ class Editor:
                 rule.mediaList = medialist
                 # rule.styles = cssutils.css.RuleList()
                 rule.cssRules = cssutils.css.CSSRuleList()
-                for name, value in ruledata['rules']:
+                for _name, value in ruledata['rules']:
                 # for value in [x[1] for x in ruledata['rules']]:
                     srule = cssutils.css.CSSStyleRule()
                     ssellist = cssutils.css.SelectorList()

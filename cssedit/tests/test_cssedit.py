@@ -380,6 +380,7 @@ class TestMyCSSSerializer:
     """unittests for cssedit.MyCSSSerializer
     """
     def setup_testobj(self, monkeypatch, capsys):
+        "return a stub for a MyCssSerializer instance"
         def mock_init(self):
             print('called MyCSSSerializer.__init__')
         monkeypatch.setattr(testee.MyCSSSerializer, '__init__', mock_init)
