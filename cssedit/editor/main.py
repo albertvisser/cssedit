@@ -3,6 +3,7 @@
 import os
 # import sys
 import contextlib
+from .cssedit import RTYPES, parse_log_line, get_definition_from_file
 
 try:
     import cssedit.editor.cssedit as ed  # helper class for css specific stuff
@@ -296,8 +297,8 @@ class Editor:
     def show_log(self):
         """show the messages generated when loading the file
         """
-        if self.css:
-            gui.LogDialog(self.gui, self.css.log)
+        if hasattr(self.css, 'log'):
+            LogDialog(self, self.css.log)
         else:
             self.gui.show_statusmessage('Load a css file first')
 
@@ -779,3 +780,167 @@ class Editor:
                     self.gui.tree.add_subitem(ruletopitem, rulekeyitem)
             rules.append(ruletypeitem)
         return rules
+
+
+class LogDialog:
+    "Simple Log display"
+
+    text = "css definition that triggers this message:\n\n"
+
+    def __init__(self, parent, log):
+        self.parent = parent
+        title = self.parent.app_title + " - show log for current file"
+        self.gui = gui.LogDialogGui(self, parent.gui, title, size=(600, 480))
+        self.gui.add_label("Dubbelklik op een regel om de context "
+                           "(definitie in de css) te bekijken")
+        self.lijst = self.gui.add_listbox(log, self.show_context)
+        self.gui.add_buttons([("&Toon Context", self.show_context), ("&Klaar", self.gui.done)])
+        self.gui.finish_dialog()
+
+    # def itemDoubleClicked(self, item):
+    #     """handler for doubleclicking over a line
+    #     """
+    #     self.show_context(item)
+
+    def show_context(self, item=None):
+        """show full logline (in case it's been chopped off)
+        and the definition that triggered it
+        """
+        # determine selected line in the list and get associated data
+        breakpoint()
+        selected = item or self.gui.get_selection(self.lijst)
+        y = parse_log_line(self.gui.get_listitem_text(selected))
+        context = get_definition_from_file(self.parent.project_file, y.line, y.pos)
+        # pop up a box to show the data
+        title = self.parent.app_title + " - show context for log message"
+        self.gui.meld(title, self.text + context)
+
+    # def done(self, arg=None):
+    #     """finish dialog
+    #     """
+    #     super().done(0)
+
+
+class TextDialog:
+    """dialoog om een ongedefinieerde tekst (bv. van een commentaar) weer te geven
+    d.m.v. een multiline tekst box
+    """
+    def __init__(self, parent, title='', text=''):
+        self.parent = parent
+        self.gui = gui.TextDialogGui(self, parent.gui, title, size=(440, 280))
+        self.data_text = self.gui.add_textfield(text)
+        self.gui.add_okcancel_buttons('&Save')
+        self.gui.finalize_dialog(focusfield=self.data_text)
+
+    def confirm(self):
+        """confirm changed text
+        """
+        self.parent.dialog_data = self.gui.get_textfield_text(self.data_text)
+        super().accept()
+
+
+class GridDialog:
+    """dialoog om stijl definities voor een (groep van) selector(s) op te voeren
+    of te wijzigen
+    """
+    def __init__(self, parent, title='', itemlist=None):  # , comment=False):
+        self.parent = parent
+        self.gui = gui.GridDialogGui(self, parent.gui, title, size=(440, 280))
+        box = self.gui.add_outline()
+        self.gui.add_label_to_outline(box, "Items in table:")
+        self.attr_table = self.gui.add_table_to_outline(box, ['property', 'value'], (102, 152),
+                                                             itemlist)
+        self.gui.add_buttons_to_outline(box, [('&Add Item', self.on_add),
+                                              ('&Delete Selected', self.on_del)])
+        self.gui.finish_outline(box)
+        self.gui.add_okcancel_buttons('&Save')
+        self.gui.finalize_dialog(focusfield=self.data_text)
+
+    def on_add(self):
+        """property toevoegen:
+        in dit geval hoef ik alleen maar een lege regel aan de tabel toe te voegen
+        """
+        self.gui.add_row_to_table(self.attr_table)
+
+    def on_del(self):
+        """attribuut verwijderen
+        """
+        ok = self.ask_question('Delete row from table', 'Are you sure?')
+        if ok:
+            self.gui.delete_row_from_table(self.attr_table)
+
+    def confirm(self):
+        """controle bij OK aanklikken
+        """
+        proplist = []
+        for i in range(self.gui.getrowcount(self.attr_table)):
+            name_item = self.gui.get_tableitem(self.attr_table, i, 0)
+            value_item = self.gui.get_tableitem(self.attr_table, i, 1)
+            if not name_item or not value_item:
+                self.gui.meld("Can't continue", 'Not all values are entered and confirmed')
+                return False
+            proplist.append(self.gui.get_item_text(name_item), self.gui.get_item_text(value_item))
+        self.parent.dialog_data = proplist
+        return True
+
+
+class ListDialog:
+    """dialoog om een list type property toe te voegen of te wijzigen
+    """
+    def __init__(self, parent, title='', itemlist=None):  # , comment=False):
+        self.parent = parent
+        self.gui = gui.ListDialogGui(self, parent.gui, title)
+        self.is_rules_node = "'rules'" in title
+        box = self.gui.add_outline()
+        self.gui.add_label_to_outline(box, "Items in list:")
+        self.list = self.gui.add_list_to_outline(box, [self._parent.tree.get_itemtext(x)
+                                                       for x in itemlist])
+        self.gui.add_buttons_to_outline(box, [('&Add Item', self.on_add),
+                                              ('&Edit Selected', self.on_edit),
+                                              ('&Delete Selected', self.on_del)])
+        self.gui.finish_outline(box)
+        self.gui.add_okcancel_buttons('&Save')
+        self.gui.finalize_dialog(focusfield=self.data_text)
+
+    def on_add(self):
+        "item toevoegen"
+        if self.is_rules_node:
+            ruletypes = sorted([(x, y[0]) for x, y in RTYPES.items()], key=lambda item: item[1])
+            options = [x[1] for x in ruletypes]
+            text, ok = self.gui.select_item(self.parent.app_title, "Choose type for this rule",
+                                            options)
+        else:
+            text, ok = self.gui.ask_for_text('Add item to list', 'Enter text for this item')
+        if ok:
+            self.gui.add_row_to_list(self.list, text)
+
+    def on_edit(self):
+        "item wijzigen"
+        current = self.gui.get_listitem(self.list)
+        oldtext = self.gui.get_itemtext(current)
+        if self.is_rules_node:
+            ruletypes = sorted([(x, y[0]) for x, y in RTYPES.items()], key=lambda item: item[1])
+            options = [x[1] for x in ruletypes]
+            current_index = options.index(oldtext) if oldtext else 0
+            text, ok = self.gui.select_item(self.parent.app_title, "Choose type for this rule",
+                                            options, current_index)
+        else:
+            text, ok = self.gui.ask_for_text('Edit list item', 'Enter text for this item:',
+                                             text=oldtext)
+        if ok and text != oldtext:
+            self.gui.set_itemtext(current, text)
+
+    def on_del(self):
+        "item verwijderen"
+        ok = self.gui.ask_question('Delete item from list', 'Are you sure?')
+        if ok:
+            self.list.takeItem(self.list.currentRow())
+
+    def confirm(self):
+        """bij OK: de opgebouwde list via self.dialog_data doorgeven
+        aan het mainwindow
+        """
+        list_data = []
+        for row in range(self.gui.get_list_length(self.list)):
+            list_data.append(self.gui.get_itemtext(self.gui.get_listitem(self.list, row)))
+        self.parent.dialog_data = list_data

@@ -5,7 +5,6 @@ import os
 import PyQt6.QtWidgets as qtw
 import PyQt6.QtGui as gui
 import PyQt6.QtCore as core
-from .cssedit import RTYPES, parse_log_line, get_definition_from_file
 HERE = os.path.dirname(__file__)
 
 
@@ -23,7 +22,8 @@ class MainGui(qtw.QMainWindow):
         super().__init__()
         self.set_window_title(title)
         if self.master.app_iconame:
-            self.setWindowIcon(gui.QIcon(self.master.app_iconame))
+            self.appicon = gui.QIcon(self.master.app_iconame)
+            self.setWindowIcon(self.appicon)
         offset = 40 if os.name != 'posix' else 10
         self.move(pos[0] + offset, pos[1] + offset)
         self.resize(size[0], size[1])
@@ -348,45 +348,44 @@ class TreePanel(qtw.QTreeWidget):
         item.setExpanded(False)
 
 
-class LogDialog(qtw.QDialog):
+class LogDialogGui(qtw.QDialog):
     "Simple Log display"
-
-    text = "css definition that triggers this message:\n\n"
-
-    def __init__(self, parent, log):
+    def __init__(self, mathter, parent, title, size):
+        self.mathter = mathter
         self.parent = parent
         super().__init__(parent)
-        self.setWindowTitle(self.parent.master.app_title + " - show log for current file")
-        ## self.setWindowIcon(self.parent.app_icon)
-        txt = qtw.QLabel("Dubbelklik op een regel om de context "
-                         "(definitie in de css) te bekijken")
-        self.lijst = qtw.QListWidget(self)
-        ## self.lijst.setSelectionMode(gui.QAbstractItemView.SingleSelection)
-        self.lijst.addItems(log)
-        b1 = qtw.QPushButton("&Toon Context", self)
-        b1.clicked.connect(self.show_context)
-        b2 = qtw.QPushButton("&Klaar", self)
-        b2.clicked.connect(self.done)
+        self.setWindowTitle(title)
+        self.setWindowIcon(parent.appicon)
+        self.resize(size[0], size[1])
+        self.vbox = qtw.QVBoxLayout()
 
-        vbox = qtw.QVBoxLayout()
-
+    def add_label(self, labeltext):
         hbox = qtw.QHBoxLayout()
-        hbox.addWidget(txt)
-        vbox.addLayout(hbox)
+        hbox.addWidget(qtw.QLabel(labeltext))
+        self.vbox.addLayout(hbox)
 
+    def add_listbox(self, data, callback):
         hbox = qtw.QHBoxLayout()
-        hbox.addWidget(self.lijst)
-        vbox.addLayout(hbox)
+        lijst = qtw.QListWidget(self)
+        # lijst.setSelectionMode(gui.QAbstractItemView.SingleSelection)
+        lijst.addItems(data)
+        lijst.itemDoubleClicked.connect(callback)   # in plaats van het signal herdefiniëren?
+        hbox.addWidget(lijst)
+        self.vbox.addLayout(hbox)
+        return lijst
 
+    def add_buttons(self, buttondefs):
         hbox = qtw.QHBoxLayout()
-        hbox.addWidget(b1)
-        hbox.addWidget(b2)
-        hbox.insertStretch(0, 1)
-        hbox.addStretch(1)
-        vbox.addLayout(hbox)
+        hbox.addStretch()
+        for text, callback in buttondefs:
+            btn = qtw.QPushButton(text, self)
+            btn.clicked.connect(callback)
+            hbox.addWidget(btn)
+        hbox.addStretch()
+        self.vbox.addLayout(hbox)
 
-        self.setLayout(vbox)
-        self.resize(600, 480)
+    def finish_dialog(self):
+        self.setLayout(self.vbox)
         self.exec()
 
     def itemDoubleClicked(self, item):
@@ -394,18 +393,14 @@ class LogDialog(qtw.QDialog):
         """
         self.show_context(item)
 
-    def show_context(self, item=None):
-        """show full logline (in case it's been chopped off)
-        and the definition that triggered it
-        """
-        # determine selected line in the list and get associated data
-        # import pdb; pdb.set_trace()
-        selected = item or self.lijst.currentItem()
-        y = parse_log_line(selected.text())
-        context = get_definition_from_file(self.parent.master.project_file, y.line, y.pos)
-        # pop up a box to show the data
-        title = self.parent.master.app_title + " - show context for log message"
-        qtw.QMessageBox.information(self, title, self.text + context)
+    def get_selection(self, listbox):
+        return listbox.currentItem()
+
+    def get_listitem_text(self, item):
+        return item.text()
+
+    def meld(self, title, text):
+        qtw.QMessageBox.information(self, title, text)
 
     def done(self, arg=None):
         """finish dialog
@@ -413,290 +408,192 @@ class LogDialog(qtw.QDialog):
         super().done(0)
 
 
-class TextDialog(qtw.QDialog):
+class EditDialogGui(qtw.QDialog):
+    """base class for dialogs to edit css properties
+    """
+    def __init__(self, mathter, parent, title, size):
+        self.mathter = mathter
+        self._parent = parent
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setWindowIcon(parent.appicon)
+        self.resize(size[0], size[1])
+        self.vbox = qtw.QVBoxLayout()
+
+    def add_outline(self):
+        sbox = qtw.QFrame()
+        sbox.setFrameStyle(qtw.QFrame.Shape.Box)
+        box = qtw.QVBoxLayout()
+        self.sbox.setLayout(box)
+        self.vbox.addWidget(sbox)
+        return box
+
+    def add_label_to_outline(self, box, labeltext):
+        hbox = qtw.QHBoxLayout()
+        hbox.addStretch()
+        hbox.addWidget(qtw.QLabel(labeltext))
+        hbox.addStretch()
+        box.addLayout(hbox)
+
+    def add_buttons_to_outline(self, box, buttondefs):
+        hbox = qtw.QHBoxLayout()
+        hbox.addSpacing(50)
+        for text, callback in buttondefs:
+            btn = qtw.QPushButton(text, self)
+            btn.clicked.connect(callback)
+            hbox.addWidget(btn)
+        hbox.addSpacing(50)
+        box.addLayout(hbox)
+
+    def add_okcancel_buttons(self, oktext):
+        hbox = qtw.QHBoxLayout()
+        hbox.addStretch()
+        btn = qtw.QPushButton(oktext, self)
+        btn.clicked.connect(self.accept)
+        btn.setDefault(True)
+        hbox.addWidget(btn)
+        btn = qtw.QPushButton('&Cancel', self)
+        btn.clicked.connect(self.reject)
+        hbox.addWidget(btn)
+        hbox.addStretch()
+        self.vbox.addLayout(hbox)
+
+    def finalize_dialog(self, focusfield):
+        self.setLayout(self.vbox)
+        focusfield.setFocus()
+
+    def meld(self, title, text):
+        qtw.QMessageBox.information(self, title, text)
+
+    def ask_question(self, title, message):
+        """attribuut verwijderen
+        """
+        ok = qtw.QMessageBox.question(self, title, message,
+                                      qtw.QMessageBox.StandardButton.Ok
+                                      | qtw.QMessageBox.StandardButton.Cancel,
+                                      qtw.QMessageBox.StandardButton.Ok)
+        return ok == qtw.QMessageBox.StandardButton.Ok
+
+    def accept(self):
+        """reimplemented
+        """
+        self.mathter.confirm()
+        super().accept()
+
+
+class TextDialogGui(EditDialogGui):
     """dialoog om een ongedefinieerde tekst (bv. van een commentaar) weer te geven
     d.m.v. een multiline tekst box
     """
-    def __init__(self, parent, title='', text=''):  # , comment=False):
-        self._parent = parent
-        super().__init__(parent)
-        self.setWindowTitle(title)
-        self.resize(440, 280)
-        vbox = qtw.QVBoxLayout()
 
+    def add_textfield(self, text):
         hbox = qtw.QHBoxLayout()
-        self.data_text = qtw.QTextEdit(self)
-        ## self.data_text.resize(440, 280)
+        field = qtw.QTextEdit(self)
+        # self.data_text.resize(440, 280)
         hbox.addSpacing(50)
-        self.data_text.setText(text)
-        hbox.addWidget(self.data_text)
+        field.setText(text)
+        hbox.addWidget(field)
         hbox.addSpacing(50)
-        vbox.addLayout(hbox)
+        self.vbox.addLayout(hbox)
+        return field
 
-        hbox = qtw.QHBoxLayout()
-        hbox.addStretch()
-        btn = qtw.QPushButton('&Save', self)
-        btn.clicked.connect(self.on_ok)
-        btn.setDefault(True)
-        hbox.addWidget(btn)
-        btn = qtw.QPushButton('&Cancel', self)
-        btn.clicked.connect(self.on_cancel)
-        hbox.addWidget(btn)
-        hbox.addStretch()
-        vbox.addLayout(hbox)
-
-        self.setLayout(vbox)
-        self.data_text.setFocus()
-
-    def on_cancel(self):
-        """callback for cancel button (should be replaced by connecting to reject?)
-        """
-        super().reject()
-
-    def on_ok(self):
-        """confirm changed text
-        """
-        self._parent.dialog_data = str(self.data_text.toPlainText())
-        super().accept()
+    def get_textfield_text(self, field):
+        return field.toPlainText()
 
 
-class GridDialog(qtw.QDialog):
+class GridDialogGui(EditDialogGui):
     """dialoog om stijl definities voor een (groep van) selector(s) op te voeren
     of te wijzigen
     """
-    def __init__(self, parent, title='', itemlist=None):  # , comment=False):
-        self._parent = parent
-        super().__init__(parent)
-        self.setWindowTitle(title)
-        ## self.setWindowIcon(gui.QIcon(os.path.join(PPATH,"ashe.ico")))
-        vbox = qtw.QVBoxLayout()
 
-        sbox = qtw.QFrame()
-        sbox.setFrameStyle(qtw.QFrame.Shape.Box)
-        box = qtw.QVBoxLayout()
-
+    def add_table_to_outline(self, box, headers, widths, itemlist):
         hbox = qtw.QHBoxLayout()
-        hbox.addStretch()
-        hbox.addWidget(qtw.QLabel("Items in table:", self))
-        hbox.addStretch()
-        box.addLayout(hbox)
-
-        hbox = qtw.QHBoxLayout()
-        self.attr_table = qtw.QTableWidget(self)
-        ## self.attr_table.resize(540, 340)
-        self.attr_table.setColumnCount(2)
-        self.attr_table.setHorizontalHeaderLabels(['property', 'value'])  # alleen zo te wijzigen
-        hdr = self.attr_table.horizontalHeader()
-        ## hdr.setMinimumSectionSize(340)
-        hdr.resizeSection(0, 102)
-        hdr.resizeSection(1, 152)
+        table = qtw.QTableWidget(self)
+        table.setColumnCount(len(headers))
+        table.setHorizontalHeaderLabels(headers)
+        hdr = table.horizontalHeader()
+        for column, width in enumerate(widths):
+            hdr.resizeSection(column, width)
         hdr.setStretchLastSection(True)
-        self.attr_table.verticalHeader().setVisible(False)
-        self.attr_table.setTabKeyNavigation(False)
-        ## self.attr_table.SetColSize(1, tbl.Size[0] - 162) # 178) # 160)
+        table.verticalHeader().setVisible(False)
+        table.setTabKeyNavigation(False)
         if itemlist is not None:
             for attr, value in itemlist:
                 idx = self.attr_table.rowCount()
-                self.attr_table.insertRow(idx)
+                table.insertRow(idx)
                 item = qtw.QTableWidgetItem(attr)
-                self.attr_table.setItem(idx, 0, item)
+                table.setItem(idx, 0, item)
                 item = qtw.QTableWidgetItem(value)
-                self.attr_table.setItem(idx, 1, item)
+                table.setItem(idx, 1, item)
         else:
             self.row = -1
-        ## hbox.addStretch()
-        hbox.addWidget(self.attr_table)
-        ## hbox.addStretch()
+        hbox.addWidget(table)
         box.addLayout(hbox)
+        return table
 
-        hbox = qtw.QHBoxLayout()
-        hbox.addSpacing(50)
-        btn = qtw.QPushButton('&Add Item', self)
-        btn.clicked.connect(self.on_add)
-        hbox.addWidget(btn)
-        btn = qtw.QPushButton('&Delete Selected', self)
-        btn.clicked.connect(self.on_del)
-        hbox.addWidget(btn)
-        hbox.addSpacing(50)
-        box.addLayout(hbox)
+    def getroecount(self, table):
+        return table.rowCount()
 
-        sbox.setLayout(box)
-        vbox.addWidget(sbox)
+    def get_tableitem(self, table, row, column):
+        return table.item(row, column)
 
-        hbox = qtw.QHBoxLayout()
-        hbox.addStretch()
-        btn = qtw.QPushButton('&Save', self)
-        btn.clicked.connect(self.on_ok)
-        btn.setDefault(True)
-        hbox.addWidget(btn)
-        btn = qtw.QPushButton('&Cancel', self)
-        btn.clicked.connect(self.on_cancel)
-        hbox.addWidget(btn)
-        vbox.addLayout(hbox)
-        hbox.addStretch()
+    def get_item_text(self, tableitem):
+        return tableitem.text()
 
-        self.setLayout(vbox)
-
-    ## def on_resize(self, evt=None):
-        ## self.attr_table.SetColSize(1, self.attr_table.GetSize()[0] - 162) # 178) # 160)
-        ## self.attr_table.ForceRefresh()
-
-    def on_add(self):
+    def add_row_to_table(self, table):
         """property toevoegen:
         in dit geval hoef ik alleen maar een lege regel aan de tabel toe te voegen
         """
-        ## self.attr_table.setFocus()
-        num = self.attr_table.rowCount()
-        self.attr_table.setRowCount(num + 1)
-        ## self.attr_table.insertRow(idx) # waarom niet addRow?
-        ## self.attr_table.setCurrentCell(idx, 0)
+        num = table.rowCount()
+        table.setRowCount(num + 1)
 
-    def on_del(self):
-        """attribuut verwijderen
-        """
-        ok = qtw.QMessageBox.question(self, 'Delete row from table', 'Are you sure?',
-                                      qtw.QMessageBox.StandardButton.Ok
-                                      | qtw.QMessageBox.StandardButton.Cancel,
-                                      qtw.QMessageBox.StandardButton.Ok)
-        if ok == qtw.QMessageBox.StandardButton.Ok:
-            self.attr_table.removeRow(self.attr_table.currentRow())
-
-    def on_cancel(self):
-        """callback for cancel button (should be replaced by connecting to reject?)
-        """
-        ## qtw.QDialog.done(self, qtw.QDialog.Rejected)
-        super().reject()
-
-    def on_ok(self):
-        """controle bij OK aanklikken
-        """
-        proplist = []
-        for i in range(self.attr_table.rowCount()):
-            name_item = self.attr_table.item(i, 0)
-            value_item = self.attr_table.item(i, 1)
-            if not name_item or not value_item:
-                qtw.QMessageBox.information(self, "Can't continue",
-                                            'Not all values are entered and confirmed')
-                return
-            proplist.append((str(name_item.text()), str(value_item.text())))
-        self._parent.dialog_data = proplist
-        ## qtw.QDialog.done(self, qtw.QDialog.Accepted)
-        super().accept()
+    def delete_row_from_table(self, table):
+        table.removeRow(currentRow())
 
 
-class ListDialog(qtw.QDialog):
+class ListDialogGui(EditDialogGui):
     """dialoog om een list type property toe te voegen of te wijzigen
     """
-    def __init__(self, parent, title='', itemlist=None):  # , comment=False):
-        self._parent = parent
-        super().__init__(parent)
-        self.setWindowTitle(title)
-        self.is_rules_node = "'rules'" in title
-        vbox = qtw.QVBoxLayout()
 
-        sbox = qtw.QFrame()
-        sbox.setFrameStyle(qtw.QFrame.Shape.Box)
-        box = qtw.QVBoxLayout()
+    def select_item(self, title, caption, choices, current_index=0, editable=False):
+        text, ok = qtw.QInputDialog.getItem(self, title, caption , options, current_index,
+                                            editable)
+        return text, ok
 
-        hbox = qtw.QHBoxLayout()
-        hbox.addStretch()
-        hbox.addWidget(qtw.QLabel("Items in list:", self))
-        hbox.addStretch()
-        vbox.addLayout(hbox)
-
-        self.list = qtw.QListWidget(self)
-        if itemlist is not None:
-            self.list.addItems([self._parent.tree.get_itemtext(x) for x in itemlist])
+    def add_list_to_outline(self, box, items):
         hbox = qtw.QHBoxLayout()
         hbox.addSpacing(50)
-        hbox.addWidget(self.list)
+        lbox = qtw.QListWidget(self)
+        if items:
+            lbox.addItems(items)
+        hbox.addWidget(lbox)
         hbox.addSpacing(50)
         box.addLayout(hbox)
+        return lbox
 
-        hbox = qtw.QHBoxLayout()
-        hbox.addStretch()
-        btn = qtw.QPushButton('&Add Item', self)
-        btn.clicked.connect(self.on_add)
-        hbox.addWidget(btn)
-        btn = qtw.QPushButton('&Edit Selected', self)
-        btn.clicked.connect(self.on_edit)
-        hbox.addWidget(btn)
-        btn = qtw.QPushButton('&Delete Selected', self)
-        btn.clicked.connect(self.on_del)
-        hbox.addWidget(btn)
-        hbox.addStretch()
-        box.addLayout(hbox)
+    def ask_for_text(self, title, caption, text=''):
+        text, ok = qtw.QInputDialog.getText(self, title, caption, text=text)
+        return text, ok
 
-        sbox.setLayout(box)
-        vbox.addWidget(sbox)
-
-        hbox = qtw.QHBoxLayout()
-        hbox.addStretch()
-        btn = qtw.QPushButton('&Save', self)
-        btn.clicked.connect(self.on_ok)
-        btn.setDefault(True)
-        hbox.addWidget(btn)
-        btn = qtw.QPushButton('&Cancel', self)
-        btn.clicked.connect(self.on_cancel)
-        hbox.addWidget(btn)
-        vbox.addLayout(hbox)
-        hbox.addStretch()
-
-        self.setLayout(vbox)
-
-    def on_add(self):
+    def add_row_to_list(self, lbox, itemtext):
         "item toevoegen"
-        if self.is_rules_node:
-            ruletypes = sorted([(x, y[0]) for x, y in RTYPES.items()], key=lambda item: item[1])
-            options = [x[1] for x in ruletypes]
-            text, ok = qtw.QInputDialog.getItem(self, self._parent.app_title,
-                                                "Choose type for this rule", options,
-                                                editable=False)
-        else:
-            text, ok = qtw.QInputDialog.getText(
-                self, 'Add item to list', 'Enter text for this item')
-        if ok:
-            self.list.addItem(text)
+        lbox.addItem(itemtext)
 
-    def on_edit(self):
-        "item wijzigen"
-        current = self.list.currentItem()
-        oldtext = current.text()
-        if self.is_rules_node:
-            ruletypes = sorted([(x, y[0]) for x, y in RTYPES.items()], key=lambda item: item[1])
-            options = [x[1] for x in ruletypes]
-            current_index = options.index(oldtext) if oldtext else 0
-            text, ok = qtw.QInputDialog.getItem(self, self._parent.app_title,
-                                                "Choose type for this rule", options,
-                                                current_index, editable=False)
+    def get_listitem(self, lbox, row=-1):
+        if listitem == -1:
+            return lbox.currentItem()
         else:
-            text, ok = qtw.QInputDialog.getText(
-                self, 'Edit list item', 'Enter text for this item:', text=oldtext)
-        if ok and text != oldtext:
-            current.setText(text)
+            return lbox.item(row)
 
-    def on_del(self):
+    def get_itemtext(self, item):
+        return item.text()
+
+    def set_itemtext(self, item, text):
+        item.setText(text)
+
+    def delete_row_from_table(self, lbox):
         "item verwijderen"
-        ok = qtw.QMessageBox.question(self, 'Delete item from list', 'Are you sure?',
-                                      qtw.QMessageBox.StandardButton.Ok
-                                      | qtw.QMessageBox.StandardButton.Cancel,
-                                      qtw.QMessageBox.StandardButton.Ok)
-        if ok == qtw.QMessageBox.StandardButton.Ok:
-            self.list.takeItem(self.list.currentRow())
+        list.takeItem(list.currentRow())
 
-    def on_cancel(self):
-        """callback for cancel button (should be replaced by connecting to reject?)
-        """
-        ## qtw.QDialog.done(self, qtw.QDialog.Rejected)
-        super().reject()
-
-    def on_ok(self):
-        """bij OK: de opgebouwde list via self.dialog_data doorgeven
-        aan het mainwindow
-        """
-        list_data = []
-        for row in range(self.list.count()):
-            list_data.append(str(self.list.item(row).text()))
-        self._parent.dialog_data = list_data
-        ## qtw.QDialog.done(self, qtw.QDialog.Accepted)
-        super().accept()
+    def get_list_length(self, lbox):
+        return lbox.count()
