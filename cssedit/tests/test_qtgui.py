@@ -6,205 +6,6 @@ from mockgui import mockqtwidgets as mockqtw
 from cssedit.editor import gui_qt as testee
 
 
-exp_maingui = """\
-called QMainWindow.__init__ with args () {}
-called MainGui.set_window_title with arg 'xxx'
-called Icon.__init__ with arg `yyy`
-called MainWindow.setWindowIcon
-called MainWindow.move with args (20, 20)
-called MainWindow.resize with args (1800, 1500)
-called MainWindow.statusBar
-called StatusBar.__init__ with args ()
-called Tree.__init__
-called MainWidget.setCentralWidget with arg `TreePanel`
-"""
-exp_logdialog = """\
-called Dialog.__init__ with args namespace(master=namespace(app_title='apptitle')) () {{}}
-called Dialog.setWindowTitle with args ('apptitle - show log for current file',)
-called Label.__init__ with args ('Dubbelklik op een regel om de context (definitie in de css) te bekijken',)
-called List.__init__
-called List.addItems with arg `['regel1', 'regel2']`
-called PushButton.__init__ with args ('&Toon Context', {testobj}) {{}}
-called Signal.connect with args ({testobj.show_context},)
-called PushButton.__init__ with args ('&Klaar', {testobj}) {{}}
-called Signal.connect with args ({testobj.done},)
-called VBox.__init__
-called HBox.__init__
-called HBox.addWidget with arg MockLabel
-called VBox.addLayout with arg MockHBoxLayout
-called HBox.__init__
-called HBox.addWidget with arg MockListBox
-called VBox.addLayout with arg MockHBoxLayout
-called HBox.__init__
-called HBox.addWidget with arg MockPushButton
-called HBox.addWidget with arg MockPushButton
-called HBox.insertStretch
-called HBox.addStretch
-called VBox.addLayout with arg MockHBoxLayout
-called Dialog.setLayout with arg MockVBoxLayout
-called Widget.resize with args (600, 480)
-called Dialog.exec
-"""
-exp_textdialog = """\
-called Dialog.__init__ with args namespace(master=namespace(app_title='apptitle')) () {{}}
-called Dialog.setWindowTitle with args ('{title}',)
-called Widget.resize with args (440, 280)
-called VBox.__init__
-called HBox.__init__
-called Editor.__init__ with args ({testobj},)
-called HBox.addSpacing
-called Editor.setText with arg `{text}`
-called HBox.addWidget with arg MockEditorWidget
-called HBox.addSpacing
-called VBox.addLayout with arg MockHBoxLayout
-called HBox.__init__
-called HBox.addStretch
-called PushButton.__init__ with args ('&Save', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_ok},)
-called PushButton.setDefault with arg `True`
-called HBox.addWidget with arg MockPushButton
-called PushButton.__init__ with args ('&Cancel', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_cancel},)
-called HBox.addWidget with arg MockPushButton
-called HBox.addStretch
-called VBox.addLayout with arg MockHBoxLayout
-called Dialog.setLayout with arg MockVBoxLayout
-called Editor.setFocus
-"""
-exp_grid_start = """\
-called Dialog.__init__ with args namespace(master=namespace(app_title='apptitle')) () {{}}
-called Dialog.setWindowTitle with args ('{title}',)
-called VBox.__init__
-called Frame.__init__
-called Frame.setFrameStyle with arg `{testee.qtw.QFrame.Box}`
-called VBox.__init__
-called HBox.__init__
-called HBox.addStretch
-called Label.__init__ with args ('Items in table:', {testobj})
-called HBox.addWidget with arg MockLabel
-called HBox.addStretch
-called VBox.addLayout with arg MockHBoxLayout
-called HBox.__init__
-called Table.__init__ with args ({testobj},)
-called Header.__init__
-called Header.__init__
-called Table.setColumnCount with arg '2'
-called Table.setHorizontalHeaderLabels with arg '['property', 'value']'
-called Table.horizontalHeader
-called Header.resizeSection with args (0, 102)
-called Header.resizeSection with args (1, 152)
-called Header.setStretchLastSection with arg True
-called Table.verticalHeader
-called Header.setVisible with arg False
-called Table.setTabKeyNavigation with arg False
-"""
-exp_grid_middle = """\
-called Table.rowCount
-called Table.insertRow with arg '0'
-called Table.setItem with args (0, 0, QTableWidgetItem)
-called Table.setItem with args (0, 1, QTableWidgetItem)
-called Table.rowCount
-called Table.insertRow with arg '1'
-called Table.setItem with args (1, 0, QTableWidgetItem)
-called Table.setItem with args (1, 1, QTableWidgetItem)
-"""
-exp_grid_end = """\
-called HBox.addWidget with arg MockTable
-called VBox.addLayout with arg MockHBoxLayout
-called HBox.__init__
-called HBox.addSpacing
-called PushButton.__init__ with args ('&Add Item', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_add},)
-called HBox.addWidget with arg MockPushButton
-called PushButton.__init__ with args ('&Delete Selected', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_del},)
-called HBox.addWidget with arg MockPushButton
-called HBox.addSpacing
-called VBox.addLayout with arg MockHBoxLayout
-called Frame.setLayout with arg MockVBoxLayout
-called VBox.addWidget with arg MockFrame
-called HBox.__init__
-called HBox.addStretch
-called PushButton.__init__ with args ('&Save', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_ok},)
-called PushButton.setDefault with arg `True`
-called HBox.addWidget with arg MockPushButton
-called PushButton.__init__ with args ('&Cancel', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_cancel},)
-called HBox.addWidget with arg MockPushButton
-called VBox.addLayout with arg MockHBoxLayout
-called HBox.addStretch
-called Dialog.setLayout with arg MockVBoxLayout
-"""
-exp_list_start = """\
-called Dialog.__init__ with args {parent} () {{}}
-called Dialog.setWindowTitle with args ({title!r},)
-called VBox.__init__
-called Frame.__init__
-called Frame.setFrameStyle with arg `{testee.qtw.QFrame.Box}`
-called VBox.__init__
-called HBox.__init__
-called HBox.addStretch
-called Label.__init__ with args ('Items in list:', {testobj})
-called HBox.addWidget with arg MockLabel
-called HBox.addStretch
-called VBox.addLayout with arg MockHBoxLayout
-called List.__init__
-"""
-exp_list_middle = """\
-called Tree.get_itemtext with arg 'yyy'
-called Tree.get_itemtext with arg 'zzz'
-called List.addItems with arg `['yyy', 'zzz']`
-"""
-exp_list_end = """\
-called HBox.__init__
-called HBox.addSpacing
-called HBox.addWidget with arg MockListBox
-called HBox.addSpacing
-called VBox.addLayout with arg MockHBoxLayout
-called HBox.__init__
-called HBox.addStretch
-called PushButton.__init__ with args ('&Add Item', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_add},)
-called HBox.addWidget with arg MockPushButton
-called PushButton.__init__ with args ('&Edit Selected', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_edit},)
-called HBox.addWidget with arg MockPushButton
-called PushButton.__init__ with args ('&Delete Selected', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_del},)
-called HBox.addWidget with arg MockPushButton
-called HBox.addStretch
-called VBox.addLayout with arg MockHBoxLayout
-called Frame.setLayout with arg MockVBoxLayout
-called VBox.addWidget with arg MockFrame
-called HBox.__init__
-called HBox.addStretch
-called PushButton.__init__ with args ('&Save', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_ok},)
-called PushButton.setDefault with arg `True`
-called HBox.addWidget with arg MockPushButton
-called PushButton.__init__ with args ('&Cancel', {testobj}) {{}}
-called Signal.connect with args ({testobj.on_cancel},)
-called HBox.addWidget with arg MockPushButton
-called VBox.addLayout with arg MockHBoxLayout
-called HBox.addStretch
-called Dialog.setLayout with arg MockVBoxLayout
-"""
-
-
-@pytest.fixture
-def expected_output():
-    """generic fixture for ouput expectations
-    """
-    return {'maingui': exp_maingui,
-            'logdialog': exp_logdialog,
-            'textdialog': exp_textdialog,
-            'griddialog': exp_grid_start + exp_grid_end,
-            'griddialog2': exp_grid_start + exp_grid_middle + exp_grid_end,
-            'listdialog': exp_list_start + exp_list_end,
-            'listdialog2': exp_list_start + exp_list_middle + exp_list_end}
-
-
 class MockEditor:
     "stub for main.Editor"
     def __init__(self):
@@ -248,7 +49,7 @@ class TestMainGui:
                                            'called Tree.__init__\n')
         return testobj
 
-    def test_init(self, monkeypatch, capsys, expected_output):
+    def test_init(self, monkeypatch, capsys):
         """unittest for MainGui.__init__
         """
         def mock_init(self, *args, **kwargs):
@@ -289,7 +90,17 @@ class TestMainGui:
                 "called MainWidget.setCentralWidget with arg `TreePanel`\n")
         master.app_iconame = 'yyy'
         testobj = testee.MainGui(master, 'app', title='xxx', pos=(10, 10), size=(1800, 1500))
-        assert capsys.readouterr().out == expected_output['maingui']
+        assert capsys.readouterr().out == (
+                "called QMainWindow.__init__ with args () {}\n"
+                "called MainGui.set_window_title with arg 'xxx'\n"
+                "called Icon.__init__ with arg `yyy`\n"
+                "called MainWindow.setWindowIcon\n"
+                "called MainWindow.move with args (20, 20)\n"
+                "called MainWindow.resize with args (1800, 1500)\n"
+                "called MainWindow.statusBar\n"
+                "called StatusBar.__init__ with args ()\n"
+                "called Tree.__init__\n"
+                "called MainWidget.setCentralWidget with arg `TreePanel`\n")
 
     def test_create_menu(self, monkeypatch, capsys):
         """unittest for MainGui.create_menu
@@ -320,7 +131,6 @@ class TestMainGui:
                       ('label-2', callback2, '', 'infotekst-2'),
                       ('', callback3, 'z', 'infotekst-2'),
                       ('label-3', callback3, 'z', ''))),)
-        # breakpoint()
         testobj.create_menu(menudata)
         assert list(testobj.menus.keys()) == ['menutitle']
         assert isinstance(testobj.menus['menutitle'], mockqtw.MockMenu)
@@ -540,20 +350,25 @@ class TestMainGui:
     def test_show_dialog(self, monkeypatch, capsys):
         """unittest for MainGui.show_dialog
         """
-        def mock_exec(self):
+        class MockDialogParent:
+            gui = mockqtw.MockDialog()
+            def __init__(self, *args):
+                print('called DialogParent.__init__ with args', args)
+        def mock_exec():
             print('called Dialog.exec')
             return testee.qtw.QDialog.DialogCode.Accepted
+        assert capsys.readouterr().out == "called Dialog.__init__ with args None () {}\n"
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.dialog_data = {'x': 'y'}
-        cls = mockqtw.MockDialog
+        cls = MockDialogParent
         assert testobj.show_dialog(cls, 'args') == (False, None)
         assert capsys.readouterr().out == (
-                f"called Dialog.__init__ with args {testobj} ('args',) {{}}\n"
+                f"called DialogParent.__init__ with args ({testobj}, 'args')\n"
                 "called Dialog.exec\n")
-        cls.exec = mock_exec
+        cls.gui.exec = mock_exec
         assert testobj.show_dialog(cls, 'args') == (True, {'x': 'y'})
         assert capsys.readouterr().out == (
-                f"called Dialog.__init__ with args {testobj} ('args',) {{}}\n"
+                f"called DialogParent.__init__ with args ({testobj}, 'args')\n"
                 "called Dialog.exec\n")
 
 
@@ -878,11 +693,11 @@ class TestTreePanel:
         assert capsys.readouterr().out == ("called TreeItem.setExpanded with arg `False`\n")
 
 
-class TestLogDialog:
-    """unittest for gui_qt.LogDialog
+class TestLogDialogGui:
+    """unittest for gui_qt.LogDialogGui
     """
     def setup_testobj(self, monkeypatch, capsys):
-        """stub for gui_qt.LogDialog object
+        """stub for gui_qt.LogDialogGui object
 
         create the object skipping the normal initialization
         intercept messages during creation
@@ -891,84 +706,117 @@ class TestLogDialog:
         def mock_init(self, *args):
             """stub
             """
-            print('called LogDialog.__init__ with args', args)
-        monkeypatch.setattr(testee.LogDialog, '__init__', mock_init)
-        testobj = testee.LogDialog()
-        testobj.parent = MockMainGui()
-        testobj.parent.master = MockEditor()
-        assert capsys.readouterr().out == ('called LogDialog.__init__ with args ()\n'
-                                           'called MainGui.__init__ with args ()\n'
-                                           'called Editor.__init__\n')
+            print('called LogDialogGui.__init__ with args', args)
+        monkeypatch.setattr(testee.LogDialogGui, '__init__', mock_init)
+        testobj = testee.LogDialogGui()
+        assert capsys.readouterr().out == 'called LogDialogGui.__init__ with args ()\n'
         return testobj
 
-    def test_init(self, monkeypatch, capsys, expected_output):
-        """unittest for LogDialog.__init__
+    def test_init(self, monkeypatch, capsys):
+        """unittest for LogDialogGui.__init__
         """
         monkeypatch.setattr(testee.qtw.QDialog, '__init__', mockqtw.MockDialog.__init__)
         monkeypatch.setattr(testee.qtw.QDialog, 'setWindowTitle', mockqtw.MockDialog.setWindowTitle)
-        monkeypatch.setattr(testee.qtw.QDialog, 'setLayout', mockqtw.MockDialog.setLayout)
-        monkeypatch.setattr(testee.qtw.QDialog, 'resize', mockqtw.MockWidget.resize)
-        monkeypatch.setattr(testee.qtw.QDialog, 'exec', mockqtw.MockDialog.exec)
-        monkeypatch.setattr(testee.qtw, 'QLabel', mockqtw.MockLabel)
-        monkeypatch.setattr(testee.qtw, 'QListWidget', mockqtw.MockListBox)
-        monkeypatch.setattr(testee.qtw, 'QPushButton', mockqtw.MockPushButton)
+        monkeypatch.setattr(testee.qtw.QDialog, 'setWindowIcon', mockqtw.MockDialog.setWindowIcon)
+        monkeypatch.setattr(testee.qtw.QDialog, 'resize', mockqtw.MockDialog.resize)
         monkeypatch.setattr(testee.qtw, 'QVBoxLayout', mockqtw.MockVBoxLayout)
+        parent = types.SimpleNamespace(appicon='appicon')
+        testobj = testee.LogDialogGui('master', parent, 'title', ('si', 'ze'))
+        assert capsys.readouterr().out == (
+                f"called Dialog.__init__ with args {parent} () {{}}\n"
+                "called Dialog.setWindowTitle with args ('title',)\n"
+                "called Dialog.setWindowIcon with args ('appicon',)\n"
+                "called Dialog.resize with args ('si', 'ze')\n"
+                "called VBox.__init__\n")
+
+    def test_add_label(self, monkeypatch, capsys):
         monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
-        parent = types.SimpleNamespace(master=types.SimpleNamespace(app_title='apptitle'))
-        testobj = testee.LogDialog(parent, ['regel1', 'regel2'])
-        assert capsys.readouterr().out == expected_output['logdialog'].format(testobj=testobj)
-
-    def test_itemDoubleClicked(self, monkeypatch, capsys):
-        """unittest for LogDialog.itemDoubleClicked
-        """
-        def mock_show(*args):
-            print('called LogDialog.show_context with args', args)
+        monkeypatch.setattr(testee.qtw, 'QLabel', mockqtw.MockLabel)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.show_context = mock_show
-        testobj.itemDoubleClicked('item')
-        assert capsys.readouterr().out == "called LogDialog.show_context with args ('item',)\n"
+        testobj.vbox = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        testobj.add_label('labeltext')
+        assert capsys.readouterr().out == (
+                "called HBox.__init__\n"
+                "called Label.__init__ with args ('labeltext',)\n"
+                "called HBox.addWidget with arg MockLabel\n"
+                "called VBox.addLayout with arg MockHBoxLayout\n")
 
-    def test_show_context(self, monkeypatch, capsys):
-        """unittest for LogDialog.show_context
+    def test_add_listbox(self, monkeypatch, capsys):
+        monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
+        monkeypatch.setattr(testee.qtw, 'QListWidget', mockqtw.MockListBox)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.vbox = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        result = testobj.add_listbox(['data'], 'callback')
+        assert capsys.readouterr().out == (
+                "called HBox.__init__\n"
+                "called List.__init__\n"
+                "called List.addItems with arg `['data']`\n"
+                "called Signal.connect with args ('callback',)\n"
+                "called HBox.addWidget with arg MockListBox\n"
+                "called VBox.addLayout with arg MockHBoxLayout\n")
+
+    def test_add_buttons(self, monkeypatch, capsys):
+        monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
+        monkeypatch.setattr(testee.qtw, 'QPushButton', mockqtw.MockPushButton)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.vbox = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        testobj.add_buttons([])
+        assert capsys.readouterr().out == (
+                "called HBox.__init__\n"
+                "called HBox.addStretch\n"
+                "called HBox.addStretch\n"
+                "called VBox.addLayout with arg MockHBoxLayout\n")
+        testobj.add_buttons([('xx', 'callback1'), ('yy', 'callback2')])
+        assert capsys.readouterr().out == (
+                "called HBox.__init__\n"
+                "called HBox.addStretch\n"
+                f"called PushButton.__init__ with args ('xx', {testobj}) {{}}\n"
+                "called Signal.connect with args ('callback1',)\n"
+                "called HBox.addWidget with arg MockPushButton\n"
+                f"called PushButton.__init__ with args ('yy', {testobj}) {{}}\n"
+                "called Signal.connect with args ('callback2',)\n"
+                "called HBox.addWidget with arg MockPushButton\n"
+                "called HBox.addStretch\n"
+                "called VBox.addLayout with arg MockHBoxLayout\n")
+
+    def test_finish_dialog(self, monkeypatch, capsys):
+        monkeypatch.setattr(testee.qtw.QDialog, 'setLayout', mockqtw.MockDialog.setLayout)
+        monkeypatch.setattr(testee.qtw.QDialog, 'exec', mockqtw.MockDialog.exec)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.vbox = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        testobj.finish_dialog()
+        assert capsys.readouterr().out == (
+                "called Dialog.setLayout with arg MockVBoxLayout\n"
+                "called Dialog.exec\n")
+
+    def test_get_selection(self, monkeypatch, capsys):
+        """unittest for LogDialog.get_selection
         """
-        def mock_item():
-            print('called List.currentItem')
-            return mockqtw.MockListItem('xxx')
-        def mock_parse(arg):
-            print('called parse_log_line with arg', arg)
-            return types.SimpleNamespace(line=1, pos=2)
-        def mock_get_definition(*args):
-            print('called get_definition_from_file with args', args)
-            return 'context'
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        listbox = mockqtw.MockListBox()
+        assert testobj.get_selection(listbox) == 'current item'
+        assert capsys.readouterr().out == "called List.__init__\ncalled List.currentItem\n"
+
+    def test_get_listitem_text(self, monkeypatch, capsys):
+        """unittest for LogDialog.get_listitem_text
+        """
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        item = mockqtw.MockListItem()
+        assert testobj.get_listitem_text(item) == ''
+        assert capsys.readouterr().out == 'called ListItem.__init__\ncalled ListItem.text\n'
+
+    def test_meld(self, monkeypatch, capsys):
+        """unittest for LogDialog.meld
+        """
         monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        monkeypatch.setattr(testee, 'parse_log_line', mock_parse)
-        monkeypatch.setattr(testee, 'get_definition_from_file', mock_get_definition)
-        testobj.lijst = mockqtw.MockListBox()
-        assert capsys.readouterr().out == "called List.__init__\n"
-        testobj.lijst.currentItem = mock_item
-        testobj.parent.master.app_title = 'app title'
-        testobj.parent.master.project_file = 'pfile'
-        testobj.show_context()
+        testobj.meld('title', 'text')
         assert capsys.readouterr().out == (
-                "called List.currentItem\n"
-                "called ListItem.__init__ with args ('xxx',)\n"
-                "called ListItem.text\n"
-                "called parse_log_line with arg xxx\n"
-                "called get_definition_from_file with args ('pfile', 1, 2)\n"
-                f"called MessageBox.information with args `{testobj}`"
-                " `app title - show context for log message`"
-                " `css definition that triggers this message:\n\ncontext`\n")
-        item = mockqtw.MockListItem('yyy')
-        testobj.show_context(item)
-        assert capsys.readouterr().out == (
-                "called ListItem.__init__ with args ('yyy',)\n"
-                "called ListItem.text\n"
-                "called parse_log_line with arg yyy\n"
-                "called get_definition_from_file with args ('pfile', 1, 2)\n"
-                f"called MessageBox.information with args `{testobj}`"
-                " `app title - show context for log message`"
-                " `css definition that triggers this message:\n\ncontext`\n")
+                f"called MessageBox.information with args `{testobj}` `title` `text`\n")
 
     def test_done(self, monkeypatch, capsys):
         """unittest for LogDialog.done
@@ -983,11 +831,11 @@ class TestLogDialog:
         assert capsys.readouterr().out == ("called Dialog.done with arg 0\n")
 
 
-class TestTextDialog:
-    """unittest for gui_qt.TextDialog
+class TestEditDialogGui:
+    """unittest for gui_qt.EditDialogGui
     """
     def setup_testobj(self, monkeypatch, capsys):
-        """stub for gui_qt.TextDialog object
+        """stub for gui_qt.EditDialogGui object
 
         create the object skipping the normal initialization
         intercept messages during creation
@@ -996,66 +844,161 @@ class TestTextDialog:
         def mock_init(self, *args):
             """stub
             """
-            print('called TextDialog.__init__ with args', args)
-        monkeypatch.setattr(testee.TextDialog, '__init__', mock_init)
-        testobj = testee.TextDialog('parent')
-        assert capsys.readouterr().out == "called TextDialog.__init__ with args ('parent',)\n"
+            print('called EditDialogGui.__init__ with args', args)
+        monkeypatch.setattr(testee.EditDialogGui, '__init__', mock_init)
+        testobj = testee.EditDialogGui('parent')
+        assert capsys.readouterr().out == "called EditDialogGui.__init__ with args ('parent',)\n"
         return testobj
 
-    def test_init(self, monkeypatch, capsys, expected_output):
-        """unittest for TextDialog.__init__
+    def test_init(self, monkeypatch, capsys):
+        """unittest for EditDialogGui.__init__
         """
         monkeypatch.setattr(testee.qtw.QDialog, '__init__', mockqtw.MockDialog.__init__)
         monkeypatch.setattr(testee.qtw.QDialog, 'setWindowTitle', mockqtw.MockDialog.setWindowTitle)
+        monkeypatch.setattr(testee.qtw.QDialog, 'setWindowIcon', mockqtw.MockDialog.setWindowIcon)
         monkeypatch.setattr(testee.qtw.QDialog, 'setLayout', mockqtw.MockDialog.setLayout)
         monkeypatch.setattr(testee.qtw.QDialog, 'resize', mockqtw.MockWidget.resize)
-        monkeypatch.setattr(testee.qtw, 'QTextEdit', mockqtw.MockEditorWidget)
-        monkeypatch.setattr(testee.qtw, 'QPushButton', mockqtw.MockPushButton)
         monkeypatch.setattr(testee.qtw, 'QVBoxLayout', mockqtw.MockVBoxLayout)
+        parent = types.SimpleNamespace(appicon='appicon')
+        testobj = testee.EditDialogGui('master', parent, 'title')
+        assert isinstance(testobj.vbox, testee.qtw.QVBoxLayout)
+        assert capsys.readouterr().out == (
+                "called Dialog.__init__ with args namespace(appicon='appicon') () {}\n"
+                "called Dialog.setWindowTitle with args ('title',)\n"
+                "called Dialog.setWindowIcon with args ('appicon',)\n"
+                "called VBox.__init__\n")
+        testobj = testee.EditDialogGui('master', parent, 'title', ('si', 'ze'))
+        assert isinstance(testobj.vbox, testee.qtw.QVBoxLayout)
+        assert capsys.readouterr().out == (
+                "called Dialog.__init__ with args namespace(appicon='appicon') () {}\n"
+                "called Dialog.setWindowTitle with args ('title',)\n"
+                "called Dialog.setWindowIcon with args ('appicon',)\n"
+                "called Widget.resize with args ('si', 'ze')\n"
+                "called VBox.__init__\n")
+
+    def test_add_outline(self, monkeypatch, capsys):
+        """unittest for EditDialogGui.add_outline
+        """
+        monkeypatch.setattr(testee.qtw, 'QFrame', mockqtw.MockFrame)
+        monkeypatch.setattr(testee.qtw, 'QVBoxLayout', mockqtw.MockVBoxLayout)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.vbox = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        assert isinstance(testobj.add_outline(), testee.qtw.QVBoxLayout)
+        assert capsys.readouterr().out == ("called Frame.__init__\n"
+                                           "called Frame.setFrameStyle with arg `32`\n"
+                                           "called VBox.__init__\n"
+                                           "called Frame.setLayout with arg MockVBoxLayout\n"
+                                           "called VBox.addWidget with arg MockFrame\n")
+
+    def test_add_label_to_outline(self, monkeypatch, capsys):
+        """unittest for EditDialogGui.add_label_to_outline
+        """
         monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
-        parent = types.SimpleNamespace(master=types.SimpleNamespace(app_title='apptitle'))
-        testobj = testee.TextDialog(parent)  # , comment=False)
-        assert testobj.parent == parent
-        assert isinstance(testobj.data_text, testee.qtw.QTextEdit)
-        assert capsys.readouterr().out == expected_output['textdialog'].format(testobj=testobj,
-                                                                               title='', text='')
-        testobj = testee.TextDialog(parent, title='xxx', text='yyyy')  # , comment=False)
-        assert testobj.parent == parent
-        assert isinstance(testobj.data_text, testee.qtw.QTextEdit)
-        assert capsys.readouterr().out == expected_output['textdialog'].format(testobj=testobj,
-                                                                               title='xxx',
-                                                                               text='yyyy')
-
-    def test_on_cancel(self, monkeypatch, capsys):
-        """unittest for TextDialog.on_cancel
-        """
-        def mock_reject(self):
-            print('called Dialog.reject')
-        monkeypatch.setattr(testee.qtw.QDialog, 'reject', mock_reject)
+        monkeypatch.setattr(testee.qtw, 'QLabel', mockqtw.MockLabel)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.on_cancel()
-        assert capsys.readouterr().out == ("called Dialog.reject\n")
+        box = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        testobj.add_label_to_outline(box, 'text')
+        assert capsys.readouterr().out == ("called HBox.__init__\n"
+                                           "called HBox.addStretch\n"
+                                           "called Label.__init__ with args ('text',)\n"
+                                           "called HBox.addWidget with arg MockLabel\n"
+                                           "called HBox.addStretch\n"
+                                           "called VBox.addLayout with arg MockHBoxLayout\n")
 
-    def test_on_ok(self, monkeypatch, capsys):
-        """unittest for TextDialog.on_ok
+    def test_add_buttons_to_outline(self, monkeypatch, capsys):
+        """unittest for EditDialogGui.add_buttons_to_outline
         """
-        def mock_accept(self):
-            print('called Dialog.accept')
-        monkeypatch.setattr(testee.qtw.QDialog, 'accept', mock_accept)
+        monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
+        monkeypatch.setattr(testee.qtw, 'QPushButton', mockqtw.MockPushButton)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj._parent = types.SimpleNamespace(dialog_data='')
-        testobj.data_text = mockqtw.MockEditorWidget('xxx')
-        assert capsys.readouterr().out == "called Editor.__init__ with args ('xxx',)\n"
-        testobj.on_ok()
-        assert testobj._parent.dialog_data == 'xxx'
-        assert capsys.readouterr().out == "called Editor.toPlainText\ncalled Dialog.accept\n"
+        box = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        testobj.add_buttons_to_outline(box, [('xx', 'callback1'), ('yy', 'callback2')])
+        assert capsys.readouterr().out == (
+                "called HBox.__init__\n"
+                "called HBox.addSpacing\n"
+                f"called PushButton.__init__ with args ('xx', {testobj}) {{}}\n"
+                "called Signal.connect with args ('callback1',)\n"
+                "called HBox.addWidget with arg MockPushButton\n"
+                f"called PushButton.__init__ with args ('yy', {testobj}) {{}}\n"
+                "called Signal.connect with args ('callback2',)\n"
+                "called HBox.addWidget with arg MockPushButton\n"
+                "called HBox.addSpacing\n"
+                "called VBox.addLayout with arg MockHBoxLayout\n")
+
+    def test_add_okcancel_buttons(self, monkeypatch, capsys):
+        """unittest for EditDialogGui.okcancel_buttons
+        """
+        monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
+        monkeypatch.setattr(testee.qtw, 'QPushButton', mockqtw.MockPushButton)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.vbox = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        testobj.add_okcancel_buttons('oktext')
+        assert capsys.readouterr().out == (
+                "called HBox.__init__\n"
+                "called HBox.addStretch\n"
+                f"called PushButton.__init__ with args ('oktext', {testobj}) {{}}\n"
+                f"called Signal.connect with args ({testobj.accept},)\n"
+                "called PushButton.setDefault with arg `True`\n"
+                "called HBox.addWidget with arg MockPushButton\n"
+                f"called PushButton.__init__ with args ('&Cancel', {testobj}) {{}}\n"
+                f"called Signal.connect with args ({testobj.reject},)\n"
+                "called HBox.addWidget with arg MockPushButton\n"
+                "called HBox.addStretch\n"
+                "called VBox.addLayout with arg MockHBoxLayout\n")
+
+    def test_finalize_dialog(self, monkeypatch, capsys):
+        """unittest for EditDialogGui.finalize_dialog
+        """
+        monkeypatch.setattr(testee.qtw.QDialog, 'setLayout', mockqtw.MockDialog.setLayout)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.vbox = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        focusfield = mockqtw.MockWidget()
+        testobj.finalize_dialog(focusfield)
+        assert capsys.readouterr().out == ("called Widget.__init__\n"
+                                           "called Dialog.setLayout with arg MockVBoxLayout\n"
+                                           "called Widget.setFocus\n")
+
+    def test_meld(self, monkeypatch, capsys):
+        """unittest for EditDialogGui.meld
+        """
+        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.meld('title', 'message')
+        assert capsys.readouterr().out == (
+                f"called MessageBox.information with args `{testobj}` `title` `message`\n")
+
+    def test_ask_question(self, monkeypatch, capsys):
+        """unittest for EditDialogGui.ask_question
+        """
+        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.ask_question('title', 'message')
+        assert capsys.readouterr().out == (
+                f"called MessageBox.question with args `{testobj}` `title` `message` `3` `1`\n")
+
+    def test_accept(self, monkeypatch, capsys):
+        """unittest for EditDialogGui.accept
+        """
+        def mock_confirm():
+            print('called EditDialog.confirm')
+        monkeypatch.setattr(testee.qtw.QDialog, 'accept', mockqtw.MockDialog.accept)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.mathter = types.SimpleNamespace(confirm=mock_confirm)
+        testobj.accept()
+        assert capsys.readouterr().out == ("called EditDialog.confirm\n"
+                                           "called Dialog.accept\n")
 
 
-class TestGridDialog:
-    """unittest for gui_qt.GridDialog)
+class TestTextDialogGui:
+    """unittest for gui_qt.TextDialogGui
     """
     def setup_testobj(self, monkeypatch, capsys):
-        """stub for gui_qt.GridDialog object
+        """stub for gui_qt.TextDialogGui object
 
         create the object skipping the normal initialization
         intercept messages during creation
@@ -1064,152 +1007,189 @@ class TestGridDialog:
         def mock_init(self, *args):
             """stub
             """
-            print('called GridDialog.__init__ with args', args)
-        monkeypatch.setattr(testee.GridDialog, '__init__', mock_init)
-        testobj = testee.GridDialog()
-        testobj.parent = MockMainGui()
-        testobj.parent.master = MockEditor()
-        assert capsys.readouterr().out == ('called GridDialog.__init__ with args ()\n'
-                                           'called MainGui.__init__ with args ()\n'
-                                           'called Editor.__init__\n')
-        testobj.attr_table = mockqtw.MockTable(testobj)
-        assert capsys.readouterr().out == (f"called Table.__init__ with args ({testobj},)\n"
-                                           "called Header.__init__\n"
-                                           "called Header.__init__\n")
+            print('called TextDialogGui.__init__ with args', args)
+        monkeypatch.setattr(testee.TextDialogGui, '__init__', mock_init)
+        testobj = testee.TextDialogGui('parent')
+        assert capsys.readouterr().out == "called TextDialogGui.__init__ with args ('parent',)\n"
         return testobj
 
-    def test_init(self, monkeypatch, capsys, expected_output):
-        """unittest for GridDialog.__init__
+    def test_add_textfield(self, monkeypatch, capsys):
+        """unittest for TextDialogGui.add_textfield
         """
-        monkeypatch.setattr(testee.qtw.QDialog, '__init__', mockqtw.MockDialog.__init__)
-        monkeypatch.setattr(testee.qtw.QDialog, 'setWindowTitle', mockqtw.MockDialog.setWindowTitle)
-        monkeypatch.setattr(testee.qtw.QDialog, 'setLayout', mockqtw.MockDialog.setLayout)
-        monkeypatch.setattr(testee.qtw, 'QFrame', mockqtw.MockFrame)
-        monkeypatch.setattr(testee.qtw, 'QLabel', mockqtw.MockLabel)
-        monkeypatch.setattr(testee.qtw, 'QTableWidget', mockqtw.MockTable)
-        monkeypatch.setattr(testee.qtw, 'QPushButton', mockqtw.MockPushButton)
-        monkeypatch.setattr(testee.qtw, 'QVBoxLayout', mockqtw.MockVBoxLayout)
         monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
-        parent = types.SimpleNamespace(master=types.SimpleNamespace(app_title='apptitle'))
-        testobj = testee.GridDialog(parent)
-        assert testobj.parent == parent
-        assert isinstance(testobj.attr_table, testee.qtw.QTableWidget)
-        assert capsys.readouterr().out == expected_output['griddialog'].format(testee=testee,
-                                                                               testobj=testobj,
-                                                                               title='',
-                                                                               text='yyyy')
-        testobj = testee.GridDialog(parent, title='xxx', itemlist=['yy', 'zz'])
-        assert testobj.parent == parent
-        assert isinstance(testobj.attr_table, testee.qtw.QTableWidget)
-        assert capsys.readouterr().out == expected_output['griddialog2'].format(testee=testee,
-                                                                                testobj=testobj,
-                                                                                title='xxx',
-                                                                                text='yyyy')
-
-    def test_on_add(self, monkeypatch, capsys):
-        """unittest for GridDialog.on_add
-        """
+        monkeypatch.setattr(testee.qtw, 'QTextEdit', mockqtw.MockEditorWidget)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.on_add()
+        testobj.vbox = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        result = testobj.add_textfield('text')
+        assert isinstance(result, testee.qtw.QTextEdit)
+        assert capsys.readouterr().out == ("called HBox.__init__\n"
+                                           f"called Editor.__init__ with args ({testobj},)\n"
+                                           "called HBox.addSpacing\n"
+                                           "called Editor.setText with arg `text`\n"
+                                           "called HBox.addWidget with arg MockEditorWidget\n"
+                                           "called HBox.addSpacing\n"
+                                           "called VBox.addLayout with arg MockHBoxLayout\n")
+
+    def test_get_textfield_text(self, monkeypatch, capsys):
+        """unittest for TextDialogGui.get_textfield_text
+        """
+        textfield = mockqtw.MockEditorWidget()
+        assert capsys.readouterr().out == "called Editor.__init__\n"
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        assert testobj.get_textfield_text(textfield) == 'editor text'
+        assert capsys.readouterr().out == "called Editor.toPlainText\n"
+
+
+class TestGridDialogGui:
+    """unittest for gui_qt.GridDialogGui
+    """
+    def setup_testobj(self, monkeypatch, capsys):
+        """stub for gui_qt.GridDialogGui object
+
+        create the object skipping the normal initialization
+        intercept messages during creation
+        return the object so that other methods can be monkeypatched in the caller
+        """
+        def mock_init(self, *args):
+            """stub
+            """
+            print('called GridDialogGui.__init__ with args', args)
+        monkeypatch.setattr(testee.GridDialogGui, '__init__', mock_init)
+        testobj = testee.GridDialogGui()
+        assert capsys.readouterr().out == 'called GridDialogGui.__init__ with args ()\n'
+        return testobj
+
+    def test_add_table_to_outline(self, monkeypatch, capsys):
+        """unittest for GridDialog.add_table_to_outline
+        """
+        monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
+        monkeypatch.setattr(testee.qtw, 'QTableWidget', mockqtw.MockTable)
+        box = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        result = testobj.add_table_to_outline(box, ['xxx', 'yyy'], (10, 20), None)
+        assert isinstance(result, testee.qtw.QTableWidget)
+        assert capsys.readouterr().out == (
+                "called HBox.__init__\n"
+                f"called Table.__init__ with args ({testobj},)\n"
+                "called Header.__init__\n"
+                "called Header.__init__\n"
+                "called Table.setColumnCount with arg '2'\n"
+                "called Table.setHorizontalHeaderLabels with arg '['xxx', 'yyy']'\n"
+                "called Table.horizontalHeader\n"
+                "called Header.resizeSection with args (0, 10)\n"
+                "called Header.resizeSection with args (1, 20)\n"
+                "called Header.setStretchLastSection with arg True\n"
+                "called Table.verticalHeader\n"
+                "called Header.setVisible with arg False\n"
+                "called Table.setTabKeyNavigation with arg False\n"
+                "called HBox.addWidget with arg MockTable\n"
+                "called VBox.addLayout with arg MockHBoxLayout\n")
+        result = testobj.add_table_to_outline(box, ['xxx', 'yyy'], (10, 20), [])
+        assert isinstance(result, testee.qtw.QTableWidget)
+        assert capsys.readouterr().out == (
+                "called HBox.__init__\n"
+                f"called Table.__init__ with args ({testobj},)\n"
+                "called Header.__init__\n"
+                "called Header.__init__\n"
+                "called Table.setColumnCount with arg '2'\n"
+                "called Table.setHorizontalHeaderLabels with arg '['xxx', 'yyy']'\n"
+                "called Table.horizontalHeader\n"
+                "called Header.resizeSection with args (0, 10)\n"
+                "called Header.resizeSection with args (1, 20)\n"
+                "called Header.setStretchLastSection with arg True\n"
+                "called Table.verticalHeader\n"
+                "called Header.setVisible with arg False\n"
+                "called Table.setTabKeyNavigation with arg False\n"
+                "called HBox.addWidget with arg MockTable\n"
+                "called VBox.addLayout with arg MockHBoxLayout\n")
+        result = testobj.add_table_to_outline(box, ['xxx', 'yyy'], (10, 20), [('a', 'bbb'),
+                                                                              ('c', 'ddd')])
+        assert isinstance(result, testee.qtw.QTableWidget)
+        assert capsys.readouterr().out == (
+                "called HBox.__init__\n"
+                f"called Table.__init__ with args ({testobj},)\n"
+                "called Header.__init__\n"
+                "called Header.__init__\n"
+                "called Table.setColumnCount with arg '2'\n"
+                "called Table.setHorizontalHeaderLabels with arg '['xxx', 'yyy']'\n"
+                "called Table.horizontalHeader\n"
+                "called Header.resizeSection with args (0, 10)\n"
+                "called Header.resizeSection with args (1, 20)\n"
+                "called Header.setStretchLastSection with arg True\n"
+                "called Table.verticalHeader\n"
+                "called Header.setVisible with arg False\n"
+                "called Table.setTabKeyNavigation with arg False\n"
+                "called Table.rowCount\n"
+                "called Table.insertRow with arg '0'\n"
+                "called Table.setItem with args (0, 0, QTableWidgetItem)\n"
+                "called Table.setItem with args (0, 1, QTableWidgetItem)\n"
+                "called Table.rowCount\n"
+                "called Table.insertRow with arg '1'\n"
+                "called Table.setItem with args (1, 0, QTableWidgetItem)\n"
+                "called Table.setItem with args (1, 1, QTableWidgetItem)\n"
+                "called HBox.addWidget with arg MockTable\n"
+                "called VBox.addLayout with arg MockHBoxLayout\n")
+
+    def test_getrowcount(self, monkeypatch, capsys):
+        """unittest for GridDialog.getrowcount
+        """
+        table = mockqtw.MockTable()
+        assert capsys.readouterr().out == ("called Table.__init__ with args ()\n"
+                                           "called Header.__init__\ncalled Header.__init__\n")
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.getrowcount(table)
+        assert capsys.readouterr().out == "called Table.rowCount\n"
+
+    def test_get_tableitem(self, monkeypatch, capsys):
+        """unittest for GridDialog.get_tableitem
+        """
+        table = mockqtw.MockTable()
+        assert capsys.readouterr().out == ("called Table.__init__ with args ()\n"
+                                           "called Header.__init__\ncalled Header.__init__\n")
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        result = testobj.get_tableitem(table, 'row', 'col')
+        assert result == 'tableitem at row, col'
+        assert capsys.readouterr().out == "called Table.item with args (row, col)\n"
+
+    def test_get_item_text(self, monkeypatch, capsys):
+        """unittest for GridDialog.get_item_text
+        """
+        item = mockqtw.MockTableItem()
+        assert capsys.readouterr().out == "called TableItem.__init__ with arg ''\n"
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        assert testobj.get_item_text(item) == ''
+        assert capsys.readouterr().out == "called TableItem.text\n"
+
+    def test_add_row_to_table(self, monkeypatch, capsys):
+        """unittest for GridDialog.add_row_to_table
+        """
+        table = mockqtw.MockTable()
+        assert capsys.readouterr().out == ("called Table.__init__ with args ()\n"
+                                           "called Header.__init__\ncalled Header.__init__\n")
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.add_row_to_table(table)
         assert capsys.readouterr().out == ("called Table.rowCount\n"
                                            "called Table.setRowCount with arg '1'\n")
 
-    def test_on_del(self, monkeypatch, capsys):
-        """unittest for GridDialog.on_del
+    def test_delete_row_from_table(self, monkeypatch, capsys):
+        """unittest for GridDialog.remove_row_from_table
         """
-        def mock_question(parent, caption, message, buttons, default):
-            print('called MessageBox.question with args'
-                  f' `{caption}` `{message}` `{buttons}` `{default}`')
-            return testee.qtw.QMessageBox.StandardButton.Cancel
-        def mock_question_2(parent, caption, message, buttons, default):
-            print('called MessageBox.question with args'
-                  f' `{caption}` `{message}` `{buttons}` `{default}`')
-            return testee.qtw.QMessageBox.StandardButton.Ok
+        table = mockqtw.MockTable()
+        assert capsys.readouterr().out == ("called Table.__init__ with args ()\n"
+                                           "called Header.__init__\ncalled Header.__init__\n")
         testobj = self.setup_testobj(monkeypatch, capsys)
-        monkeypatch.setattr(mockqtw.MockMessageBox, 'question', mock_question)
-        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
-        testobj.on_del()
-        assert capsys.readouterr().out == ("called MessageBox.question with args"
-                                           " `Delete row from table` `Are you sure?` `3` `1`\n")
-        monkeypatch.setattr(testee.qtw.QMessageBox, 'question', mock_question_2)
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.on_del()
-        assert capsys.readouterr().out == ("called MessageBox.question with args"
-                                           " `Delete row from table` `Are you sure?` `3` `1`\n"
-                                           "called Table.currentRow\n"
+        testobj.delete_row_from_table(table)
+        assert capsys.readouterr().out == ("called Table.currentRow\n"
                                            "called Table.removeRow with arg '2'\n")
 
-    def test_on_cancel(self, monkeypatch, capsys):
-        """unittest for GridDialog.on_cancel
-        """
-        def mock_reject(self):
-            print('called Dialog.reject')
-        monkeypatch.setattr(testee.qtw.QDialog, 'reject', mock_reject)
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.on_cancel()
-        assert capsys.readouterr().out == ("called Dialog.reject\n")
 
-    def test_on_ok(self, monkeypatch, capsys):
-        """unittest for GridDialog.on_ok
-        """
-        def get_item(x, y):
-            if y == 1:
-                return None
-            return mockqtw.MockTableItem()
-        def get_item_2(x, y):
-            if y == 0:
-                return None
-            return mockqtw.MockTableItem()
-        def get_item_3(x, y):
-            return mockqtw.MockTableItem(f'item{x}{y}')
-        def mock_accept(self):
-            print('called Dialog.accept')
-        monkeypatch.setattr(testee.qtw.QDialog, 'accept', mock_accept)
-        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj._parent = types.SimpleNamespace(dialog_data='')
-        testobj.attr_table = mockqtw.MockTable(testobj)
-        testobj.attr_table.setRowCount(2)
-        testobj.attr_table.item = get_item
-        assert capsys.readouterr().out == (f"called Table.__init__ with args ({testobj},)\n"
-                                           "called Header.__init__\n"
-                                           "called Header.__init__\n"
-                                           "called Table.setRowCount with arg '2'\n")
-        testobj.on_ok()
-        assert testobj._parent.dialog_data == ''
-        assert capsys.readouterr().out == (
-                "called Table.rowCount\n"
-                "called TableItem.__init__ with arg ''\n"
-                f"called MessageBox.information with args `{testobj}`"
-                " `Can't continue` `Not all values are entered and confirmed`\n")
-        testobj.attr_table.item = get_item_2
-        testobj.on_ok()
-        assert testobj._parent.dialog_data == ''
-        assert capsys.readouterr().out == (
-                "called Table.rowCount\n"
-                "called TableItem.__init__ with arg ''\n"
-                f"called MessageBox.information with args `{testobj}`"
-                " `Can't continue` `Not all values are entered and confirmed`\n")
-        testobj.attr_table.item = get_item_3
-        testobj.on_ok()
-        assert testobj._parent.dialog_data == [('item00', 'item01'), ('item10', 'item11')]
-        assert capsys.readouterr().out == ("called Table.rowCount\n"
-                                           "called TableItem.__init__ with arg 'item00'\n"
-                                           "called TableItem.__init__ with arg 'item01'\n"
-                                           "called TableItem.text\n"
-                                           "called TableItem.text\n"
-                                           "called TableItem.__init__ with arg 'item10'\n"
-                                           "called TableItem.__init__ with arg 'item11'\n"
-                                           "called TableItem.text\n"
-                                           "called TableItem.text\n"
-                                           "called Dialog.accept\n")
-
-
-class TestListDialog:
-    """unittest for gui_qt.ListDialog
+class TestListDialogGui:
+    """unittest for gui_qt.ListDialogGui
     """
     def setup_testobj(self, monkeypatch, capsys):
-        """stub for gui_qt.ListDialog object
+        """stub for gui_qt.ListDialogGui object
 
         create the object skipping the normal initialization
         intercept messages during creation
@@ -1218,218 +1198,124 @@ class TestListDialog:
         def mock_init(self, *args):
             """stub
             """
-            print('called ListDialog.__init__ with args', args)
-        monkeypatch.setattr(testee.ListDialog, '__init__', mock_init)
+            print('called ListDialogGui.__init__ with args', args)
+        monkeypatch.setattr(testee.ListDialogGui, '__init__', mock_init)
         parent = types.SimpleNamespace()
-        testobj = testee.ListDialog(parent)
-        testobj._parent = parent
-        testobj.list = mockqtw.MockListBox()
-        assert capsys.readouterr().out == (f'called ListDialog.__init__ with args ({parent},)\n'
-                                           'called List.__init__\n')
+        testobj = testee.ListDialogGui(parent)
+        assert capsys.readouterr().out == f'called ListDialogGui.__init__ with args ({parent},)\n'
         return testobj
 
-    def test_init(self, monkeypatch, capsys, expected_output):
-        """unittest for ListDialog.__init__
+    def test_add_list_to_outline(self, monkeypatch, capsys):
+        """unittest for ListDialog.add_list_to_outline
         """
-        def mock_get_itemtext(arg):
-            print(f"called Tree.get_itemtext with arg '{arg}'")
-            return arg
-        monkeypatch.setattr(testee.qtw.QDialog, '__init__', mockqtw.MockDialog.__init__)
-        monkeypatch.setattr(testee.qtw.QDialog, 'setWindowTitle', mockqtw.MockDialog.setWindowTitle)
-        monkeypatch.setattr(testee.qtw.QDialog, 'setLayout', mockqtw.MockDialog.setLayout)
-        monkeypatch.setattr(testee.qtw, 'QFrame', mockqtw.MockFrame)
-        monkeypatch.setattr(testee.qtw, 'QLabel', mockqtw.MockLabel)
-        monkeypatch.setattr(testee.qtw, 'QListWidget', mockqtw.MockListBox)
-        monkeypatch.setattr(testee.qtw, 'QPushButton', mockqtw.MockPushButton)
-        monkeypatch.setattr(testee.qtw, 'QVBoxLayout', mockqtw.MockVBoxLayout)
         monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
-        parent = types.SimpleNamespace(tree=types.SimpleNamespace(get_itemtext=mock_get_itemtext))
-        testobj = testee.ListDialog(parent)
-        assert testobj.parent == parent
-        assert not testobj.is_rules_node
-        assert isinstance(testobj.list, testee.qtw.QListWidget)
-        title = ''
-        assert capsys.readouterr().out == expected_output['listdialog'].format(testee=testee,
-                                                                               parent=parent,
-                                                                               title=title,
-                                                                               testobj=testobj)
-        title = "xxx'rules'xx"
-        testobj = testee.ListDialog(parent, title, ['yyy', 'zzz'])
-        assert testobj.parent == parent
-        assert testobj.is_rules_node
-        assert isinstance(testobj.list, testee.qtw.QListWidget)
-        assert capsys.readouterr().out == expected_output['listdialog2'].format(testee=testee,
-                                                                                parent=parent,
-                                                                                title=title,
-                                                                                testobj=testobj)
+        monkeypatch.setattr(testee.qtw, 'QListWidget', mockqtw.MockListBox)
+        box = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        result = testobj.add_list_to_outline(box, [])
+        assert isinstance(result, testee.qtw.QListWidget)
+        assert capsys.readouterr().out == ("called HBox.__init__\n"
+                                           "called HBox.addSpacing\n"
+                                           "called List.__init__\n"
+                                           "called HBox.addWidget with arg MockListBox\n"
+                                           "called HBox.addSpacing\n"
+                                           "called VBox.addLayout with arg MockHBoxLayout\n")
+        result = testobj.add_list_to_outline(box, ['x'])
+        assert isinstance(result, testee.qtw.QListWidget)
+        assert capsys.readouterr().out == ("called HBox.__init__\n"
+                                           "called HBox.addSpacing\n"
+                                           "called List.__init__\n"
+                                           "called List.addItems with arg `['x']`\n"
+                                           "called HBox.addWidget with arg MockListBox\n"
+                                           "called HBox.addSpacing\n"
+                                           "called VBox.addLayout with arg MockHBoxLayout\n")
 
-    def test_on_add(self, monkeypatch, capsys):
-        """unittest for ListDialog.on_add
+    def test_select_item(self, monkeypatch, capsys):
+        """unittest for ListDialog.select_item
         """
-        def mock_get_item(*args, **kwargs):
-            print('called InputDialog.getItem with args', args, kwargs)
-            return 'zzz', True
-        def mock_get_text(*args, **kwargs):
-            print('called InputDialog.getText with args', args, kwargs)
-            return 'zzz', True
-        monkeypatch.setattr(testee.qtw, 'QInputDialog', mockqtw.MockInputDialog)
-        monkeypatch.setattr(testee, 'RTYPES', {'a': ['x', 1], 'b': ['y', 0]})
+        def mock_get(self, *args):
+            print('called InputDialog.getItem with args', args)
+            return 'yyy', 'z'
+        monkeypatch.setattr(testee.qtw.QInputDialog, 'getItem', mock_get)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj._parent.app_title = 'app title'
-        testobj.is_rules_node = True
-        testobj.on_add()
-        assert capsys.readouterr().out == (
-                f"called InputDialog.getItem with args {testobj}"
-                " ('app title', 'Choose type for this rule', ['x', 'y']) {'editable': False}\n")
-        testobj.is_rules_node = False
-        testobj.on_add()
-        assert capsys.readouterr().out == (
-                f"called InputDialog.getText with args {testobj}"
-                " ('Add item to list', 'Enter text for this item') {}\n")
-        testobj.is_rules_node = True
-        monkeypatch.setattr(testee.qtw.QInputDialog, 'getItem', mock_get_item)
-        testobj.on_add()
-        assert capsys.readouterr().out == (
-                f"called InputDialog.getItem with args ({testobj},"
-                " 'app title', 'Choose type for this rule', ['x', 'y']) {'editable': False}\n"
-                "called List.addItem with arg `zzz`\n")
-        testobj.is_rules_node = False
-        monkeypatch.setattr(testee.qtw.QInputDialog, 'getText', mock_get_text)
-        testobj.on_add()
-        assert capsys.readouterr().out == (
-                f"called InputDialog.getText with args ({testobj},"
-                " 'Add item to list', 'Enter text for this item') {}\n"
-                "called List.addItem with arg `zzz`\n")
+        assert testobj.select_item('title', 'caption', ['choice']) == ('yyy', 'z')
+        assert capsys.readouterr().out == ("called InputDialog.getItem with args"
+                                           " ('title', 'caption', ['choice'], 0, False)\n")
+        assert testobj.select_item('title', 'caption', ['choice'], 1, True) == ('yyy', 'z')
+        assert capsys.readouterr().out == ("called InputDialog.getItem with args"
+                                           " ('title', 'caption', ['choice'], 1, True)\n")
 
-    def test_on_edit(self, monkeypatch, capsys):
-        """unittest for ListDialog.on_edit
+    def test_ask_for_text(self, monkeypatch, capsys):
+        """unittest for ListDialog.ask_for_text
         """
-        def mock_get_item(*args, **kwargs):
-            print('called InputDialog.getItem with args', args, kwargs)
-            return 'yy', True
-        def mock_get_item_2(*args, **kwargs):
-            print('called InputDialog.getItem with args', args, kwargs)
-            return '', True
-        def mock_get_text(*args, **kwargs):
+        def mock_get(self, *args, **kwargs):
             print('called InputDialog.getText with args', args, kwargs)
-            return 'yy', True
-        def mock_get_text_2(*args, **kwargs):
-            print('called InputDialog.getText with args', args, kwargs)
-            return '', True
-        def mock_current():
-            result = mockqtw.MockListItem('yy')
-            assert capsys.readouterr().out == ("called ListItem.__init__ with args ('yy',)\n")
-            print('called List.currentItem')
-            return result
-        monkeypatch.setattr(testee.qtw, 'QInputDialog', mockqtw.MockInputDialog)
-        monkeypatch.setattr(testee, 'RTYPES', {'a': ['yy', 'qq'], 'b': ['xx', 'rr']})
+            return 'yyy','z'
+        monkeypatch.setattr(testee.qtw.QInputDialog, 'getText', mock_get)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj._parent.app_title = 'app title'
-        testobj.list.currentItem = mock_current
-        testobj.is_rules_node = True
-        testobj.on_edit()
-        assert capsys.readouterr().out == (
-                "called List.currentItem\n"
-                "called ListItem.text\n"
-                f"called InputDialog.getItem with args {testobj}"
-                " ('app title', 'Choose type for this rule', ['xx', 'yy'], 1) {'editable': False}\n")
-        testobj.is_rules_node = False
-        testobj.on_edit()
-        assert capsys.readouterr().out == (
-                "called List.currentItem\n"
-                "called ListItem.text\n"
-                f"called InputDialog.getText with args {testobj}"
-                " ('Edit list item', 'Enter text for this item:') {'text': 'yy'}\n")
-        testobj.is_rules_node = True
-        monkeypatch.setattr(testee.qtw.QInputDialog, 'getItem', mock_get_item)
-        testobj.on_edit()
-        assert capsys.readouterr().out == (
-                "called List.currentItem\n"
-                "called ListItem.text\n"
-                f"called InputDialog.getItem with args ({testobj},"
-                " 'app title', 'Choose type for this rule', ['xx', 'yy'], 1) {'editable': False}\n")
-        testobj.is_rules_node = False
-        monkeypatch.setattr(testee.qtw.QInputDialog, 'getText', mock_get_text)
-        testobj.on_edit()
-        assert capsys.readouterr().out == (
-                "called List.currentItem\n"
-                "called ListItem.text\n"
-                f"called InputDialog.getText with args ({testobj},"
-                " 'Edit list item', 'Enter text for this item:') {'text': 'yy'}\n")
-        testobj.is_rules_node = True
-        monkeypatch.setattr(testee.qtw.QInputDialog, 'getItem', mock_get_item_2)
-        testobj.on_edit()
-        assert capsys.readouterr().out == (
-                "called List.currentItem\n"
-                "called ListItem.text\n"
-                f"called InputDialog.getItem with args ({testobj},"
-                " 'app title', 'Choose type for this rule', ['xx', 'yy'], 1) {'editable': False}\n"
-                "called ListItem.setText with arg ''\n")
-        testobj.is_rules_node = False
-        monkeypatch.setattr(testee.qtw.QInputDialog, 'getText', mock_get_text_2)
-        testobj.on_edit()
-        assert capsys.readouterr().out == (
-                "called List.currentItem\n"
-                "called ListItem.text\n"
-                f"called InputDialog.getText with args ({testobj},"
-                " 'Edit list item', 'Enter text for this item:') {'text': 'yy'}\n"
-                "called ListItem.setText with arg ''\n")
+        assert testobj.ask_for_text('title', 'caption') == ('yyy', 'z')
+        assert capsys.readouterr().out == ("called InputDialog.getText with args"
+                                           " ('title', 'caption') {'text': ''}\n")
+        assert testobj.ask_for_text('title', 'caption', 'qqq') == ('yyy', 'z')
+        assert capsys.readouterr().out == ("called InputDialog.getText with args"
+                                           " ('title', 'caption') {'text': 'qqq'}\n")
 
-    def test_on_del(self, monkeypatch, capsys):
-        """unittest for ListDialog.on_del
+    def test_add_row_to_list(self, monkeypatch, capsys):
+        """unittest for GridDialog.add_row_to_table
         """
-        def mock_question(parent, caption, message, buttons, default):
-            print('called MessageBox.question with args'
-                  f' `{caption}` `{message}` `{buttons}` `{default}`')
-            return testee.qtw.QMessageBox.StandardButton.Cancel
-        def mock_question_2(parent, caption, message, buttons, default):
-            print('called MessageBox.question with args'
-                  f' `{caption}` `{message}` `{buttons}` `{default}`')
-            return testee.qtw.QMessageBox.StandardButton.Ok
-        monkeypatch.setattr(mockqtw.MockMessageBox, 'question', mock_question)
-        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
+        listbox = mockqtw.MockListBox()
+        assert capsys.readouterr().out == "called List.__init__\n"
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.on_del()
-        assert capsys.readouterr().out == ("called MessageBox.question with args"
-                                           " `Delete item from list` `Are you sure?` `3` `1`\n")
-        monkeypatch.setattr(mockqtw.MockMessageBox, 'question', mock_question_2)
-        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
+        testobj.add_row_to_list(listbox, 'xxx')
+        assert capsys.readouterr().out == "called List.addItem with arg `xxx`\n"
+
+    def test_get_listitem(self, monkeypatch, capsys):
+        """unittest for GridDialog.get_tableitem
+        """
+        listbox = mockqtw.MockListBox()
+        assert capsys.readouterr().out == "called List.__init__\n"
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.on_del()
-        assert capsys.readouterr().out == ("called MessageBox.question with args"
-                                           " `Delete item from list` `Are you sure?` `3` `1`\n"
-                                           "called List.currentRow\n"
+        result = testobj.get_listitem(listbox)
+        assert result == 'current item'
+        assert capsys.readouterr().out == "called List.currentItem\n"
+        result = testobj.get_listitem(listbox, 1)
+        assert result is None
+        assert capsys.readouterr().out == "called List.item with arg 1\n"
+
+    def test_get_itemtext(self, monkeypatch, capsys):
+        """unittest for GridDialog.get_itemtext
+        """
+        item = mockqtw.MockTableItem()
+        assert capsys.readouterr().out == "called TableItem.__init__ with arg ''\n"
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        assert testobj.get_itemtext(item) == ''
+        assert capsys.readouterr().out == "called TableItem.text\n"
+
+    def test_set_itemtext(self, monkeypatch, capsys):
+        """unittest for GridDialog.set_itemtext
+        """
+        item = mockqtw.MockTableItem()
+        assert capsys.readouterr().out == "called TableItem.__init__ with arg ''\n"
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.set_itemtext(item, 'text')
+        assert capsys.readouterr().out == f"called TableItem.setText with arg 'text'\n"
+
+    def test_delete_row_from_list(self, monkeypatch, capsys):
+        """unittest for GridDialog.remove_row_from_tabele
+        """
+        lbox = mockqtw.MockListBox()
+        assert capsys.readouterr().out == "called List.__init__\n"
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.delete_row_from_list(lbox)
+        assert capsys.readouterr().out == ("called List.currentRow\n"
                                            "called List.takeItem with arg `current row`\n")
 
-    def test_on_cancel(self, monkeypatch, capsys):
-        """unittest for ListDialog.on_cancel
+    def test_get_list_length(self, monkeypatch, capsys):
+        """unittest for ListDialog.get_list_length
         """
-        def mock_reject(self):
-            print('called Dialog.reject')
-        monkeypatch.setattr(testee.qtw.QDialog, 'reject', mock_reject)
+        lbox = mockqtw.MockListBox()
+        assert capsys.readouterr().out == "called List.__init__\n"
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.on_cancel()
-        assert capsys.readouterr().out == ("called Dialog.reject\n")
-
-    def test_on_ok(self, monkeypatch, capsys):
-        """unittest for ListDialog.on_ok
-        """
-        def mock_accept(self):
-            print('called Dialog.accept')
-        monkeypatch.setattr(testee.qtw.QDialog, 'accept', mock_accept)
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        x = mockqtw.MockListItem('xxx')
-        testobj.list.addItem(x)
-        y = mockqtw.MockListItem('yyy')
-        testobj.list.addItem(y)
-        assert capsys.readouterr().out == ("called ListItem.__init__ with args ('xxx',)\n"
-                                           f"called List.addItem with arg `{x}`\n"
-                                           "called ListItem.__init__ with args ('yyy',)\n"
-                                           f"called List.addItem with arg `{y}`\n")
-        testobj._parent.dialog_data = []
-        testobj.on_ok()
-        assert testobj._parent.dialog_data == ['xxx', 'yyy']
-        assert capsys.readouterr().out == ("called List.count\n"
-                                           "called ListItem.text\n"
-                                           "called ListItem.text\n"
-                                           "called Dialog.accept\n")
+        testobj.get_list_length(lbox)
+        assert capsys.readouterr().out == ("called List.count\n")

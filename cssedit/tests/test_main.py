@@ -608,7 +608,7 @@ class TestEditor:
         """
         def mock_log(*args):
             print('called LogDialog with args', args)
-        monkeypatch.setattr(testee.gui, 'LogDialog', mock_log)
+        monkeypatch.setattr(testee, 'LogDialog', mock_log)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.css = None  # types.SimpleNamespace()  # ''
         testobj.show_log()
@@ -616,7 +616,7 @@ class TestEditor:
                 "called MainGui.show_statusmessage with arg 'Load a css file first'\n")
         testobj.css = types.SimpleNamespace(log='xyz')
         testobj.show_log()
-        assert capsys.readouterr().out == f"called LogDialog with args ({testobj.gui}, 'xyz')\n"
+        assert capsys.readouterr().out == f"called LogDialog with args ({testobj}, 'xyz')\n"
 
     def test_exit(self, monkeypatch, capsys):
         """unittest for Editor.exit
@@ -1134,7 +1134,7 @@ class TestEditor:
             return True, 'Nodetext!'
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.item = 'testitem'
-        monkeypatch.setattr(testee.gui, 'TextDialog', MockTextDialog)
+        monkeypatch.setattr(testee, 'TextDialog', MockTextDialog)
         testobj.gui.show_dialog = mock_show
         testobj.gui.tree.get_subitems = mock_get_subitems
         testobj.gui.tree.get_itemtext = mock_get_itemtext
@@ -1216,7 +1216,7 @@ class TestEditor:
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.item = 'testitem'
         testobj.gui.tree.get_itemtext = mock_get_itemtext
-        monkeypatch.setattr(testee.gui, 'ListDialog', MockListDialog)
+        monkeypatch.setattr(testee, 'ListDialog', MockListDialog)
         testobj.gui.show_dialog = mock_show
         testobj.gui.tree.get_subitems = mock_get_subitems
         testobj.gui.tree.remove_subitem = mock_remove_subitem
@@ -1315,7 +1315,7 @@ class TestEditor:
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.item = 'node'
         testobj.gui.tree.get_itemtext = mock_get_itemtext
-        monkeypatch.setattr(testee.gui, 'GridDialog', MockGridDialog)
+        monkeypatch.setattr(testee, 'GridDialog', MockGridDialog)
         testobj.gui.show_dialog = mock_show
         testobj.gui.tree.get_subitems = mock_get_subitems
         testobj.gui.tree.remove_subitem = mock_remove_subitem
@@ -1710,11 +1710,8 @@ class TestEditor:
         """
         def mock_level(arg):
             print(f'called Editor.determine_level with arg `{arg}`')
-        def mock_level_2(arg):
-            print(f'called Editor.determine_level with arg `{arg}`')
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.determine_level = mock_level
-        testobj.determine_level_orig = mock_level_2
         testobj.item = 'item'
         monkeypatch.setattr(testobj, 'checkselection', self.mock_check_false)
         testobj.show_level()
@@ -1724,9 +1721,7 @@ class TestEditor:
         assert capsys.readouterr().out == (
                 "called Editor.checkselection\n"
                 "called Editor.determine_level with arg `item`\n"
-                "called MainGui.show_message with arg `This element is at level None`\n"
-                "called Editor.determine_level with arg `item`\n"
-                "called MainGui.show_message with arg `Or is this element at level None?`\n")
+                "called MainGui.show_message with arg `This element is at level None`\n")
 
     def test_add_subitems(self, monkeypatch, capsys):
         """unittest for Editor.add_subitems
@@ -1901,3 +1896,625 @@ class TestEditor:
                 "called TreePanel.new_treeitem with arg value\n"
                 "called TreePanel.add_subitem with args ('key_item', 'value_item')\n"
                 "called TreePanel.add_subitem with args ('key_item', 'rtype_item')\n")
+
+
+class TestLogDialog:
+    """unittest for gui_qt.LogDialog
+    """
+    def setup_testobj(self, monkeypatch, capsys):
+        """stub for gui_qt.LogDialog object
+
+        create the object skipping the normal initialization
+        intercept messages during creation
+        return the object so that other methods can be monkeypatched in the caller
+        """
+        def mock_init(self, *args):
+            """stub
+            """
+            print('called LogDialog.__init__ with args', args)
+        monkeypatch.setattr(testee.LogDialog, '__init__', mock_init)
+        testobj = testee.LogDialog()
+        # testobj.parent = MockMainGui()
+        # testobj.parent.master = MockEditor()
+        assert capsys.readouterr().out == 'called LogDialog.__init__ with args ()\n'
+                                          #  'called MainGui.__init__ with args ()\n'
+                                          #  'called Editor.__init__\n')
+        return testobj
+
+    def test_init(self, monkeypatch, capsys):
+        """unittest for LogDialog.__init__
+        """
+        class MockGui:
+            "teststub for LogDialoGui"
+            def __init__(self, *args, **kwargs):
+                print('called gui.LogDoalogGui.__init__ with args', args, kwargs)
+            def add_label(self, *args):
+                print('called gui.LogDoalogGui.add_label with args', args)
+            def add_listbox(self, *args):
+                print('called gui.LogDoalogGui.add_listbox with args', args)
+                return 'listbox'
+            def add_buttons(self, *args):
+                print('called gui.LogDoalogGui.add_buttons with args', args)
+            def finish_dialog(self):
+                print('called gui.LogDoalogGui.finish_dialog')
+            def accept(self):
+                "empty callback"
+        monkeypatch.setattr(testee.gui, 'LogDialogGui', MockGui)
+        parent = types.SimpleNamespace(app_title='apptitle', gui='EditorGui')
+        testobj = testee.LogDialog(parent, ['regel1', 'regel2'])
+        assert testobj.parent == parent
+        assert testobj.lijst == 'listbox'
+        assert capsys.readouterr().out == (
+                "called gui.LogDoalogGui.__init__ with args"
+                f" ({testobj}, 'EditorGui', 'apptitle - show log for current file')"
+                " {'size': (600, 480)}\n"
+                "called gui.LogDoalogGui.add_label with args"
+                " ('Dubbelklik op een regel om de context (definitie in de css) te bekijken',)\n"
+                "called gui.LogDoalogGui.add_listbox with args"
+                f" (['regel1', 'regel2'], {testobj.show_context})\n"
+                "called gui.LogDoalogGui.add_buttons with args"
+                f" ([('&Toon Context', {testobj.show_context}),"
+                f" ('&Klaar', {testobj.gui.accept})],)\n"
+                "called gui.LogDoalogGui.finish_dialog\n")
+
+    def test_show_context(self, monkeypatch, capsys):
+        """unittest for LogDialog.show_context
+        """
+        class MockGui:
+            def get_selection(self, arg):
+                print('called LogDialogGui.get_selection with arg', arg)
+                return 'xxx'
+            def get_listitem_text(self, arg):
+                print('called LogDialogGui.get_listitem_text with arg', arg)
+                return 'yyy'
+            def meld(self, *args):
+                print('called LogDialogGui.meld with args', args)
+        def mock_parse(arg):
+            print('called parse_log_line with arg', arg)
+            return types.SimpleNamespace(line=1, pos=2)
+        def mock_get_definition(*args):
+            print('called get_definition_from_file with args', args)
+            return 'context'
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.gui = MockGui()
+        monkeypatch.setattr(testee, 'parse_log_line', mock_parse)
+        monkeypatch.setattr(testee, 'get_definition_from_file', mock_get_definition)
+        testobj.lijst = 'listbox'
+        # assert capsys.readouterr().out == "called List.__init__\n"
+        # testobj.lijst.currentItem = mock_item
+        testobj.parent = types.SimpleNamespace(app_title='app title', project_file='pfile')
+        testobj.show_context()
+        assert capsys.readouterr().out == (
+                'called LogDialogGui.get_selection with arg listbox\n'
+                'called LogDialogGui.get_listitem_text with arg xxx\n'
+                "called parse_log_line with arg yyy\n"
+                "called get_definition_from_file with args ('pfile', 1, 2)\n"
+                "called LogDialogGui.meld with args"
+                " ('app title - show context for log message',"
+                " 'css definition that triggers this message:\\n\\ncontext')\n")
+        item = 'zzz'
+        testobj.show_context(item)
+        assert capsys.readouterr().out == (
+                'called LogDialogGui.get_listitem_text with arg zzz\n'
+                "called parse_log_line with arg yyy\n"
+                "called get_definition_from_file with args ('pfile', 1, 2)\n"
+                "called LogDialogGui.meld with args"
+                " ('app title - show context for log message',"
+                " 'css definition that triggers this message:\\n\\ncontext')\n")
+
+
+class TestTextDialogGui:
+    """unittest for gui_qt.TextDialogGui
+    """
+    def setup_testobj(self, monkeypatch, capsys):
+        """stub for gui_qt.TextDialog object
+
+        create the object skipping the normal initialization
+        intercept messages during creation
+        return the object so that other methods can be monkeypatched in the caller
+        """
+        def mock_init(self, *args):
+            """stub
+            """
+            print('called TextDialog.__init__ with args', args)
+        monkeypatch.setattr(testee.TextDialog, '__init__', mock_init)
+        testobj = testee.TextDialog('parent')
+        assert capsys.readouterr().out == "called TextDialog.__init__ with args ('parent',)\n"
+        return testobj
+
+    def test_init(self, monkeypatch, capsys):
+        """unittest for TextDialog.__init__
+        """
+        class MockGui:
+            def __init__(self, *args, **kwargs):
+                print('called TextDialogGui.__init__ with args', args, kwargs)
+            def add_textfield(self, *args):
+                print('called TextDialogGui.add_textfield with args', args)
+                return 'textfield'
+            def add_okcancel_buttons(self, *args):
+                print('called TextDialogGui.add_okcancel_buttons with args', args)
+            def finalize_dialog(self, **kwargs):
+                print('called TextDialogGui.finalize_dialog with args', kwargs)
+        monkeypatch.setattr(testee.gui, 'TextDialogGui', MockGui)
+        parent = 'parent'
+        testobj = testee.TextDialog(parent)
+        assert testobj.parent == 'parent'
+        testobj.data_text == 'textfield'
+        assert capsys.readouterr().out == (
+                "called TextDialogGui.__init__ with args"
+                f" ({testobj}, 'parent', '') {{'size': (440, 280)}}\n"
+                "called TextDialogGui.add_textfield with args ('',)\n"
+                "called TextDialogGui.add_okcancel_buttons with args ('&Save',)\n"
+                "called TextDialogGui.finalize_dialog with args {'focusfield': 'textfield'}\n")
+        testobj = testee.TextDialog(parent, title='xxx', text='yyyy')
+        assert testobj.parent == 'parent'
+        testobj.data_text == 'textfield'
+        assert capsys.readouterr().out == (
+                "called TextDialogGui.__init__ with args"
+                f" ({testobj}, 'parent', 'xxx') {{'size': (440, 280)}}\n"
+                "called TextDialogGui.add_textfield with args ('yyyy',)\n"
+                "called TextDialogGui.add_okcancel_buttons with args ('&Save',)\n"
+                "called TextDialogGui.finalize_dialog with args {'focusfield': 'textfield'}\n")
+
+    def test_confirm(self, monkeypatch, capsys):
+        """unittest for TextDialog.confirm
+        """
+        def mock_get(arg):
+            print('called TextDialogGui.get_textfield_text with arg', arg)
+            return 'xxx'
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.gui = types.SimpleNamespace(get_textfield_text=mock_get)
+        testobj.parent = types.SimpleNamespace(dialog_data='')
+        testobj.data_text = 'textfield'
+        testobj.confirm()
+        assert testobj.parent.dialog_data == 'xxx'
+        assert capsys.readouterr().out == (
+                "called TextDialogGui.get_textfield_text with arg textfield\n")
+
+
+class TestGridDialogGui:
+    """unittest for gui_qt.GridDialogGui
+    """
+    def setup_testobj(self, monkeypatch, capsys):
+        """stub for gui_qt.GridDialog object
+
+        create the object skipping the normal initialization
+        intercept messages during creation
+        return the object so that other methods can be monkeypatched in the caller
+        """
+        def mock_init(self, *args):
+            """stub
+            """
+            print('called GridDialog.__init__ with args', args)
+        monkeypatch.setattr(testee.GridDialog, '__init__', mock_init)
+        testobj = testee.GridDialog()
+        assert capsys.readouterr().out == 'called GridDialog.__init__ with args ()\n'
+        return testobj
+
+    def test_init(self, monkeypatch, capsys):
+        """unittest for GridDialog.__init__
+        """
+        class MockGui:
+            def __init__(self, *args, **kwargs):
+                print('called GridDialogGui.__init__ with args', args, kwargs)
+            def add_outline(self):
+                print('called GridDialogGui.add_outline')
+                return 'box'
+            def add_label_to_outline(self, *args):
+                print('called GridDialogGui.add_label_to_outline with args', args)
+            def add_table_to_outline(self, *args):
+                print('called GridDialogGui.add_table_to_outline with args', args)
+                return 'table'
+            def add_buttons_to_outline(self, *args):
+                print('called GridDialogGui.add_buttons_to_outline with args', args)
+            def add_okcancel_buttons(self, *args):
+                print('called GridDialogGui.add_okcancel_buttons with args', args)
+            def finalize_dialog(self, *args, **kwargs):
+                print('called GridDialogGui.finalize_dialog with args', args, kwargs)
+        monkeypatch.setattr(testee.gui, 'GridDialogGui', MockGui)
+        parent = 'parent'
+        testobj = testee.GridDialog(parent)
+        assert testobj.parent == 'parent'
+        assert testobj.attr_table == 'table'
+        assert capsys.readouterr().out == (
+               "called GridDialogGui.__init__ with args"
+               f" ({testobj}, 'parent', '') {{'size': (440, 280)}}\n"
+               "called GridDialogGui.add_outline\n"
+               "called GridDialogGui.add_label_to_outline with args ('box', 'Items in table:')\n"
+               "called GridDialogGui.add_table_to_outline with args"
+               " ('box', ['property', 'value'], (102, 152), None)\n"
+               "called GridDialogGui.add_buttons_to_outline with args"
+               f" ('box', [('&Add Item', {testobj.on_add}),"
+               f" ('&Delete Selected', {testobj.on_del})])\n"
+               "called GridDialogGui.add_okcancel_buttons with args ('&Save',)\n"
+               "called GridDialogGui.finalize_dialog with args () {'focusfield': 'table'}\n")
+        testobj = testee.GridDialog(parent, title='xxx', itemlist=['yy', 'zz'])
+        assert testobj.parent == 'parent'
+        assert testobj.attr_table == 'table'
+        assert capsys.readouterr().out == (
+               "called GridDialogGui.__init__ with args"
+               f" ({testobj}, 'parent', 'xxx') {{'size': (440, 280)}}\n"
+               "called GridDialogGui.add_outline\n"
+               "called GridDialogGui.add_label_to_outline with args ('box', 'Items in table:')\n"
+               "called GridDialogGui.add_table_to_outline with args"
+               " ('box', ['property', 'value'], (102, 152), ['yy', 'zz'])\n"
+               "called GridDialogGui.add_buttons_to_outline with args"
+               f" ('box', [('&Add Item', {testobj.on_add}),"
+               f" ('&Delete Selected', {testobj.on_del})])\n"
+               "called GridDialogGui.add_okcancel_buttons with args ('&Save',)\n"
+               "called GridDialogGui.finalize_dialog with args () {'focusfield': 'table'}\n")
+
+    def test_on_add(self, monkeypatch, capsys):
+        """unittest for GridDialog.on_add
+        """
+        def mock_add(arg):
+            print(f'called GridDialogGui.add_row_to_table with arg {arg}')
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.attr_table = 'table'
+        testobj.gui = types.SimpleNamespace(add_row_to_table=mock_add)
+        testobj.on_add()
+        assert capsys.readouterr().out == "called GridDialogGui.add_row_to_table with arg table\n"
+
+    def test_on_del(self, monkeypatch, capsys):
+        """unittest for GridDialog.on_del
+        """
+        def mock_question(*args):
+            print(f'called GridDialogGui.ask_question with args', args)
+            return False
+        def mock_question_2(*args):
+            print(f'called GridDialogGui.ask_question with args', args)
+            return True
+        def mock_delete(arg):
+            print(f'called GridDialogGui.delete_row_from_table with arg {arg}')
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.attr_table = 'table'
+        testobj.gui = types.SimpleNamespace(ask_question=mock_question,
+                                            delete_row_from_table=mock_delete)
+        testobj.on_del()
+        assert capsys.readouterr().out == ("called GridDialogGui.ask_question with args"
+                                           " ('Delete row from table', 'Are you sure?')\n")
+        testobj.gui.ask_question = mock_question_2
+        testobj.on_del()
+        assert capsys.readouterr().out == (
+                "called GridDialogGui.ask_question with args"
+                " ('Delete row from table', 'Are you sure?')\n"
+                "called GridDialogGui.delete_row_from_table with arg table\n")
+
+    def test_confirm(self, monkeypatch, capsys):
+        """unittest for GridDialog.confirm
+        """
+        class MockGui:
+            def getrowcount(self, table):
+                print(f'called TestDialogGui.getrowcount with arg {table}')
+                return 0
+            def get_tableitem(self, *args):
+                print('called TestDialogGui.get_tableitem with args', args)
+                return ''
+            def get_item_text(self, item):
+                print(f'called TestDialogGui.get_item_text with arg {item}')
+                return item
+            def meld(self, *args):
+                print('called TestDialogGui.meld with args', args)
+            def accept(self):
+                print('called TestDialogGui.accept')
+        def mock_count(table):
+            print(f'called TestDialogGui.getrowcount with arg {table}')
+            return 1
+        def mock_item(*args):
+            print('called TestDialogGui.get_tableitem with args', args)
+            if args[2] == 1:
+                return ''
+            return 'xxx'
+        def mock_item_2(*args):
+            print('called TestDialogGui.get_tableitem with args', args)
+            if args[2] == 0:
+                return ''
+            return 'xxx'
+        def mock_item_3(*args):
+            print('called TestDialogGui.get_tableitem with args', args)
+            return f'item{args[1]}{args[2]}'
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.gui = MockGui()
+        testobj.parent = types.SimpleNamespace()
+        testobj.attr_table = 'table'
+        testobj.confirm()
+        assert testobj.parent.dialog_data == []
+        assert capsys.readouterr().out == "called TestDialogGui.getrowcount with arg table\n"
+        testobj.gui.getrowcount = mock_count
+        assert not testobj.confirm()
+        assert testobj.parent.dialog_data == []
+        assert capsys.readouterr().out == (
+                "called TestDialogGui.getrowcount with arg table\n"
+                "called TestDialogGui.get_tableitem with args ('table', 0, 0)\n"
+                "called TestDialogGui.get_tableitem with args ('table', 0, 1)\n"
+                "called TestDialogGui.meld with args"
+                " (\"Can't continue\", 'Not all values are entered and confirmed')\n")
+        testobj.gui.get_tableitem = mock_item
+        assert not testobj.confirm()
+        assert testobj.parent.dialog_data == []
+        assert capsys.readouterr().out == (
+                "called TestDialogGui.getrowcount with arg table\n"
+                "called TestDialogGui.get_tableitem with args ('table', 0, 0)\n"
+                "called TestDialogGui.get_tableitem with args ('table', 0, 1)\n"
+                "called TestDialogGui.meld with args"
+                " (\"Can't continue\", 'Not all values are entered and confirmed')\n")
+        testobj.gui.get_tableitem = mock_item_2
+        assert not testobj.confirm()
+        assert testobj.parent.dialog_data == []
+        assert capsys.readouterr().out == (
+                "called TestDialogGui.getrowcount with arg table\n"
+                "called TestDialogGui.get_tableitem with args ('table', 0, 0)\n"
+                "called TestDialogGui.get_tableitem with args ('table', 0, 1)\n"
+                "called TestDialogGui.meld with args"
+                " (\"Can't continue\", 'Not all values are entered and confirmed')\n")
+        testobj.gui.get_tableitem = mock_item_3
+        assert testobj.confirm()
+        assert testobj.parent.dialog_data == [('item00', 'item01')]
+        assert capsys.readouterr().out == (
+                "called TestDialogGui.getrowcount with arg table\n"
+                "called TestDialogGui.get_tableitem with args ('table', 0, 0)\n"
+                "called TestDialogGui.get_tableitem with args ('table', 0, 1)\n"
+                "called TestDialogGui.get_item_text with arg item00\n"
+                "called TestDialogGui.get_item_text with arg item01\n")
+
+
+class TestListDialogGui:
+    """unittest for gui_qt.ListDialogGui
+    """
+    def setup_testobj(self, monkeypatch, capsys):
+        """stub for gui_qt.ListDialog object
+
+        create the object skipping the normal initialization
+        intercept messages during creation
+        return the object so that other methods can be monkeypatched in the caller
+        """
+        def mock_init(self, *args):
+            """stub
+            """
+            print('called ListDialog.__init__ with args', args)
+        monkeypatch.setattr(testee.ListDialog, '__init__', mock_init)
+        testobj = testee.ListDialog()
+        assert capsys.readouterr().out == f'called ListDialog.__init__ with args ()\n'
+        return testobj
+
+    def test_init(self, monkeypatch, capsys):
+        """unittest for ListDialog.__init__
+        """
+        def mock_get(arg):
+            print(f"called Tree.get_itemtext with arg '{arg}'")
+            return arg
+        class MockGui:
+            def __init__(self, *args, **kwargs):
+                print('called ListDialogGui.__init__ with args', args, kwargs)
+            def add_outline(self):
+                print('called ListDialogGui.add_outline')
+                return 'box'
+            def add_label_to_outline(self, *args):
+                print('called ListDialogGui.add_label_to_outline with args', args)
+            def add_list_to_outline(self, *args):
+                print('called ListDialogGui.add_list_to_outline with args', args)
+                return 'list'
+            def add_buttons_to_outline(self, *args):
+                print('called ListDialogGui.add_buttons_to_outline with args', args)
+            def add_okcancel_buttons(self, *args):
+                print('called ListDialogGui.add_okcancel_buttons with args', args)
+            def finalize_dialog(self, *args, **kwargs):
+                print('called ListDialogGui.finalize_dialog with args', args, kwargs)
+        monkeypatch.setattr(testee.gui, 'ListDialogGui', MockGui)
+        parent = types.SimpleNamespace(tree=types.SimpleNamespace(get_itemtext=mock_get))
+        testobj = testee.ListDialog(parent)
+        assert testobj.parent == parent
+        assert not testobj.is_rules_node
+        assert testobj.list == 'list'
+        assert capsys.readouterr().out == (
+                f"called ListDialogGui.__init__ with args ({testobj}, {testobj.parent}, '') {{}}\n"
+                "called ListDialogGui.add_outline\n"
+                "called ListDialogGui.add_label_to_outline with args ('box', 'Items in list:')\n"
+                "called ListDialogGui.add_list_to_outline with args ('box', [])\n"
+                "called ListDialogGui.add_buttons_to_outline with args"
+                f" ('box', [('&Add Item', {testobj.on_add}), ('&Edit Selected', {testobj.on_edit}),"
+                f" ('&Delete Selected', {testobj.on_del})])\n"
+                "called ListDialogGui.add_okcancel_buttons with args ('&Save',)\n"
+                "called ListDialogGui.finalize_dialog with args () {'focusfield': 'list'}\n")
+        title = "xxx'rules'xx"
+        testobj = testee.ListDialog(parent, title, ['yyy', 'zzz'])
+        assert testobj.parent == parent
+        assert testobj.is_rules_node
+        assert testobj.list == 'list'
+        assert capsys.readouterr().out == (
+                f"called ListDialogGui.__init__ with args ({testobj}, {testobj.parent},"
+                " \"xxx'rules'xx\") {}\n"
+                "called ListDialogGui.add_outline\n"
+                "called ListDialogGui.add_label_to_outline with args ('box', 'Items in list:')\n"
+                "called Tree.get_itemtext with arg 'yyy'\n"
+                "called Tree.get_itemtext with arg 'zzz'\n"
+                "called ListDialogGui.add_list_to_outline with args ('box', ['yyy', 'zzz'])\n"
+                "called ListDialogGui.add_buttons_to_outline with args"
+                f" ('box', [('&Add Item', {testobj.on_add}), ('&Edit Selected', {testobj.on_edit}),"
+                f" ('&Delete Selected', {testobj.on_del})])\n"
+                "called ListDialogGui.add_okcancel_buttons with args ('&Save',)\n"
+                "called ListDialogGui.finalize_dialog with args () {'focusfield': 'list'}\n")
+
+    def test_on_add(self, monkeypatch, capsys):
+        """unittest for ListDialog.on_add
+        """
+        class MockGui:
+            def select_item(self, *args):
+                print('called ListDialogGui.select_item with args', args)
+                return '', False
+            def ask_for_text(self, *args):
+                print('called ListDialogGui.ask_for_text with args', args)
+                return '', False
+            def add_row_to_list(self, *args):
+                print('called ListDialogGui.add_row_to_list with args', args)
+        def mock_get_item(*args, **kwargs):
+            print('called ListDialogGui.select_item with args', args)
+            return 'yyy', True
+        def mock_get_text(*args, **kwargs):
+            print('called ListDialogGui.ask_for_text with args', args)
+            return 'zzz', True
+        monkeypatch.setattr(testee, 'RTYPES', {'a': ['x', 1], 'b': ['y', 0]})
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.gui = MockGui()
+        testobj.parent = types.SimpleNamespace(app_title='app title')
+        testobj.list = 'listbox'
+        testobj.is_rules_node = True
+        testobj.on_add()
+        assert capsys.readouterr().out == (
+                "called ListDialogGui.select_item with args"
+                " ('app title', 'Choose type for this rule', ['x', 'y'])\n")
+        testobj.is_rules_node = False
+        testobj.on_add()
+        assert capsys.readouterr().out == (
+                "called ListDialogGui.ask_for_text with args"
+                " ('Add item to list', 'Enter text for this item')\n")
+        testobj.is_rules_node = True
+        testobj.gui.select_item = mock_get_item
+        testobj.on_add()
+        assert capsys.readouterr().out == (
+                "called ListDialogGui.select_item with args"
+                " ('app title', 'Choose type for this rule', ['x', 'y'])\n"
+                "called ListDialogGui.add_row_to_list with args ('listbox', 'yyy')\n")
+        testobj.is_rules_node = False
+        testobj.gui.ask_for_text = mock_get_text
+        testobj.on_add()
+        assert capsys.readouterr().out == (
+                "called ListDialogGui.ask_for_text with args"
+                " ('Add item to list', 'Enter text for this item')\n"
+                "called ListDialogGui.add_row_to_list with args ('listbox', 'zzz')\n")
+
+    def test_on_edit(self, monkeypatch, capsys):
+        """unittest for ListDialog.on_edit
+        """
+        class MockGui:
+            def get_listitem(self, arg):
+                print('called ListDialogGui.get_listitem with arg', arg)
+                return 'xxx'
+            def get_itemtext(self, arg):
+                print('called ListDialogGui.get_itemtext with arg', arg)
+                return 'yy'
+            def select_item(self, *args):
+                print('called ListDialogGui.select_item with args', args)
+                return '', False
+            def ask_for_text(self, *args, **kwargs):
+                print('called ListDialogGui.ask_for_text with args', args, kwargs)
+                return '', False
+            def set_itemtext(self, *args):
+                print('called ListDialogGui.set_itemtext with args', args)
+        def mock_select(*args, **kwargs):
+            print('called ListDialogGui.select_item with args', args)
+            return 'yyy', True
+        def mock_ask(*args, **kwargs):
+            print('called ListDialogGui.ask_for_text with args', args)
+            return 'zzz', True
+        def mock_get(arg):
+            print('called ListDialogGui.get_itemtext with arg', arg)
+            return ''
+        def mock_get_2(arg):
+            print('called ListDialogGui.get_itemtext with arg', arg)
+            return 'qq'
+        monkeypatch.setattr(testee, 'RTYPES', {'a': ['yy', 'qq'], 'b': ['xx', 'rr']})
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.gui = MockGui()
+        testobj.list = 'listbox'
+        testobj.parent = types.SimpleNamespace(app_title='app title')
+        testobj.is_rules_node = True
+        testobj.on_edit()
+        assert capsys.readouterr().out == (
+                'called ListDialogGui.get_listitem with arg listbox\n'
+                'called ListDialogGui.get_itemtext with arg xxx\n'
+                'called ListDialogGui.select_item with args'
+                " ('app title', 'Choose type for this rule', ['xx', 'yy'], 1)\n")
+        testobj.is_rules_node = False
+        testobj.on_edit()
+        assert capsys.readouterr().out == (
+                'called ListDialogGui.get_listitem with arg listbox\n'
+                'called ListDialogGui.get_itemtext with arg xxx\n'
+                'called ListDialogGui.ask_for_text with args'
+                " ('Edit list item', 'Enter text for this item:') {'text': 'yy'}\n")
+        testobj.gui.select_item = mock_select
+        testobj.gui.ask_for_text = mock_ask
+        testobj.is_rules_node = True
+        testobj.on_edit()
+        assert capsys.readouterr().out == (
+                'called ListDialogGui.get_listitem with arg listbox\n'
+                'called ListDialogGui.get_itemtext with arg xxx\n'
+                'called ListDialogGui.select_item with args'
+                " ('app title', 'Choose type for this rule', ['xx', 'yy'], 1)\n"
+                "called ListDialogGui.set_itemtext with args ('xxx', 'yyy')\n")
+        testobj.is_rules_node = False
+        testobj.on_edit()
+        assert capsys.readouterr().out == (
+                'called ListDialogGui.get_listitem with arg listbox\n'
+                'called ListDialogGui.get_itemtext with arg xxx\n'
+                'called ListDialogGui.ask_for_text with args'
+                " ('Edit list item', 'Enter text for this item:')\n"
+                "called ListDialogGui.set_itemtext with args ('xxx', 'zzz')\n")
+        testobj.gui.get_itemtext = mock_get
+        testobj.is_rules_node = True
+        testobj.on_edit()
+        assert capsys.readouterr().out == (
+                'called ListDialogGui.get_listitem with arg listbox\n'
+                'called ListDialogGui.get_itemtext with arg xxx\n'
+                'called ListDialogGui.select_item with args'
+                " ('app title', 'Choose type for this rule', ['xx', 'yy'], 0)\n"
+                "called ListDialogGui.set_itemtext with args ('xxx', 'yyy')\n")
+        testobj.gui.get_itemtext = mock_get_2
+        testobj.on_edit()
+        assert capsys.readouterr().out == (
+                'called ListDialogGui.get_listitem with arg listbox\n'
+                'called ListDialogGui.get_itemtext with arg xxx\n'
+                'called ListDialogGui.select_item with args'
+                " ('app title', 'Choose type for this rule', ['xx', 'yy'], 0)\n"
+                "called ListDialogGui.set_itemtext with args ('xxx', 'yyy')\n")
+
+    def test_on_del(self, monkeypatch, capsys):
+        """unittest for ListDialog.on_del
+        """
+        class MockGui:
+            def ask_question(self, *args):
+                print('called ListDialogGui.ask_question with args', args)
+                return False
+            def delete_row_from_list(self, arg):
+                print('called ListDialogGui.delete_row_from_list with arg', arg)
+        def mock_question(*args):
+            print('called ListDialogGui.ask_question with args', args)
+            return True
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.gui = MockGui()
+        testobj.list = 'listbox'
+        testobj.on_del()
+        assert capsys.readouterr().out == ("called ListDialogGui.ask_question with args"
+                                           " ('Delete item from list', 'Are you sure?')\n")
+        testobj.gui.ask_question = mock_question
+        testobj.on_del()
+        assert capsys.readouterr().out == (
+                "called ListDialogGui.ask_question with args"
+                " ('Delete item from list', 'Are you sure?')\n"
+                "called ListDialogGui.delete_row_from_list with arg listbox\n")
+
+    def test_confirm(self, monkeypatch, capsys):
+        """unittest for ListDialog.confirm
+        """
+        class MockGui:
+            def get_list_length(self, arg):
+                print('called ListDialogGui.get_list_length with arg', arg)
+                return 2
+            def get_listitem(self, *args):
+                print('called ListDialogGui.get_listitem with arg', args)
+                return f'item{args[1]}'
+            def get_itemtext(self, arg):
+                print('called ListDialogGui.get_itemtext with arg', arg)
+                return arg
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.list ='listbox'
+        testobj.gui = MockGui()
+        testobj.parent = types.SimpleNamespace(dialog_data=[])
+        testobj.confirm()
+        assert testobj.parent.dialog_data == ['item0', 'item1']
+        assert capsys.readouterr().out == (
+                "called ListDialogGui.get_list_length with arg listbox\n"
+                "called ListDialogGui.get_listitem with arg ('listbox', 0)\n"
+                "called ListDialogGui.get_itemtext with arg item0\n"
+                "called ListDialogGui.get_listitem with arg ('listbox', 1)\n"
+                "called ListDialogGui.get_itemtext with arg item1\n")

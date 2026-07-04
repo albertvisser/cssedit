@@ -134,7 +134,7 @@ class MainGui(qtw.QMainWindow):
 
     def show_dialog(self, cls, *args):
         "show and return the results of a dialog"
-        edt = cls(self, *args).exec()
+        edt = cls(self, *args).gui.exec()
         if edt == qtw.QDialog.DialogCode.Accepted:
             return True, self.dialog_data
         return False, None
@@ -388,11 +388,6 @@ class LogDialogGui(qtw.QDialog):
         self.setLayout(self.vbox)
         self.exec()
 
-    def itemDoubleClicked(self, item):
-        """handler for doubleclicking over a line
-        """
-        self.show_context(item)
-
     def get_selection(self, listbox):
         return listbox.currentItem()
 
@@ -411,20 +406,21 @@ class LogDialogGui(qtw.QDialog):
 class EditDialogGui(qtw.QDialog):
     """base class for dialogs to edit css properties
     """
-    def __init__(self, mathter, parent, title, size):
+    def __init__(self, mathter, parent, title, size=None):
         self.mathter = mathter
         self._parent = parent
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setWindowIcon(parent.appicon)
-        self.resize(size[0], size[1])
+        if size:
+            self.resize(size[0], size[1])
         self.vbox = qtw.QVBoxLayout()
 
     def add_outline(self):
         sbox = qtw.QFrame()
         sbox.setFrameStyle(qtw.QFrame.Shape.Box)
         box = qtw.QVBoxLayout()
-        self.sbox.setLayout(box)
+        sbox.setLayout(box)
         self.vbox.addWidget(sbox)
         return box
 
@@ -507,6 +503,8 @@ class GridDialogGui(EditDialogGui):
     """
 
     def add_table_to_outline(self, box, headers, widths, itemlist):
+        if itemlist is None:
+            itemlist = []
         hbox = qtw.QHBoxLayout()
         table = qtw.QTableWidget(self)
         table.setColumnCount(len(headers))
@@ -517,21 +515,18 @@ class GridDialogGui(EditDialogGui):
         hdr.setStretchLastSection(True)
         table.verticalHeader().setVisible(False)
         table.setTabKeyNavigation(False)
-        if itemlist is not None:
-            for attr, value in itemlist:
-                idx = self.attr_table.rowCount()
-                table.insertRow(idx)
-                item = qtw.QTableWidgetItem(attr)
-                table.setItem(idx, 0, item)
-                item = qtw.QTableWidgetItem(value)
-                table.setItem(idx, 1, item)
-        else:
-            self.row = -1
+        for attr, value in itemlist:
+            idx = table.rowCount()
+            table.insertRow(idx)
+            item = qtw.QTableWidgetItem(attr)
+            table.setItem(idx, 0, item)
+            item = qtw.QTableWidgetItem(value)
+            table.setItem(idx, 1, item)
         hbox.addWidget(table)
         box.addLayout(hbox)
         return table
 
-    def getroecount(self, table):
+    def getrowcount(self, table):
         return table.rowCount()
 
     def get_tableitem(self, table, row, column):
@@ -548,17 +543,12 @@ class GridDialogGui(EditDialogGui):
         table.setRowCount(num + 1)
 
     def delete_row_from_table(self, table):
-        table.removeRow(currentRow())
+        table.removeRow(table.currentRow())
 
 
 class ListDialogGui(EditDialogGui):
     """dialoog om een list type property toe te voegen of te wijzigen
     """
-
-    def select_item(self, title, caption, choices, current_index=0, editable=False):
-        text, ok = qtw.QInputDialog.getItem(self, title, caption , options, current_index,
-                                            editable)
-        return text, ok
 
     def add_list_to_outline(self, box, items):
         hbox = qtw.QHBoxLayout()
@@ -571,6 +561,11 @@ class ListDialogGui(EditDialogGui):
         box.addLayout(hbox)
         return lbox
 
+    def select_item(self, title, caption, choices, current_index=0, editable=False):
+        text, ok = qtw.QInputDialog.getItem(self, title, caption, choices, current_index,
+                                            editable)
+        return text, ok
+
     def ask_for_text(self, title, caption, text=''):
         text, ok = qtw.QInputDialog.getText(self, title, caption, text=text)
         return text, ok
@@ -580,7 +575,7 @@ class ListDialogGui(EditDialogGui):
         lbox.addItem(itemtext)
 
     def get_listitem(self, lbox, row=-1):
-        if listitem == -1:
+        if row == -1:
             return lbox.currentItem()
         else:
             return lbox.item(row)
@@ -591,9 +586,9 @@ class ListDialogGui(EditDialogGui):
     def set_itemtext(self, item, text):
         item.setText(text)
 
-    def delete_row_from_table(self, lbox):
+    def delete_row_from_list(self, lbox):
         "item verwijderen"
-        list.takeItem(list.currentRow())
+        lbox.takeItem(lbox.currentRow())
 
     def get_list_length(self, lbox):
         return lbox.count()

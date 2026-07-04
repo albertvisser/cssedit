@@ -496,7 +496,7 @@ class Editor:
         self.data = ()
         data = self.gui.tree.get_itemtext(textnode) if textnode else ''
         modified = False
-        edt, newdata = self.gui.show_dialog(gui.TextDialog, title, data)
+        edt, newdata = self.gui.show_dialog(TextDialog, title, data)
         if edt and newdata != data:
             modified = True
             if not textnode:
@@ -511,7 +511,7 @@ class Editor:
         itemtexts = self.gui.tree.get_subitems(self.item)
         maxlen = len(itemtexts)
         modified = False
-        edt, newitemtexts = self.gui.show_dialog(gui.ListDialog, title, itemtexts)
+        edt, newitemtexts = self.gui.show_dialog(ListDialog, title, itemtexts)
         if edt:
             for ix, itemtext in enumerate(newitemtexts):
                 if ix < maxlen:
@@ -548,7 +548,7 @@ class Editor:
                     for item in subitems]  # self.gui.tree.get_subitems(self.item)]
         maxlen = len(itemlist)
         modified = False
-        edt, newitemlist = self.gui.show_dialog(gui.GridDialog, title, itemlist)
+        edt, newitemlist = self.gui.show_dialog(GridDialog, title, itemlist)
         if edt:
             for ix, item in enumerate(newitemlist):
                 if ix < maxlen:
@@ -719,8 +719,6 @@ class Editor:
             return
         level = self.determine_level(self.item)
         self.gui.show_message(f'This element is at level {level}')
-        level = self.determine_level_orig(self.item)
-        self.gui.show_message(f'Or is this element at level {level}?')
 
     def add_subitems(self, parent, item):
         """recursively add items to/under a parent
@@ -794,31 +792,20 @@ class LogDialog:
         self.gui.add_label("Dubbelklik op een regel om de context "
                            "(definitie in de css) te bekijken")
         self.lijst = self.gui.add_listbox(log, self.show_context)
-        self.gui.add_buttons([("&Toon Context", self.show_context), ("&Klaar", self.gui.done)])
+        self.gui.add_buttons([("&Toon Context", self.show_context), ("&Klaar", self.gui.accept)])
         self.gui.finish_dialog()
-
-    # def itemDoubleClicked(self, item):
-    #     """handler for doubleclicking over a line
-    #     """
-    #     self.show_context(item)
 
     def show_context(self, item=None):
         """show full logline (in case it's been chopped off)
         and the definition that triggered it
         """
         # determine selected line in the list and get associated data
-        breakpoint()
         selected = item or self.gui.get_selection(self.lijst)
         y = parse_log_line(self.gui.get_listitem_text(selected))
         context = get_definition_from_file(self.parent.project_file, y.line, y.pos)
         # pop up a box to show the data
         title = self.parent.app_title + " - show context for log message"
         self.gui.meld(title, self.text + context)
-
-    # def done(self, arg=None):
-    #     """finish dialog
-    #     """
-    #     super().done(0)
 
 
 class TextDialog:
@@ -827,7 +814,7 @@ class TextDialog:
     """
     def __init__(self, parent, title='', text=''):
         self.parent = parent
-        self.gui = gui.TextDialogGui(self, parent.gui, title, size=(440, 280))
+        self.gui = gui.TextDialogGui(self, parent, title, size=(440, 280))
         self.data_text = self.gui.add_textfield(text)
         self.gui.add_okcancel_buttons('&Save')
         self.gui.finalize_dialog(focusfield=self.data_text)
@@ -836,7 +823,6 @@ class TextDialog:
         """confirm changed text
         """
         self.parent.dialog_data = self.gui.get_textfield_text(self.data_text)
-        super().accept()
 
 
 class GridDialog:
@@ -845,16 +831,15 @@ class GridDialog:
     """
     def __init__(self, parent, title='', itemlist=None):  # , comment=False):
         self.parent = parent
-        self.gui = gui.GridDialogGui(self, parent.gui, title, size=(440, 280))
+        self.gui = gui.GridDialogGui(self, parent, title, size=(440, 280))
         box = self.gui.add_outline()
         self.gui.add_label_to_outline(box, "Items in table:")
         self.attr_table = self.gui.add_table_to_outline(box, ['property', 'value'], (102, 152),
                                                              itemlist)
         self.gui.add_buttons_to_outline(box, [('&Add Item', self.on_add),
                                               ('&Delete Selected', self.on_del)])
-        self.gui.finish_outline(box)
         self.gui.add_okcancel_buttons('&Save')
-        self.gui.finalize_dialog(focusfield=self.data_text)
+        self.gui.finalize_dialog(focusfield=self.attr_table)
 
     def on_add(self):
         """property toevoegen:
@@ -865,7 +850,7 @@ class GridDialog:
     def on_del(self):
         """attribuut verwijderen
         """
-        ok = self.ask_question('Delete row from table', 'Are you sure?')
+        ok = self.gui.ask_question('Delete row from table', 'Are you sure?')
         if ok:
             self.gui.delete_row_from_table(self.attr_table)
 
@@ -879,7 +864,7 @@ class GridDialog:
             if not name_item or not value_item:
                 self.gui.meld("Can't continue", 'Not all values are entered and confirmed')
                 return False
-            proplist.append(self.gui.get_item_text(name_item), self.gui.get_item_text(value_item))
+            proplist.append((self.gui.get_item_text(name_item), self.gui.get_item_text(value_item)))
         self.parent.dialog_data = proplist
         return True
 
@@ -888,19 +873,20 @@ class ListDialog:
     """dialoog om een list type property toe te voegen of te wijzigen
     """
     def __init__(self, parent, title='', itemlist=None):  # , comment=False):
+        if itemlist is None:
+            itemlist = []
         self.parent = parent
-        self.gui = gui.ListDialogGui(self, parent.gui, title)
+        self.gui = gui.ListDialogGui(self, parent, title)
         self.is_rules_node = "'rules'" in title
         box = self.gui.add_outline()
         self.gui.add_label_to_outline(box, "Items in list:")
-        self.list = self.gui.add_list_to_outline(box, [self._parent.tree.get_itemtext(x)
+        self.list = self.gui.add_list_to_outline(box, [self.parent.tree.get_itemtext(x)
                                                        for x in itemlist])
         self.gui.add_buttons_to_outline(box, [('&Add Item', self.on_add),
                                               ('&Edit Selected', self.on_edit),
                                               ('&Delete Selected', self.on_del)])
-        self.gui.finish_outline(box)
         self.gui.add_okcancel_buttons('&Save')
-        self.gui.finalize_dialog(focusfield=self.data_text)
+        self.gui.finalize_dialog(focusfield=self.list)
 
     def on_add(self):
         "item toevoegen"
@@ -921,7 +907,7 @@ class ListDialog:
         if self.is_rules_node:
             ruletypes = sorted([(x, y[0]) for x, y in RTYPES.items()], key=lambda item: item[1])
             options = [x[1] for x in ruletypes]
-            current_index = options.index(oldtext) if oldtext else 0
+            current_index = options.index(oldtext) if oldtext and oldtext in options else 0
             text, ok = self.gui.select_item(self.parent.app_title, "Choose type for this rule",
                                             options, current_index)
         else:
@@ -934,7 +920,7 @@ class ListDialog:
         "item verwijderen"
         ok = self.gui.ask_question('Delete item from list', 'Are you sure?')
         if ok:
-            self.list.takeItem(self.list.currentRow())
+            self.gui.delete_row_from_list(self.list)  # .takeItem(self.list.currentRow())
 
     def confirm(self):
         """bij OK: de opgebouwde list via self.dialog_data doorgeven
