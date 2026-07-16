@@ -312,6 +312,9 @@ def parse_log_line(line):
 
 class MyCSSSerializer(cssutils.serialize.CSSSerializer):
     """reimplementation to accomadate for output mode "short"
+
+    de aanpassingen zitten in de laatste 8 regels van onderstaande methodes,
+    de todos zijn dus niet van mij
     """
     def do_CSSStyleRule(self, rule):
         """

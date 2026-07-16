@@ -42,8 +42,6 @@ class Editor:
     """Hoofdscherm van de applicatie
     """
     format_option = 'Set output &Format'
-    # TODO: zoeken/filteren in tags (vgl hoe dit in hotkeys is gedaan)
-    # - ook in properties voor bekijken gelijksoortige stijlen
 
     def __init__(self, parent=None, parentpos=(0, 0), app=None):
         self.parent = parent
@@ -253,8 +251,7 @@ class Editor:
                     for list_item in self.gui.tree.get_subitems(key_item):
                         key_data.append(self.gui.tree.get_itemtext(list_item))
                         if key_text == 'rules':
-                            # TODO: onderliggende ruledata toevoegen
-                            pass
+                            self.gui.show_message('rules within rules is not supported (yet)')
                 elif key_text in ('styles',):
                     key_data = {}
                     for dict_item in self.gui.tree.get_subitems(key_item):
@@ -360,7 +357,7 @@ class Editor:
             self.gui.show_message('You need to select an element or text first')
             sel = False
         else:
-            self.itemlevel = self.determine_level(self.item)  # TODO: check
+            self.itemlevel = self.determine_level(self.item)
         return sel
 
     def is_rule_parent(self, item):
