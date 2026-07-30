@@ -24,6 +24,29 @@ class MockTree:
         print('called Tree.__init__')
 
 
+def test_show_message(monkeypatch, capsys):
+    """unittest for MainGui.show_message
+    """
+    monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
+    win = types.SimpleNamespace(master=types.SimpleNamespace(app_title='apptitle'))
+    testee.show_message(win, 'qqq')
+    assert capsys.readouterr().out == (
+            f"called MessageBox.information with args `{win}` `apptitle` `qqq`\n")
+    testee.show_message(win, 'qqq', 'yyy')
+    assert capsys.readouterr().out == (
+            f"called MessageBox.information with args `{win}` `yyy` `qqq`\n")
+
+
+def test_ask_question(monkeypatch, capsys):
+    """unittest for EditDialogGui.ask_question
+    """
+    monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
+    win = 'win'
+    assert not testee.ask_question('win', 'title', 'message')
+    assert capsys.readouterr().out == (
+            f"called MessageBox.question with args `win` `title` `message` `12` `4`\n")
+
+
 class TestMainGui:
     """unittest for gui_qt.MainGui
     """
@@ -236,19 +259,6 @@ class TestMainGui:
                 "called MainWindow.setWindowModality with arg"
                 f" '{testee.core.Qt.WindowModality.ApplicationModal}'\n"
                 "called MainGui.show\n")
-
-    def test_show_message(self, monkeypatch, capsys):
-        """unittest for MainGui.show_message
-        """
-        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.master.app_title = 'xxx'
-        testobj.show_message('qqq')
-        assert capsys.readouterr().out == (
-                f"called MessageBox.information with args `{testobj}` `xxx` `qqq`\n")
-        testobj.show_message('qqq', 'yyy')
-        assert capsys.readouterr().out == (
-                f"called MessageBox.information with args `{testobj}` `yyy` `qqq`\n")
 
     def test_show_statusmessage(self, monkeypatch, capsys):
         """unittest for MainGui.show_statusmessage
@@ -809,15 +819,6 @@ class TestLogDialogGui:
         assert testobj.get_listitem_text(item) == ''
         assert capsys.readouterr().out == 'called ListItem.__init__\ncalled ListItem.text\n'
 
-    def test_meld(self, monkeypatch, capsys):
-        """unittest for LogDialog.meld
-        """
-        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.meld('title', 'text')
-        assert capsys.readouterr().out == (
-                f"called MessageBox.information with args `{testobj}` `title` `text`\n")
-
     def test_done(self, monkeypatch, capsys):
         """unittest for LogDialog.done
         """
@@ -962,24 +963,6 @@ class TestEditDialogGui:
         assert capsys.readouterr().out == ("called Widget.__init__\n"
                                            "called Dialog.setLayout with arg MockVBoxLayout\n"
                                            "called Widget.setFocus\n")
-
-    def test_meld(self, monkeypatch, capsys):
-        """unittest for EditDialogGui.meld
-        """
-        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.meld('title', 'message')
-        assert capsys.readouterr().out == (
-                f"called MessageBox.information with args `{testobj}` `title` `message`\n")
-
-    def test_ask_question(self, monkeypatch, capsys):
-        """unittest for EditDialogGui.ask_question
-        """
-        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.ask_question('title', 'message')
-        assert capsys.readouterr().out == (
-                f"called MessageBox.question with args `{testobj}` `title` `message` `3` `1`\n")
 
     def test_accept(self, monkeypatch, capsys):
         """unittest for EditDialogGui.accept

@@ -8,6 +8,22 @@ import PyQt6.QtCore as core
 HERE = os.path.dirname(__file__)
 
 
+def show_message(win, text, title=""):
+    "show a message in a box with a title"
+    title = title or win.master.app_title
+    qtw.QMessageBox.information(win, title, text)
+
+
+def ask_question(win, title, message):
+    """ask a question answerable with ok or cancel
+    """
+    ok = qtw.QMessageBox.question(win, title, message,
+                                  qtw.QMessageBox.StandardButton.Yes
+                                  | qtw.QMessageBox.StandardButton.No,
+                                  qtw.QMessageBox.StandardButton.Yes)
+    return ok == qtw.QMessageBox.StandardButton.Yes
+
+
 class MainGui(qtw.QMainWindow):
     """Hoofdscherm van de applicatie
     """
@@ -88,11 +104,6 @@ class MainGui(qtw.QMainWindow):
                     else core.Qt.WindowModality.NonModal)
         self.setWindowModality(modality)
         self.show()
-
-    def show_message(self, text, title=""):
-        "show a message in a box with a title"
-        title = title or self.master.app_title
-        qtw.QMessageBox.information(self, title, text)
 
     def show_statusmessage(self, text):
         "set the message at the bottom of the window"
@@ -360,11 +371,13 @@ class LogDialogGui(qtw.QDialog):
         self.vbox = qtw.QVBoxLayout()
 
     def add_label(self, labeltext):
+        "add some fixed text to the dialog"
         hbox = qtw.QHBoxLayout()
         hbox.addWidget(qtw.QLabel(labeltext))
         self.vbox.addLayout(hbox)
 
     def add_listbox(self, data, callback):
+        "add a listbox to the dialog"
         hbox = qtw.QHBoxLayout()
         lijst = qtw.QListWidget(self)
         # lijst.setSelectionMode(gui.QAbstractItemView.SingleSelection)
@@ -375,6 +388,7 @@ class LogDialogGui(qtw.QDialog):
         return lijst
 
     def add_buttons(self, buttondefs):
+        "add a strip with action buttons to the bottom of the dialog"
         hbox = qtw.QHBoxLayout()
         hbox.addStretch()
         for text, callback in buttondefs:
@@ -385,17 +399,17 @@ class LogDialogGui(qtw.QDialog):
         self.vbox.addLayout(hbox)
 
     def finish_dialog(self):
+        "finish the display and show the dialog"
         self.setLayout(self.vbox)
         self.exec()
 
     def get_selection(self, listbox):
+        "return the selected item"
         return listbox.currentItem()
 
     def get_listitem_text(self, item):
+        "return the text of an item"
         return item.text()
-
-    def meld(self, title, text):
-        qtw.QMessageBox.information(self, title, text)
 
     def done(self, arg=None):
         """finish dialog
@@ -417,6 +431,7 @@ class EditDialogGui(qtw.QDialog):
         self.vbox = qtw.QVBoxLayout()
 
     def add_outline(self):
+        "add an outlined area to the dialog"
         sbox = qtw.QFrame()
         sbox.setFrameStyle(qtw.QFrame.Shape.Box)
         box = qtw.QVBoxLayout()
@@ -425,6 +440,7 @@ class EditDialogGui(qtw.QDialog):
         return box
 
     def add_label_to_outline(self, box, labeltext):
+        "add some fixed text to the area"
         hbox = qtw.QHBoxLayout()
         hbox.addStretch()
         hbox.addWidget(qtw.QLabel(labeltext))
@@ -432,6 +448,7 @@ class EditDialogGui(qtw.QDialog):
         box.addLayout(hbox)
 
     def add_buttons_to_outline(self, box, buttondefs):
+        "add a strip with some action buttons to the area"
         hbox = qtw.QHBoxLayout()
         hbox.addSpacing(50)
         for text, callback in buttondefs:
@@ -442,6 +459,7 @@ class EditDialogGui(qtw.QDialog):
         box.addLayout(hbox)
 
     def add_okcancel_buttons(self, oktext):
+        "add a strip with action buttons to the bottom of the dialog"
         hbox = qtw.QHBoxLayout()
         hbox.addStretch()
         btn = qtw.QPushButton(oktext, self)
@@ -455,20 +473,9 @@ class EditDialogGui(qtw.QDialog):
         self.vbox.addLayout(hbox)
 
     def finalize_dialog(self, focusfield):
+        "finish the display and show the dialog"
         self.setLayout(self.vbox)
         focusfield.setFocus()
-
-    def meld(self, title, text):
-        qtw.QMessageBox.information(self, title, text)
-
-    def ask_question(self, title, message):
-        """attribuut verwijderen
-        """
-        ok = qtw.QMessageBox.question(self, title, message,
-                                      qtw.QMessageBox.StandardButton.Ok
-                                      | qtw.QMessageBox.StandardButton.Cancel,
-                                      qtw.QMessageBox.StandardButton.Ok)
-        return ok == qtw.QMessageBox.StandardButton.Ok
 
     def accept(self):
         """reimplemented
@@ -483,6 +490,7 @@ class TextDialogGui(EditDialogGui):
     """
 
     def add_textfield(self, text):
+        "add a text field to the dialog"
         hbox = qtw.QHBoxLayout()
         field = qtw.QTextEdit(self)
         # self.data_text.resize(440, 280)
@@ -494,6 +502,7 @@ class TextDialogGui(EditDialogGui):
         return field
 
     def get_textfield_text(self, field):
+        "return the contents of the text area"
         return field.toPlainText()
 
 
@@ -503,6 +512,7 @@ class GridDialogGui(EditDialogGui):
     """
 
     def add_table_to_outline(self, box, headers, widths, itemlist):
+        "add a table to the area"
         if itemlist is None:
             itemlist = []
         hbox = qtw.QHBoxLayout()
@@ -527,22 +537,24 @@ class GridDialogGui(EditDialogGui):
         return table
 
     def getrowcount(self, table):
+        "return the number of rows in the table"
         return table.rowCount()
 
     def get_tableitem(self, table, row, column):
+        "return a table item indicated by row and column"
         return table.item(row, column)
 
     def get_item_text(self, tableitem):
+        "return the text of a table item"
         return tableitem.text()
 
     def add_row_to_table(self, table):
-        """property toevoegen:
-        in dit geval hoef ik alleen maar een lege regel aan de tabel toe te voegen
-        """
+        "add an empty row to the table"
         num = table.rowCount()
         table.setRowCount(num + 1)
 
     def delete_row_from_table(self, table):
+        "delete a row from the table"
         table.removeRow(table.currentRow())
 
 
@@ -551,6 +563,7 @@ class ListDialogGui(EditDialogGui):
     """
 
     def add_list_to_outline(self, box, items):
+        "add a list to the area"
         hbox = qtw.QHBoxLayout()
         hbox.addSpacing(50)
         lbox = qtw.QListWidget(self)
@@ -562,33 +575,38 @@ class ListDialogGui(EditDialogGui):
         return lbox
 
     def select_item(self, title, caption, choices, current_index=0, editable=False):
+        "present a dialog to select a value from a list and return the selected value"
         text, ok = qtw.QInputDialog.getItem(self, title, caption, choices, current_index,
                                             editable)
         return text, ok
 
     def ask_for_text(self, title, caption, text=''):
+        "present a dialog to enter some text and return the value"
         text, ok = qtw.QInputDialog.getText(self, title, caption, text=text)
         return text, ok
 
     def add_row_to_list(self, lbox, itemtext):
-        "item toevoegen"
+        "add a row to the list"
         lbox.addItem(itemtext)
 
     def get_listitem(self, lbox, row=-1):
+        "remove a row from the list"
         if row == -1:
             return lbox.currentItem()
-        else:
-            return lbox.item(row)
+        return lbox.item(row)
 
     def get_itemtext(self, item):
+        "return the text of a list item"
         return item.text()
 
     def set_itemtext(self, item, text):
+        "set the text of a list item to a given value"
         item.setText(text)
 
     def delete_row_from_list(self, lbox):
-        "item verwijderen"
+        "delete a row from the list"
         lbox.takeItem(lbox.currentRow())
 
     def get_list_length(self, lbox):
+        "return the number of items in the list"
         return lbox.count()

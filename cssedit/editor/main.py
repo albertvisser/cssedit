@@ -3,7 +3,7 @@
 import os
 # import sys
 import contextlib
-from .cssedit import RTYPES, parse_log_line, get_definition_from_file
+from .cssedit import parse_log_line, get_definition_from_file
 
 try:
     import cssedit.editor.cssedit as ed  # helper class for css specific stuff
@@ -251,7 +251,7 @@ class Editor:
                     for list_item in self.gui.tree.get_subitems(key_item):
                         key_data.append(self.gui.tree.get_itemtext(list_item))
                         if key_text == 'rules':
-                            self.gui.show_message('rules within rules is not supported (yet)')
+                            gui.show_message(self.gui, 'rules within rules is not supported (yet)')
                 elif key_text in ('styles',):
                     key_data = {}
                     for dict_item in self.gui.tree.get_subitems(key_item):
@@ -354,7 +354,7 @@ class Editor:
         self.item = self.gui.tree.getcurrent()
         self.itemlevel = 0
         if self.item is None or self.item == self.gui.tree.root:
-            self.gui.show_message('You need to select an element or text first')
+            gui.show_message(self.gui, 'You need to select an element or text first')
             sel = False
         else:
             self.itemlevel = self.determine_level(self.item)
@@ -367,7 +367,7 @@ class Editor:
         if item == self.gui.tree.root or self.gui.tree.get_itemtext(item) == "rules":
             ok = True
         if not ok:
-            self.gui.show_message("Can't add or paste rule here")
+            gui.show_message(self.gui, "Can't add or paste rule here")
         return ok
 
     def is_rule_item(self, item):
@@ -378,7 +378,7 @@ class Editor:
         if test not in RTYPES:
             ok = False
         if not ok:
-            self.gui.show_message(f"Can't do this; {test} is not a rule item")
+            gui.show_message(self.gui, f"Can't do this; {test} is not a rule item")
         return ok
 
     def mark_dirty(self, state):
@@ -425,7 +425,7 @@ class Editor:
         if not self.is_rule_parent(parent):
             return
         if self.mode == 'tag' and len(self.gui.tree.get_subitems(parent)) == 1:
-            self.gui.show_message('Only one rule allowed when editing tag style')
+            gui.show_message(self.gui, 'Only one rule allowed when editing tag style')
             return
         # collect all ruletypes, build and display choicedialog
         ruletypes = sorted([(x, y[0]) for x, y in ed.RTYPES.items()], key=lambda x: x[1])
@@ -436,7 +436,7 @@ class Editor:
         if not ok:
             return
         if self.mode == 'tag' and typename != 'STYLE_RULE':
-            self.gui.show_message('Only style rule allowed when editing tag style')
+            gui.show_message(self.gui, 'Only style rule allowed when editing tag style')
             return
         # ruletype = None
         ruletype = get_ruletype_for_name(typename)
@@ -445,7 +445,7 @@ class Editor:
         #         ruletype = rtype
         #         break
         if ruletype is None:
-            self.gui.show_message('Can you even choose an option that is not in the option list?')
+            gui.show_message(self.gui, 'Can you even choose an option that is not in the option list?')
             return
         if after is None:
             # parent = parent
@@ -481,7 +481,7 @@ class Editor:
         else:
             msg = "You can't edit this type of node"
         if msg:
-            self.gui.show_message(msg)
+            gui.show_message(self.gui, msg)
         elif modified:
             self.gui.tree.expand_item(self.item)
             self.mark_dirty(True)
@@ -570,7 +570,9 @@ class Editor:
     def delete(self):
         """callback for menu option
         """
-        self._copy_rule(cut=True, retain=False)
+        ok = gui.ask_question(self.gui, 'Delete rule', 'Are you sure?')
+        if ok:
+            self._copy_rule(cut=True, retain=False)
 
     def cut(self):
         """callback for menu option
@@ -715,7 +717,7 @@ class Editor:
         if not self.checkselection():
             return
         level = self.determine_level(self.item)
-        self.gui.show_message(f'This element is at level {level}')
+        gui.show_message(self.gui, f'This element is at level {level}')
 
     def add_subitems(self, parent, item):
         """recursively add items to/under a parent
@@ -802,7 +804,7 @@ class LogDialog:
         context = get_definition_from_file(self.parent.project_file, y.line, y.pos)
         # pop up a box to show the data
         title = self.parent.app_title + " - show context for log message"
-        self.gui.meld(title, self.text + context)
+        gui.show_message(self.gui, self.text + context, title)
 
 
 class TextDialog:
@@ -832,7 +834,7 @@ class GridDialog:
         box = self.gui.add_outline()
         self.gui.add_label_to_outline(box, "Items in table:")
         self.attr_table = self.gui.add_table_to_outline(box, ['property', 'value'], (102, 152),
-                                                             itemlist)
+                                                        itemlist)
         self.gui.add_buttons_to_outline(box, [('&Add Item', self.on_add),
                                               ('&Delete Selected', self.on_del)])
         self.gui.add_okcancel_buttons('&Save')
@@ -847,7 +849,7 @@ class GridDialog:
     def on_del(self):
         """attribuut verwijderen
         """
-        ok = self.gui.ask_question('Delete row from table', 'Are you sure?')
+        ok = gui.ask_question(self.gui, 'Delete row from table', 'Are you sure?')
         if ok:
             self.gui.delete_row_from_table(self.attr_table)
 
@@ -859,7 +861,8 @@ class GridDialog:
             name_item = self.gui.get_tableitem(self.attr_table, i, 0)
             value_item = self.gui.get_tableitem(self.attr_table, i, 1)
             if not name_item or not value_item:
-                self.gui.meld("Can't continue", 'Not all values are entered and confirmed')
+                gui.show_message(self.gui, 'Not all values are entered and confirmed',
+                                 "Can't continue")
                 return False
             proplist.append((self.gui.get_item_text(name_item), self.gui.get_item_text(value_item)))
         self.parent.dialog_data = proplist
@@ -915,7 +918,7 @@ class ListDialog:
 
     def on_del(self):
         "item verwijderen"
-        ok = self.gui.ask_question('Delete item from list', 'Are you sure?')
+        ok = gui.ask_question(self.gui, 'Delete item from list', 'Are you sure?')
         if ok:
             self.gui.delete_row_from_list(self.list)  # .takeItem(self.list.currentRow())
 

@@ -496,6 +496,9 @@ class TestEditor:
             if tcounter in (2, 4, 6, 8, 10, 12):
                 return ['text', 'data', 'selectors', 'media', 'rules', 'styles'][tcounter // 2 - 1]
             return f'y{tcounter}'
+        def mock_show(*args):
+            print('called gui.show_message with args', args)
+        monkeypatch.setattr(testee.gui, 'show_message', mock_show)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.gui.tree.root = 'here'
         testobj.gui.tree.get_subitems = mock_get_subitems
@@ -521,6 +524,8 @@ class TestEditor:
                                            "called TreePanel.get_itemtext with arg bb\n"
                                            "called TreePanel.get_subitems with arg bb\n"
                                            "called TreePanel.get_itemtext with arg x7\n"
+                                           f"called gui.show_message with args ({testobj.gui},"
+                                           " 'rules within rules is not supported (yet)')\n"
                                            "called TreePanel.get_itemtext with arg cc\n"
                                            "called TreePanel.get_subitems with arg cc\n"
                                            "called TreePanel.get_itemtext with arg x8\n"
@@ -718,21 +723,24 @@ class TestEditor:
         def mock_level(arg):
             print(f'called Editor.determine_level with arg `{arg}`')
             return expected_level
+        def mock_show(*args):
+            print('called gui.show_message with args', args)
+        monkeypatch.setattr(testee.gui, 'show_message', mock_show)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.determine_level = mock_level
         testobj.gui.tree.getcurrent = mock_get_return_none
         assert not testobj.checkselection()
         assert testobj.itemlevel == 0
         assert capsys.readouterr().out == ("called Tree.getcurrent\n"
-                                           "called MainGui.show_message with arg"
-                                           " `You need to select an element or text first`\n")
+                                           f"called gui.show_message with args ({testobj.gui},"
+                                           " 'You need to select an element or text first')\n")
         testobj.gui.tree.root = 'item'
         testobj.gui.tree.getcurrent = mock_get
         assert not testobj.checkselection()
         assert testobj.itemlevel == 0
         assert capsys.readouterr().out == ("called Tree.getcurrent\n"
-                                           "called MainGui.show_message with arg"
-                                           " `You need to select an element or text first`\n")
+                                           f"called gui.show_message with args ({testobj.gui},"
+                                           " 'You need to select an element or text first')\n")
         testobj.gui.tree.root = 'root'
         testobj.gui.tree.getcurrent = mock_get
         assert testobj.checkselection()
@@ -746,6 +754,9 @@ class TestEditor:
         def mock_get_itemtext(arg):
             print('called TreePanel.get_itemtext with arg', arg)
             return 'rules'
+        def mock_show(*args):
+            print('called gui.show_message with args', args)
+        monkeypatch.setattr(testee.gui, 'show_message', mock_show)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.gui.tree.root = 'item'
         assert testobj.is_rule_parent('item')
@@ -754,7 +765,8 @@ class TestEditor:
         assert not testobj.is_rule_parent('item')
         assert capsys.readouterr().out == (
                 "called TreePanel.get_itemtext with arg item\n"
-                "called MainGui.show_message with arg `Can't add or paste rule here`\n")
+                f"called gui.show_message with args ({testobj.gui},"
+                ' "Can\'t add or paste rule here")\n')
         monkeypatch.setattr(testobj.gui.tree, 'get_itemtext', mock_get_itemtext)
         assert testobj.is_rule_parent('item')
         assert capsys.readouterr().out == "called TreePanel.get_itemtext with arg item\n"
@@ -763,11 +775,15 @@ class TestEditor:
         """unittest for Editor.is_rule_item
         """
         monkeypatch.setattr(testee, 'RTYPES', ('x', 'y'))
+        def mock_show(*args):
+            print('called gui.show_message with args', args)
+        monkeypatch.setattr(testee.gui, 'show_message', mock_show)
         testobj = self.setup_testobj(monkeypatch, capsys)
         assert not testobj.is_rule_item('item')
         assert capsys.readouterr().out == (
                 "called TreePanel.get_itemtext with arg item\n"
-                "called MainGui.show_message with arg `Can't do this; itemtext is not a rule item`\n")
+                f"called gui.show_message with args ({testobj.gui},"
+                ' "Can\'t do this; itemtext is not a rule item")\n')
         monkeypatch.setattr(testee, 'RTYPES', ('itemtext', 'y'))
         testobj = self.setup_testobj(monkeypatch, capsys)
         assert testobj.is_rule_item('item')
@@ -864,6 +880,9 @@ class TestEditor:
             print('called MainGui.get_input_choice with args', args)
             return 'B', True
 
+        def mock_show(*args):
+            print('called gui.show_message with args', args)
+        monkeypatch.setattr(testee.gui, 'show_message', mock_show)
         monkeypatch.setattr(testee.ed, 'RTYPES', {2: ('A', [('x', 1, 'fn')]),
                                                   1: ('B', [('y', 2, 'f2')])})
         monkeypatch.setattr(testee.ed, 'Editor', MockEditor)
@@ -883,7 +902,8 @@ class TestEditor:
             "called TreePanel.get_parentpos with item\n"
             "called Editor.is_rule_parent with arg item\n"
             "called TreePanel.get_subitems with arg item\n"
-            "called MainGui.show_message with arg `Only one rule allowed when editing tag style`\n")
+            f"called gui.show_message with args ({testobj.gui},"
+            " 'Only one rule allowed when editing tag style')\n")
         testobj.gui.tree.get_subitems = mock_get_subitems_n
         testobj.add_rule()
         assert capsys.readouterr().out == (
@@ -898,7 +918,8 @@ class TestEditor:
             "called Editor.is_rule_parent with arg item\n"
             "called TreePanel.get_subitems with arg item\n"
             "called MainGui.get_input_choice with args ('Choose type for new rule', ['A', 'B'])\n"
-            "called MainGui.show_message with arg `Only style rule allowed when editing tag style`\n")
+            f"called gui.show_message with args ({testobj.gui},"
+            " 'Only style rule allowed when editing tag style')\n")
         testobj.gui.get_input_choice = mock_get_choice_2
         testobj.add_rule()
         assert capsys.readouterr().out == (
@@ -906,7 +927,8 @@ class TestEditor:
             "called Editor.is_rule_parent with arg item\n"
             "called TreePanel.get_subitems with arg item\n"
             "called MainGui.get_input_choice with args ('Choose type for new rule', ['A', 'B'])\n"
-            "called MainGui.show_message with arg `Only style rule allowed when editing tag style`\n")
+            f"called gui.show_message with args ({testobj.gui},"
+            " 'Only style rule allowed when editing tag style')\n")
         testobj.mode = "no-tag"
         testobj.gui.get_input_choice = mock_get_choice_2
         testobj.add_rule()
@@ -914,8 +936,8 @@ class TestEditor:
             "called TreePanel.get_parentpos with item\n"
             "called Editor.is_rule_parent with arg item\n"
             "called MainGui.get_input_choice with args ('Choose type for new rule', ['A', 'B'])\n"
-            "called MainGui.show_message with arg `Can you even choose an option"
-            " that is not in the option list?`\n")
+            f"called gui.show_message with args ({testobj.gui},"
+            " 'Can you even choose an option that is not in the option list?')\n")
         testobj.gui.get_input_choice = mock_get_choice_3
         testobj.add_rule()
         assert capsys.readouterr().out == (
@@ -1045,6 +1067,9 @@ class TestEditor:
         def mock_get_parentpos(arg):
             print(f'called Tree.get_itemparentpos with arg {arg}')
             return 'node', 0
+        def mock_show(*args):
+            print('called gui.show_message with args', args)
+        monkeypatch.setattr(testee.gui, 'show_message', mock_show)
         monkeypatch.setattr(testee.ed, 'RTYPES', ['a ruletype'])
         monkeypatch.setattr(testee.ed, 'text_type', 1)
         monkeypatch.setattr(testee.ed, 'list_type', 2)
@@ -1069,7 +1094,8 @@ class TestEditor:
                 "called Tree.get_itemtext with arg item\n"
                 "called Tree.get_itemparentpos with arg item\n"
                 "called Tree.get_itemtext with arg node\n"
-                "called MainGui.show_message with arg `Edit rule via subordinate item`\n")
+                f"called gui.show_message with args ({testobj.gui},"
+                " 'Edit rule via subordinate item')\n")
         counter = 0
         testobj.gui.tree.get_itemtext = mock_get_itemtext_textitem
         testobj.edit()
@@ -1109,7 +1135,8 @@ class TestEditor:
                 "called Tree.get_itemtext with arg item\n"
                 "called Tree.get_itemparentpos with arg item\n"
                 "called Tree.get_itemtext with arg node\n"
-                "called MainGui.show_message with arg `You can't edit this type of node`\n")
+                f"called gui.show_message with args ({testobj.gui},"
+                ' "You can\'t edit this type of node")\n')
 
     def test_edit_text_node(self, monkeypatch, capsys):
         """unittest for Editor.edit_text_node
@@ -1401,10 +1428,24 @@ class TestEditor:
     def test_delete(self, monkeypatch, capsys):
         """unittest for Editor.delete
         """
+        def mock_ask(*args):
+            print('called gui.ask_question with args', args)
+            return False
+        def mock_ask_2(*args):
+            print('called gui.ask_question with args', args)
+            return True
+        monkeypatch.setattr(testee.gui, 'ask_question', mock_ask)
         testobj = self.setup_testobj(monkeypatch, capsys)
         monkeypatch.setattr(testobj, '_copy_rule', self.mock_copy)
         testobj.delete()
         assert capsys.readouterr().out == (
+                f"called gui.ask_question with args ({testobj.gui},"
+                " 'Delete rule', 'Are you sure?')\n")
+        monkeypatch.setattr(testee.gui, 'ask_question', mock_ask_2)
+        testobj.delete()
+        assert capsys.readouterr().out == (
+                f"called gui.ask_question with args ({testobj.gui},"
+                " 'Delete rule', 'Are you sure?')\n"
                 "called Editor._copy_rule with kwargs {'cut': True, 'retain': False}\n")
 
     def test_cut(self, monkeypatch, capsys):
@@ -1710,6 +1751,9 @@ class TestEditor:
         """
         def mock_level(arg):
             print(f'called Editor.determine_level with arg `{arg}`')
+        def mock_show(*args):
+            print('called gui.show_message with args', args)
+        monkeypatch.setattr(testee.gui, 'show_message', mock_show)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.determine_level = mock_level
         testobj.item = 'item'
@@ -1721,7 +1765,8 @@ class TestEditor:
         assert capsys.readouterr().out == (
                 "called Editor.checkselection\n"
                 "called Editor.determine_level with arg `item`\n"
-                "called MainGui.show_message with arg `This element is at level None`\n")
+                f"called gui.show_message with args ({testobj.gui},"
+                " 'This element is at level None')\n")
 
     def test_add_subitems(self, monkeypatch, capsys):
         """unittest for Editor.add_subitems
@@ -1975,6 +2020,9 @@ class TestLogDialog:
         def mock_get_definition(*args):
             print('called get_definition_from_file with args', args)
             return 'context'
+        def mock_show(*args):
+            print('called gui.show_message with args', args)
+        monkeypatch.setattr(testee.gui, 'show_message', mock_show)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.gui = MockGui()
         monkeypatch.setattr(testee, 'parse_log_line', mock_parse)
@@ -1989,18 +2037,18 @@ class TestLogDialog:
                 'called LogDialogGui.get_listitem_text with arg xxx\n'
                 "called parse_log_line with arg yyy\n"
                 "called get_definition_from_file with args ('pfile', 1, 2)\n"
-                "called LogDialogGui.meld with args"
-                " ('app title - show context for log message',"
-                " 'css definition that triggers this message:\\n\\ncontext')\n")
+                f"called gui.show_message with args ({testobj.gui},"
+                " 'css definition that triggers this message:\\n\\ncontext',"
+                " 'app title - show context for log message')\n")
         item = 'zzz'
         testobj.show_context(item)
         assert capsys.readouterr().out == (
                 'called LogDialogGui.get_listitem_text with arg zzz\n'
                 "called parse_log_line with arg yyy\n"
                 "called get_definition_from_file with args ('pfile', 1, 2)\n"
-                "called LogDialogGui.meld with args"
-                " ('app title - show context for log message',"
-                " 'css definition that triggers this message:\\n\\ncontext')\n")
+                f"called gui.show_message with args ({testobj.gui},"
+                " 'css definition that triggers this message:\\n\\ncontext',"
+                " 'app title - show context for log message')\n")
 
 
 class TestTextDialogGui:
@@ -2159,25 +2207,25 @@ class TestGridDialogGui:
         """unittest for GridDialog.on_del
         """
         def mock_question(*args):
-            print(f'called GridDialogGui.ask_question with args', args)
+            print(f'called gui.ask_question with args', args)
             return False
         def mock_question_2(*args):
-            print(f'called GridDialogGui.ask_question with args', args)
+            print(f'called gui.ask_question with args', args)
             return True
         def mock_delete(arg):
             print(f'called GridDialogGui.delete_row_from_table with arg {arg}')
+        monkeypatch.setattr(testee.gui, 'ask_question', mock_question)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.attr_table = 'table'
-        testobj.gui = types.SimpleNamespace(ask_question=mock_question,
-                                            delete_row_from_table=mock_delete)
+        testobj.gui = types.SimpleNamespace(delete_row_from_table=mock_delete)
         testobj.on_del()
-        assert capsys.readouterr().out == ("called GridDialogGui.ask_question with args"
-                                           " ('Delete row from table', 'Are you sure?')\n")
-        testobj.gui.ask_question = mock_question_2
+        assert capsys.readouterr().out == (f"called gui.ask_question with args ({testobj.gui},"
+                                           " 'Delete row from table', 'Are you sure?')\n")
+        monkeypatch.setattr(testee.gui, 'ask_question', mock_question_2)
         testobj.on_del()
         assert capsys.readouterr().out == (
-                "called GridDialogGui.ask_question with args"
-                " ('Delete row from table', 'Are you sure?')\n"
+                f"called gui.ask_question with args ({testobj.gui},"
+                " 'Delete row from table', 'Are you sure?')\n"
                 "called GridDialogGui.delete_row_from_table with arg table\n")
 
     def test_confirm(self, monkeypatch, capsys):
@@ -2193,8 +2241,6 @@ class TestGridDialogGui:
             def get_item_text(self, item):
                 print(f'called TestDialogGui.get_item_text with arg {item}')
                 return item
-            def meld(self, *args):
-                print('called TestDialogGui.meld with args', args)
             def accept(self):
                 print('called TestDialogGui.accept')
         def mock_count(table):
@@ -2213,6 +2259,9 @@ class TestGridDialogGui:
         def mock_item_3(*args):
             print('called TestDialogGui.get_tableitem with args', args)
             return f'item{args[1]}{args[2]}'
+        def mock_show(*args):
+            print('called gui.show_message with args', args)
+        monkeypatch.setattr(testee.gui, 'show_message', mock_show)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.gui = MockGui()
         testobj.parent = types.SimpleNamespace()
@@ -2227,8 +2276,8 @@ class TestGridDialogGui:
                 "called TestDialogGui.getrowcount with arg table\n"
                 "called TestDialogGui.get_tableitem with args ('table', 0, 0)\n"
                 "called TestDialogGui.get_tableitem with args ('table', 0, 1)\n"
-                "called TestDialogGui.meld with args"
-                " (\"Can't continue\", 'Not all values are entered and confirmed')\n")
+                f"called gui.show_message with args ({testobj.gui},"
+                " 'Not all values are entered and confirmed', \"Can't continue\")\n")
         testobj.gui.get_tableitem = mock_item
         assert not testobj.confirm()
         assert testobj.parent.dialog_data == []
@@ -2236,8 +2285,8 @@ class TestGridDialogGui:
                 "called TestDialogGui.getrowcount with arg table\n"
                 "called TestDialogGui.get_tableitem with args ('table', 0, 0)\n"
                 "called TestDialogGui.get_tableitem with args ('table', 0, 1)\n"
-                "called TestDialogGui.meld with args"
-                " (\"Can't continue\", 'Not all values are entered and confirmed')\n")
+                f"called gui.show_message with args ({testobj.gui},"
+                " 'Not all values are entered and confirmed', \"Can't continue\")\n")
         testobj.gui.get_tableitem = mock_item_2
         assert not testobj.confirm()
         assert testobj.parent.dialog_data == []
@@ -2245,8 +2294,8 @@ class TestGridDialogGui:
                 "called TestDialogGui.getrowcount with arg table\n"
                 "called TestDialogGui.get_tableitem with args ('table', 0, 0)\n"
                 "called TestDialogGui.get_tableitem with args ('table', 0, 1)\n"
-                "called TestDialogGui.meld with args"
-                " (\"Can't continue\", 'Not all values are entered and confirmed')\n")
+                f"called gui.show_message with args ({testobj.gui},"
+                " 'Not all values are entered and confirmed', \"Can't continue\")\n")
         testobj.gui.get_tableitem = mock_item_3
         assert testobj.confirm()
         assert testobj.parent.dialog_data == [('item00', 'item01')]
@@ -2472,25 +2521,26 @@ class TestListDialogGui:
         """unittest for ListDialog.on_del
         """
         class MockGui:
-            def ask_question(self, *args):
-                print('called ListDialogGui.ask_question with args', args)
-                return False
             def delete_row_from_list(self, arg):
                 print('called ListDialogGui.delete_row_from_list with arg', arg)
         def mock_question(*args):
-            print('called ListDialogGui.ask_question with args', args)
+            print(f'called gui.ask_question with args', args)
+            return False
+        def mock_question_2(*args):
+            print(f'called gui.ask_question with args', args)
             return True
+        monkeypatch.setattr(testee.gui, 'ask_question', mock_question)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.gui = MockGui()
         testobj.list = 'listbox'
         testobj.on_del()
-        assert capsys.readouterr().out == ("called ListDialogGui.ask_question with args"
-                                           " ('Delete item from list', 'Are you sure?')\n")
-        testobj.gui.ask_question = mock_question
+        assert capsys.readouterr().out == (f"called gui.ask_question with args ({testobj.gui},"
+                                           " 'Delete item from list', 'Are you sure?')\n")
+        monkeypatch.setattr(testee.gui, 'ask_question', mock_question_2)
         testobj.on_del()
         assert capsys.readouterr().out == (
-                "called ListDialogGui.ask_question with args"
-                " ('Delete item from list', 'Are you sure?')\n"
+                f"called gui.ask_question with args ({testobj.gui},"
+                " 'Delete item from list', 'Are you sure?')\n"
                 "called ListDialogGui.delete_row_from_list with arg listbox\n")
 
     def test_confirm(self, monkeypatch, capsys):
